@@ -1,0 +1,96 @@
+/*
+ * @file: real_time_example_based_deformer.h
+ * @brief: simulation driver for real-time simulation of example-based materials in
+ *         Laplace-Beltrami shape space
+ * @author: Fei Zhu
+ *
+ */
+
+#ifndef REAL_TIME_EXAMPLE_BASED_DEFORMER_H_
+#define REAL_TIME_EXAMPLE_BASED_DEFORMER_H_
+
+#include <string>
+
+class VolumetricMesh;
+class SceneObjectDeformable;
+
+class RealTimeExampleBasedDeformer
+{
+public:
+    RealTimeExampleBasedDeformer();
+    ~RealTimeExampleBasedDeformer();
+
+    void advanceStep();
+
+    //basic load && save
+    void loadSimulationMesh(const std::string &file_name);
+    void loadExamples(const std::string &file_name_prefix, unsigned int example_num);
+    void loadVisualMesh(const std::string &file_name);
+    void loadReducedBasis(const std::string &file_name);
+    void loadObjectEigenfunctions(const std::string &file_name);
+    void loadExampleEigenFunctions(const std::string &file_name_prefix);
+    void saveSimulationMesh(const std::string &file_name) const;
+    void saveExamples(const std::string &file_name_prefix) const;
+    void saveVisualMesh(const std::string &file_name) const;
+    void saveObjectEigenfunctions(const std::string &file_name) const;
+    void saveExampleEigenfunctions(const std::string &file_name_prefix) const;
+
+    //get && set
+    unsigned int exampleNum() const{return example_num_;}
+    double gravity() const {return gravity_;}
+    void setGravity(double gravity){ gravity_ = gravity;}
+    double timeStep() const {return time_step_;}
+    void setTimeStep(double dt){time_step_ = dt;}
+    unsigned int reducedBasisNum() const{return reduced_basis_num_;}
+    unsigned int objectEigenfunctionNum() const{return object_eigenfunction_num_;}
+    unsigned int exampleEigenfunctionNum() const{return example_eigenfunction_num_;}
+
+private:
+    //registration of eigenfunctions
+    void loadCorrespondenceData(const std::string &file_name);
+    void registerEigenfunctions();
+
+    //
+    
+private:
+    //volumetric meshes
+    VolumetricMesh *simulation_mesh_ = NULL;
+    VolumetricMesh **examples_ = NULL;
+    unsigned int example_num_ = 0;
+    //visual mesh for rendering
+    SceneObjectDeformable *visual_mesh_ = NULL;
+    //simulation data
+    double *displacement_ = NULL;
+    double *velocity_ = NULL;
+    double *external_force_ = NULL;
+    double gravity_ = -9.8;
+    double time_step_ = 1.0/30;
+    //reduced simulation data
+    unsigned int reduced_basis_num_ = 0;
+    double **reduced_basis_ = NULL;
+    double *reduced_displacement_ = NULL;
+    double *reduced_velocity_ = NULL;
+    //eigenfunction data
+    double **object_eigenfunctions_ = NULL;
+    double *object_eigenvalues_ = NULL;
+    unsigned int object_eigenfunction_num_ = 0;
+    double ***example_eigenfunctions_ = NULL;
+    double **example_eigenvalues_ = NULL;
+    unsigned int example_eigenfunction_num_ = 0;
+    //shapes in LB shape space
+    double *object_eigencoefs_ = NULL;
+    double **example_eigencoefs_ = NULL;
+    double *target_eigencoefs_ = NULL;
+    //total volume and per-vertex volume
+    double object_volume_ = 0;
+    double *object_vertex_volume_ = NULL;
+    double *example_volume_ = NULL;
+    double **example_vertex_volume_ = NULL;
+    //for eigenfunction registration
+    double **object_corresponding_functions_ = NULL;
+    double ***example_corresponding_functions_ = NULL;
+    unsigned int corresponding_function_num = 0;
+    bool is_region_based_correspondence_ = false;
+};
+
+#endif //REAL_TIME_EXAMPLE_BASED_DEFORMER_H_
