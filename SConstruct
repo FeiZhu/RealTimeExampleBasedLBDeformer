@@ -104,7 +104,7 @@ CPPPATH=[gl_include_path,vega_include_path,alglib_include_path,nlopt_include_pat
 LIBPATH=[gl_library_path,vega_library_path,nlopt_library_path,optpp_library_path]
 if os_name=='Linux':
    CPPPATH.append(mkl_include_path)
-   LIBPATH.append(mkl_lib_path)
+   LIBPATH.append(mkl_library_path)
 RPATH=[gl_library_path]
 LIBS=lib_files
 ENV={'PATH':os.environ['PATH']}
