@@ -11,8 +11,10 @@
 
 #include <string>
 
+class Vec3d;
 class VolumetricMesh;
 class SceneObjectDeformable;
+class Plane;
 
 class RealTimeExampleBasedDeformer
 {
@@ -20,7 +22,8 @@ public:
     RealTimeExampleBasedDeformer();
     ~RealTimeExampleBasedDeformer();
 
-    void advanceStep();
+    void setupSimulation();  //preprocess
+    void advanceStep();  //one time step
 
     //basic load && save
     void loadSimulationMesh(const std::string &file_name);
@@ -29,6 +32,7 @@ public:
     void loadReducedBasis(const std::string &file_name);
     void loadObjectEigenfunctions(const std::string &file_name);
     void loadExampleEigenFunctions(const std::string &file_name_prefix);
+    void loadPlanesInScene(const std::string &file_name, unsigned int plane_num);
     void saveSimulationMesh(const std::string &file_name) const;
     void saveExamples(const std::string &file_name_prefix) const;
     void saveVisualMesh(const std::string &file_name) const;
@@ -44,13 +48,19 @@ public:
     unsigned int reducedBasisNum() const{return reduced_basis_num_;}
     unsigned int objectEigenfunctionNum() const{return object_eigenfunction_num_;}
     unsigned int exampleEigenfunctionNum() const{return example_eigenfunction_num_;}
+    const Plane* planesInScnene() const {return planes_;}
 
-private:
     //registration of eigenfunctions
     void loadCorrespondenceData(const std::string &file_name);
     void registerEigenfunctions();
 
-    //
+private:
+    //project && unproject with eigenfunctions
+    void projectOnEigenFunctions(const VolumetricMesh *mesh, const double *displacement, const double *vertex_volume,
+                                 const double **eigenfunctions, const double *eigenvalues, unsigned int eigenfunction_num,
+                                 Vec3d *eigencoefs);
+    void reconstructFromEigenCoefs(const double **eigenfunctions, const double *eigenvalues,const Vec3d *eigencoefs,
+                                   int eigenfunction_num, int vert_num, Vec3d *vert_pos);
     
 private:
     //volumetric meshes
@@ -78,9 +88,9 @@ private:
     double **example_eigenvalues_ = NULL;
     unsigned int example_eigenfunction_num_ = 0;
     //shapes in LB shape space
-    double *object_eigencoefs_ = NULL;
-    double **example_eigencoefs_ = NULL;
-    double *target_eigencoefs_ = NULL;
+    Vec3d *object_eigencoefs_ = NULL;
+    Vec3d **example_eigencoefs_ = NULL;
+    Vec3d *target_eigencoefs_ = NULL;
     //total volume and per-vertex volume
     double object_volume_ = 0;
     double *object_vertex_volume_ = NULL;
@@ -91,6 +101,9 @@ private:
     double ***example_corresponding_functions_ = NULL;
     unsigned int corresponding_function_num = 0;
     bool is_region_based_correspondence_ = false;
+    //planes in scene, for contact
+    Plane *planes_ = NULL;
+    unsigned int plane_num_ = 0;
 };
 
 #endif //REAL_TIME_EXAMPLE_BASED_DEFORMER_H_

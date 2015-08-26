@@ -8,6 +8,7 @@
 
 #include "volumetricMesh.h"
 #include "sceneObjectDeformable.h"
+#include "planes.h"
 #include "real_time_example_based_deformer.h"
 
 RealTimeExampleBasedDeformer::RealTimeExampleBasedDeformer()
@@ -16,6 +17,11 @@ RealTimeExampleBasedDeformer::RealTimeExampleBasedDeformer()
 }
 
 RealTimeExampleBasedDeformer::~RealTimeExampleBasedDeformer()
+{
+    //TO DO
+}
+
+void RealTimeExampleBasedDeformer::setupSimulation()
 {
     //TO DO
 }
@@ -55,6 +61,11 @@ void RealTimeExampleBasedDeformer::loadExampleEigenFunctions(const std::string &
     //TO DO
 }
 
+void RealTimeExampleBasedDeformer::loadPlanesInScene(const std::string &file_name, unsigned int plane_num)
+{
+    //TO DO
+}
+
 void RealTimeExampleBasedDeformer::saveSimulationMesh(const std::string &file_name) const
 {
     //TO DO
@@ -86,6 +97,19 @@ void RealTimeExampleBasedDeformer::loadCorrespondenceData(const std::string &fil
 }
 
 void RealTimeExampleBasedDeformer::registerEigenfunctions()
+{
+    //TO DO
+}
+
+void RealTimeExampleBasedDeformer::projectOnEigenFunctions(const VolumetricMesh *mesh, const double *displacement, const double *vertex_volume,
+                                                           const double **eigenfunctions, const double *eigenvalues, unsigned int eigenfunction_num,
+                                                           Vec3d *eigencoefs)
+{
+    //TO DO
+}
+
+void RealTimeExampleBasedDeformer::reconstructFromEigenCoefs(const double **eigenfunctions, const double *eigenvalues,const Vec3d *eigencoefs,
+                                                             int eigenfunction_num, int vert_num, Vec3d *vert_pos)
 {
     //TO DO
 }
