@@ -26,6 +26,9 @@ def get_immediate_subdirectories(dir):
 os_name=platform.system()
 os_architecture=platform.architecture()[0]
 
+#mkl path
+mkl_inc_path = '/opt/intel/composer_xe_2015.3.187/compiler/lib/intel64/'
+
 #library_src_root_path
 lib_src_root_path='./'
 lib_inc_path = lib_src_root_path+'include/'
@@ -39,6 +42,10 @@ glui_src_files=Split('glui_add_controls.cpp glui_string.cpp glui.cpp glui_bitmap
 #builders
 compile=Builder(action='g++ -o $TARGET $SOURCE -c -O3 -DNDEBUG -I '+lib_inc_path)   
 arc_lib=Builder(action='ar rcs $TARGET $SOURCES')
+#need mkl on linux
+if os_name == 'Linux':
+    compile=Builder(action='g++ -o $TARGET $SOURCE -c -O3 -DNDEBUG -I '+lib_inc_path+' -I '+mkl_inc_path)   
+   
 
 #environment
 ENV={'PATH':os.environ['PATH']}

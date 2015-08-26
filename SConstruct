@@ -42,6 +42,9 @@ optpp_library_path = src_dir+'optpp/lib/'
 #ALGLIB LIBRARY
 alglib_include_path = src_dir+'alglib/'
 
+#MKL LIBRARY
+mkl_library_path = '/opt/intel/mkl/lib/intel64/'
+
 #PATHS MADE PLATFORM SPECIFIC
 if os_name=='Linux':
     vega_library_path=vega_library_path+'Linux/'
@@ -88,6 +91,9 @@ else:
 lib_files.append('glut')
 lib_files.append('GLU')
 lib_files.append('GL')
+#MKL
+if os_name=='Linux':
+   lib_files.append('mkl_core')
 
 #COMPILER OPTIONS
 CC='g++'

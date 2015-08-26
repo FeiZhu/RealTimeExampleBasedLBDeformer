@@ -99,7 +99,7 @@ private:
     //for eigenfunction registration
     double **object_corresponding_functions_ = NULL;
     double ***example_corresponding_functions_ = NULL;
-    unsigned int corresponding_function_num = 0;
+    unsigned int corresponding_function_num_ = 0;
     bool is_region_based_correspondence_ = false;
     //planes in scene, for contact
     Plane *planes_ = NULL;
