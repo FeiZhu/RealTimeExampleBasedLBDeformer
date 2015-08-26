@@ -27,7 +27,7 @@ os_name=platform.system()
 os_architecture=platform.architecture()[0]
 
 #mkl path
-mkl_inc_path = '/opt/intel/composer_xe_2015.3.187/compiler/lib/intel64/'
+mkl_inc_path = '/opt/intel/composer_xe_2015.3.187/mkl/include/'
 
 #library_src_root_path
 lib_src_root_path='./'
