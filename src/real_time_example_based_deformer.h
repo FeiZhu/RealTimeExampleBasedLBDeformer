@@ -27,18 +27,18 @@ public:
     void advanceStep();  //one time step
 
     //basic load && save
-    void loadSimulationMesh(const std::string &file_name);
-    void loadExamples(const std::string &file_name_prefix, unsigned int example_num);
-    void loadVisualMesh(const std::string &file_name);
-    void loadReducedBasis(const std::string &file_name);
-    void loadObjectEigenfunctions(const std::string &file_name);
-    void loadExampleEigenFunctions(const std::string &file_name_prefix);
-    void loadPlanesInScene(const std::string &file_name, unsigned int plane_num);
-    void saveSimulationMesh(const std::string &file_name) const;
-    void saveExamples(const std::string &file_name_prefix) const;
-    void saveVisualMesh(const std::string &file_name) const;
-    void saveObjectEigenfunctions(const std::string &file_name) const;
-    void saveExampleEigenfunctions(const std::string &file_name_prefix) const;
+    bool loadSimulationMesh(const std::string &file_name);
+    bool loadExamples(const std::string &file_name_prefix, unsigned int example_num);
+    bool loadVisualMesh(const std::string &file_name);
+    bool loadReducedBasis(const std::string &file_name);
+    bool loadObjectEigenfunctions(const std::string &file_name);
+    bool loadExampleEigenFunctions(const std::string &file_name_prefix);
+    bool loadPlanesInScene(const std::string &file_name, unsigned int plane_num);
+    bool saveSimulationMesh(const std::string &file_name) const;
+    bool saveExamples(const std::string &file_name_prefix) const;
+    bool saveVisualMesh(const std::string &file_name) const;
+    bool saveObjectEigenfunctions(const std::string &file_name) const;
+    bool saveExampleEigenfunctions(const std::string &file_name_prefix) const;
 
     //get && set
     unsigned int exampleNum() const{return example_num_;}
@@ -52,8 +52,8 @@ public:
     const Planes* planesInScnene() const {return planes_;}
 
     //registration of eigenfunctions
-    void loadCorrespondenceData(const std::string &file_name);
-    void registerEigenfunctions();
+    bool loadCorrespondenceData(const std::string &file_name);
+    bool registerEigenfunctions();
 
 private:
     //project && unproject with eigenfunctions
