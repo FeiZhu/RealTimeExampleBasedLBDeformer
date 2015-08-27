@@ -4,7 +4,7 @@
 #include "objMesh.h"
 #include "planes.h"
 
-Planes::Planes(char* config_file_name,int plane_number):plane_number(plane_number)
+Planes::Planes(const char* config_file_name,unsigned int plane_number):plane_number(plane_number)
 {
     ConfigFile config_file;
 

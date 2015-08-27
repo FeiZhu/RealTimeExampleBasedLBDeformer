@@ -49,21 +49,21 @@ using namespace std;
 
 void ObjMeshRender::Texture::loadTextureImage(string fullPath, int * width, int * height, int * bpp, unsigned char ** texData)
 {
-  ImageIO imageIO;
-  ImageIO::fileFormatType fileFormat;
+ // ImageIO imageIO;
+ // ImageIO::fileFormatType fileFormat;
   // automatically determines the file format type from the filename extension; see imageIO class
-  ImageIO::errorType errorCode = imageIO.load(fullPath.c_str(), &fileFormat);
-  if (errorCode != ImageIO::OK)
-  {
-    printf("Warning: unable to load texture %s.\n", fullPath.c_str());
-    return;
-  }
-
-  *width = imageIO.getWidth();
-  *height = imageIO.getHeight();
-  *bpp = imageIO.getBytesPerPixel();
-  *texData = (unsigned char*) malloc (sizeof(unsigned char) * *width * *height * *bpp);
-  memcpy(*texData, imageIO.getPixels(), sizeof(unsigned char) * *width * *height * *bpp);
+ // ImageIO::errorType errorCode = imageIO.load(fullPath.c_str(), &fileFormat);
+  // if (errorCode != ImageIO::OK)
+  // {
+  //   printf("Warning: unable to load texture %s.\n", fullPath.c_str());
+  //   return;
+  // }
+  //
+  // *width = imageIO.getWidth();
+  // *height = imageIO.getHeight();
+  // *bpp = imageIO.getBytesPerPixel();
+  // *texData = (unsigned char*) malloc (sizeof(unsigned char) * *width * *height * *bpp);
+  // memcpy(*texData, imageIO.getPixels(), sizeof(unsigned char) * *width * *height * *bpp);
 }
 
 void ObjMeshRender::Texture::loadTexture(string fullPath, int textureMode_)
@@ -86,11 +86,11 @@ void ObjMeshRender::Texture::loadTexture(string fullPath, int textureMode_)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-  if((textureMode & OBJMESHRENDER_MIPMAPBIT) == OBJMESHRENDER_GL_USEMIPMAP) 
+  if((textureMode & OBJMESHRENDER_MIPMAPBIT) == OBJMESHRENDER_GL_USEMIPMAP)
   {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-  } 
+  }
   else {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -120,7 +120,7 @@ void ObjMeshRender::Texture::loadTexture(string fullPath, int textureMode_)
     char * versionString = (char*) glGetString(GL_VERSION);
     double version = 0.0;
     if (versionString != NULL)  // glGetString will return NULL in an invalid OpenGL context; this is to protect from a seg fault if versionString is NULL on the next line
-      version = strtod(versionString, NULL); 
+      version = strtod(versionString, NULL);
     if (version >= 3.0)
     {
       //unsigned char * texData1 = (unsigned char*) malloc (sizeof(unsigned char) * width * height * bytesPerPixel);
@@ -183,7 +183,7 @@ void ObjMeshRender::Texture::flipImage(int width, int height, int bpp, unsigned 
   free(rowBuffer);
 }
 
-ObjMeshRender::ObjMeshRender(ObjMesh * mesh_) : mesh(mesh_) 
+ObjMeshRender::ObjMeshRender(ObjMesh * mesh_) : mesh(mesh_)
 {
   alphaBlendingThreshold = OBJMESHRENDER_DEFAULT_ALPHA_BLENDING_THRESHOLD;
 }
@@ -220,10 +220,10 @@ void ObjMeshRender::render(int geometryMode, int renderMode, int renderSingleGro
   {
     //printf("Two-pass render.\n");
     // two-pass render
-    int modifiedRenderMode = ((unsigned int)renderMode) & (~OBJMESHRENDER_TRANSPARENCY); 
+    int modifiedRenderMode = ((unsigned int)renderMode) & (~OBJMESHRENDER_TRANSPARENCY);
 
     glEnable(GL_LIGHTING);
-  
+
     // pass 1
     glEnable(GL_ALPHA_TEST);
     // glAlphaFunc(GL_EQUAL, 1.0);
@@ -233,7 +233,7 @@ void ObjMeshRender::render(int geometryMode, int renderMode, int renderSingleGro
     render(geometryMode, modifiedRenderMode, renderSingleGroup);
 
     glEnable(GL_LIGHTING);
-    
+
     // pass 2
     glEnable(GL_ALPHA_TEST);
     //glAlphaFunc(GL_LESS, 1.0);
@@ -246,7 +246,7 @@ void ObjMeshRender::render(int geometryMode, int renderMode, int renderSingleGro
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
     glDisable(GL_ALPHA_TEST);
-    
+
     return;
   }
 
@@ -294,7 +294,7 @@ void ObjMeshRender::render(int geometryMode, int renderMode, int renderSingleGro
     int faceCount = 0;
     for(unsigned int i=0; i < mesh->getNumGroups(); i++)
     {
-      if ((renderSingleGroup >= 0) && ((int)i != renderSingleGroup))     
+      if ((renderSingleGroup >= 0) && ((int)i != renderSingleGroup))
         continue;
 
       const ObjMesh::Group * groupHandle = mesh->getGroupHandle(i);
@@ -440,7 +440,7 @@ void ObjMeshRender::render(int geometryMode, int renderMode, int renderSingleGro
     }
   }
 
-  // render vertices 
+  // render vertices
   glDisable(GL_COLOR_MATERIAL);
   glDisable(GL_TEXTURE_2D);
   glDisable(GL_LIGHTING);
@@ -454,7 +454,7 @@ void ObjMeshRender::render(int geometryMode, int renderMode, int renderSingleGro
       for(int i = 0; i < numVertices; i++)
       {
         if(renderMode & OBJMESHRENDER_SELECTION)
-          glLoadName(i);  
+          glLoadName(i);
         glBegin(GL_POINTS);
         Vec3d pos = mesh->getPosition(i);
         glVertex3f(pos[0], pos[1], pos[2]);
@@ -482,7 +482,7 @@ void ObjMeshRender::render(int geometryMode, int renderMode, int renderSingleGro
     }
   }
 
-  // render edges 
+  // render edges
   if (geometryMode & OBJMESHRENDER_EDGES)
   {
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -809,7 +809,6 @@ int ObjMeshRender::maxBytesPerPixelInTextures()
 
 ObjMeshRender::Texture::~Texture()
 {
-  if (texture.first) 
+  if (texture.first)
     glDeleteTextures(1, &(texture.second));
 }
-

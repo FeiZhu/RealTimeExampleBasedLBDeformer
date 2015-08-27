@@ -48,7 +48,7 @@ class Planes
 {
 public:
     //read plane configurations from a configuration file
-    Planes(char *config_file_name,int plane_number);
+    Planes(const char *config_file_name,unsigned int plane_number);
     ~Planes();
 
     //call this inside you OpenGL display routine, rendering the enabled planes

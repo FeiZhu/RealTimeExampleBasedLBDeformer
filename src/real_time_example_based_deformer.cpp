@@ -2,23 +2,87 @@
  * @file: real_time_example_based_deformer.cpp
  * @brief: simulation driver for real-time simulation of example-based materials in
  *         Laplace-Beltrami shape space
- * @author: Fei Zhu
+ * @author: Fei Zhu,Mirror
  *
  */
-
+#include <iostream>
+#include <sstream>
+#include <fstream>
 #include "volumetricMesh.h"
+#include "volumetricMeshLoader.h"
 #include "sceneObjectDeformable.h"
+#include "coupled_quasi_harmonics.h"
 #include "planes.h"
 #include "real_time_example_based_deformer.h"
+using namespace std;
+using std::endl;
+using std::stringstream;
+using std::ofstream;
+using std::fstream;
 
 RealTimeExampleBasedDeformer::RealTimeExampleBasedDeformer()
 {
     //TO DO
+
 }
 
 RealTimeExampleBasedDeformer::~RealTimeExampleBasedDeformer()
 {
-    //TO DO
+	//delete tetrahedral meshes
+	if(simulation_mesh_)
+		delete simulation_mesh_;
+	for(unsigned int i=0;i<example_num_;++i)
+		if(examples_[i])
+			delete examples_[i];
+	if(visual_mesh_)
+		delete visual_mesh_;
+	//delete simulation data
+	delete[] displacement_;
+	delete[] velocity_;
+	delete[] external_force_;
+	//delete reduced simulation data
+	delete[] reduced_displacement_;
+	delete[] reduced_velocity_;
+	for(unsigned int i=0;i<reduced_basis_num_;++i)
+		if(reduced_basis_[i])
+			delete[] reduced_basis_[i];
+	//delete eigenfunction data and eigencoef
+	delete[] object_eigencoefs_;
+	delete[] object_vertex_volume_;
+	delete[] object_eigenvalues_;
+	for(unsigned int i=0;i<object_eigenfunction_num_;++i)
+		if(object_eigenfunctions_[i])
+			delete[] object_eigenfunctions_[i];
+	for(unsigned int i=0;i<example_num_;++i)
+	{
+		if(example_eigenfunctions_[i])
+		{
+			for(unsigned int j=0;j<example_eigenfunction_num_;++j)
+				delete[] example_eigenfunctions_[i][j];
+			delete[] example_eigenfunctions_[i];
+		}
+		delete[] example_eigenvalues_[i];
+		delete[] example_eigencoefs_[i];
+		delete[] example_vertex_volume_[i];
+	}
+	delete[] example_volume_;
+	delete[] target_eigencoefs_;
+	//delete registration information
+	for(unsigned int i=0;i<corresponding_function_num_;++i)
+		if(object_corresponding_functions_[i])
+			delete[] object_corresponding_functions_[i];
+	for(unsigned int i=0;i<example_num_;++i)
+	{
+		if(example_corresponding_functions_[i])
+		{
+			for(unsigned int j=0;j<example_eigenfunction_num_;++j)
+				delete[] example_corresponding_functions_[i][j];
+			delete[] example_corresponding_functions_[i];
+		}
+	}
+	if(planes_==NULL)
+		delete[] planes_;
+
 }
 
 void RealTimeExampleBasedDeformer::setupSimulation()
@@ -33,83 +97,680 @@ void RealTimeExampleBasedDeformer::advanceStep()
 
 void RealTimeExampleBasedDeformer::loadSimulationMesh(const std::string &file_name)
 {
-    //TO DO
+    cout<<"Loading simulation mesh: "<<file_name<<endl;
+	simulation_mesh_=VolumetricMeshLoader::load(file_name.c_str());
+	if(simulation_mesh_==NULL)
+	{
+		cout<<"Error: unable to load the simulation mesh from "<<file_name<<endl;
+		return;
+	}
+	object_volume_=simulation_mesh_->getVolume();
+	object_vertex_volume_=new double[simulation_mesh_->getNumVertices()];
+	for(unsigned int ele_idx=0;ele_idx<simulation_mesh_->getNumElements();++ele_idx)
+	{
+		for(unsigned int i=0;i<simulation_mesh_->getNumElementVertices();++i)
+		{
+			unsigned int global_idx=simulation_mesh_->getVertexIndex(ele_idx,i);
+			object_vertex_volume_[global_idx]+=simulation_mesh_->getElementVolume(ele_idx);
+		}
+	}
 }
 
 void RealTimeExampleBasedDeformer::loadExamples(const std::string &file_name_prefix, unsigned int example_num)
 {
-    //TO DO
+   	cout<<"loading examples: "<<endl;
+	example_num_=example_num;
+	examples_=new VolumetricMesh *[example_num];
+	example_volume_=new double[example_num];
+	example_vertex_volume_=new double *[example_num];
+	stringstream stream;
+	for(unsigned int i=0;i<example_num;++i)
+	{
+		string example_num_str="",file_name="";
+		stream.str("");
+		stream.clear();
+		stream<<i;
+		stream>>example_num_str;
+		file_name=file_name_prefix+example_num_str+string(".veg");
+		examples_[i]=VolumetricMeshLoader::load(file_name.c_str());
+		example_volume_[i]=examples_[i]->getVolume();
+		cout<<i<<":"<<example_volume_[i]<<endl;
+		example_vertex_volume_[i]=new double[examples_[i]->getNumVertices()];
+		for(unsigned int ele_idx=0;ele_idx<examples_[i]->getNumElements();++ele_idx)
+		{
+			for(unsigned int j=0;j<examples_[i]->getNumElementVertices();++j)
+			{
+				unsigned int global_idx=examples_[i]->getVertexIndex(ele_idx,j);
+				example_vertex_volume_[i][global_idx]+=examples_[i]->getElementVolume(ele_idx);
+			}
+		}
+	}
+
 }
 
 void RealTimeExampleBasedDeformer::loadVisualMesh(const std::string &file_name)
 {
-    //TO DO
+    //need to be modified later
+	visual_mesh_=new SceneObjectDeformable(file_name.c_str());
+	std::cout<<"visual_mesh_:"<<visual_mesh_->GetNumVertices();
 }
 
+//load reduced basis:first line is vertex_num,second line is basis num; basis are 3*vertex_num*basis_num
 void RealTimeExampleBasedDeformer::loadReducedBasis(const std::string &file_name)
 {
-    //TO DO
+	if(simulation_mesh_==NULL)
+	{
+		cout<<"The simulation tet mesh is null.\n";
+		exit(0);
+	}
+	fstream input_file(file_name.c_str());
+	if(!input_file)
+	{
+		cout<<"Error: failed open "<<file_name<<" .\n";
+		exit(0);
+	}
+	string temp_str;
+	unsigned int reduced_row_num,reduced_col_num;
+	getline(input_file,temp_str);
+	reduced_row_num=atoi(temp_str.c_str());
+	getline(input_file,temp_str);
+	reduced_col_num=atoi(temp_str.c_str());
+	reduced_basis_num_=reduced_col_num;
+	reduced_basis_=new double *[reduced_row_num];
+	cout<<reduced_row_num<<endl;
+	cout<<reduced_col_num<<endl;
+	if(reduced_row_num*3!=simulation_mesh_->getNumVertices())
+	{
+		cout<<"The input reduced basis is not correct!\n";
+		exit(0);
+	}
+	for(unsigned int i=0;i<reduced_row_num;++i)
+	{
+		reduced_basis_[i]=new double[reduced_col_num];
+	}
+	unsigned int line_num=0,str_num=0,total_num=0;
+	while((!input_file.eof())&&(input_file.peek()!=std::ifstream::traits_type::eof()))
+	{
+		++total_num;
+		double temp_value;
+		input_file>>temp_value;
+		reduced_basis_[line_num][str_num]=temp_value;
+		if(str_num>=reduced_col_num-1)
+		{
+			str_num=0;
+			if(line_num<=reduced_row_num-1)
+				++line_num;
+		}
+		else
+			++str_num;
+		if(total_num>=reduced_row_num*reduced_col_num)
+			break;
+	}
+	input_file.close();
 }
 
 void RealTimeExampleBasedDeformer::loadObjectEigenfunctions(const std::string &file_name)
 {
-    //TO DO
+	cout<<"Load object eigenfunction:\n";
+	fstream input_file(file_name.c_str());
+	if(!input_file)
+	{
+		cout<<"Error: Cannot open file "<<file_name<<endl;
+		return;
+	}
+	string temp_str;
+	while(getline(input_file,temp_str))
+	{
+		if(temp_str.compare(0,12,string("*eigenValues"))==0)
+			break;
+	}
+	string object_eigenfunction_num_str;
+	getline(input_file,object_eigenfunction_num_str);
+	object_eigenfunction_num_=atoi(object_eigenfunction_num_str.c_str());
+	object_eigenvalues_=new double[object_eigenfunction_num_];
+	unsigned int str_num=0;
+	while((!input_file.eof())&&(input_file.peek()!=std::ifstream::traits_type::eof()))
+	{
+		double temp_value;
+		input_file>>temp_value;
+		object_eigenvalues_[str_num]=temp_value;
+		str_num++;
+		if(str_num>=object_eigenfunction_num_)
+			break;
+	}
+	cout<<endl;
+	str_num=0;
+	while(getline(input_file,temp_str))
+	{
+		if(temp_str.compare(0,13,string("*eigenVectors"))==0)
+			break;
+	}
+	unsigned int eigenfunction_row_num=0,eigenfunction_col_num=0;
+	string eigenfunction_row_num_str,eigenfunction_col_num_str;
+	getline(input_file,eigenfunction_row_num_str);
+	eigenfunction_row_num=atoi(eigenfunction_row_num_str.c_str());
+	getline(input_file,eigenfunction_col_num_str);
+	eigenfunction_col_num=atoi(eigenfunction_col_num_str.c_str());
+	object_eigenfunctions_=new double *[eigenfunction_col_num];
+	for(unsigned int i=0;i<eigenfunction_col_num;++i)
+	{
+		object_eigenfunctions_[i]=new double [eigenfunction_row_num];
+		for(unsigned int j=0;j<eigenfunction_row_num;++j)
+		{
+			object_eigenfunctions_[i][j]=0.0;
+		}
+	}
+	unsigned int line_num=0;
+	str_num=0;
+	unsigned int total_str_num=0;
+	while((!input_file.eof())&&(input_file.peek()!=std::ifstream::traits_type::eof()))
+	{
+		++total_str_num;
+	//	std::cout<<"a";
+		double temp_value1;
+		input_file>>temp_value1;
+		//std::cout<<temp_value1;
+		object_eigenfunctions_[str_num][line_num]=temp_value1;
+		//std::cout<<str_num<<","<<line_num<<":"<<temp_value1<<endl;
+		if(str_num>=object_eigenfunction_num_-1)
+		{
+			str_num=0;
+			if(line_num<eigenfunction_row_num-1)
+				++line_num;
+		}
+		else
+			++str_num;
+		if(total_str_num>=eigenfunction_row_num*eigenfunction_col_num)
+			break;
+	}
+	input_file.close();
 }
 
 void RealTimeExampleBasedDeformer::loadExampleEigenFunctions(const std::string &file_name_prefix)
 {
-    //TO DO
+   	cout<<"Load example eigenfunctions:\n";
+	if(example_num_==0)
+	{
+		cout<<"example num is zero.\n";
+		return;
+	}
+	example_eigenfunctions_ = new double **[example_num_];
+	example_eigenvalues_ = new double *[example_num_];
+	for(unsigned int ex_num=0;ex_num<example_num_;++ex_num)
+	{
+		string file_num_str,file_name;
+		stringstream adaptor;
+		adaptor.str("");
+		adaptor.clear();
+		adaptor<<ex_num;
+		adaptor>>file_num_str;
+		file_name=file_name_prefix+file_num_str+string(".eigen");
+		fstream input_file(file_name.c_str());
+		if(!input_file)
+		{
+			cout<<"Error: Cannot open file "<<file_name<<endl;
+			return;
+		}
+		string temp_str;
+		while(getline(input_file,temp_str))
+		{
+			if(temp_str.compare(0,12,string("*eigenValues"))==0)
+				break;
+		}
+		string example_eigenfunction_num_str;
+		getline(input_file,example_eigenfunction_num_str);
+		example_eigenfunction_num_=atoi(example_eigenfunction_num_str.c_str());
+		example_eigenvalues_[ex_num]=new double[example_eigenfunction_num_];
+		for(unsigned int j=0;j<example_eigenfunction_num_;++j)
+		{
+			example_eigenvalues_[ex_num][j]=0.0;
+		}
+		unsigned int str_num=0;
+		while((!input_file.eof())&&(input_file.peek()!=std::ifstream::traits_type::eof()))
+		{
+			double temp_value;
+			input_file>>temp_value;
+			example_eigenvalues_[ex_num][str_num]=temp_value;
+			str_num++;
+			if(str_num>=example_eigenfunction_num_)
+				break;
+		}
+		while(getline(input_file,temp_str))
+		{
+			if(temp_str.compare(0,13,string("*eigenVectors"))==0)
+				break;
+		}
+		unsigned int eigenfunction_row_num=0,eigenfunction_col_num=0;
+		string eigenfunction_row_num_str,eigenfunction_col_num_str;
+		getline(input_file,eigenfunction_row_num_str);
+		getline(input_file,eigenfunction_col_num_str);
+		eigenfunction_row_num=atoi(eigenfunction_row_num_str.c_str());
+		eigenfunction_col_num=atoi(eigenfunction_col_num_str.c_str());
+		example_eigenfunctions_[ex_num]=new double *[eigenfunction_col_num];
+		for(unsigned int i=0;i<eigenfunction_col_num;++i)
+		{
+			example_eigenfunctions_[ex_num][i]=new double [eigenfunction_row_num];
+		}
+		for(unsigned int j=0;j<eigenfunction_col_num;++j)
+			for(unsigned int k=0;k<eigenfunction_row_num;++k)
+				example_eigenfunctions_[ex_num][j][k]=0.0;
+		unsigned int line_num=0;
+		str_num=0;
+		unsigned int total_str_num=0;
+		while((!input_file.eof())&&(input_file.peek()!=std::ifstream::traits_type::eof()))
+		{
+			++total_str_num;
+			double temp_value1;
+			input_file>>temp_value1;
+			example_eigenfunctions_[ex_num][str_num][line_num]=temp_value1;
+			cout<<str_num<<","<<line_num<<":"<<example_eigenfunctions_[ex_num][str_num][line_num]<<endl;
+			if(str_num>=example_eigenfunction_num_-1)
+			{
+				str_num=0;
+				if(line_num<eigenfunction_row_num-1)
+					++line_num;
+			}
+			else
+				++str_num;
+			cout<<str_num<<","<<line_num<<endl;
+			if(total_str_num>=eigenfunction_row_num*eigenfunction_col_num)
+				break;
+		}
+		input_file.close();
+	}
+
 }
 
 void RealTimeExampleBasedDeformer::loadPlanesInScene(const std::string &file_name, unsigned int plane_num)
 {
-    //TO DO
+    if(file_name=="")
+	{
+		cout<<"Error: cannot read "<<file_name<<".\n";
+		exit(0);
+	}
+	planes_=new Planes(file_name.c_str(),plane_num);
 }
 
 void RealTimeExampleBasedDeformer::saveSimulationMesh(const std::string &file_name) const
 {
-    //TO DO
+    if(simulation_mesh_==NULL)
+	{
+		cout<<"Error: simulation mesh is null.\n";
+		exit(0);
+	}
+	ofstream output_file(file_name.c_str());
+	if(!output_file)
+	{
+		cout<<"Error: failed to open "<<file_name<<".\n";
+		exit(0);
+	}
+	output_file<<"*VERTICES"<<endl;
+	output_file<<simulation_mesh_->getNumVertices()<<" 3 0 0"<<endl;
+	for(unsigned int i=0;i<simulation_mesh_->getNumVertices();++i)
+	{
+		output_file<<i+1<<" "<<(*simulation_mesh_->getVertex(i))[0]<<" ";
+		output_file<<(*simulation_mesh_->getVertex(i))[1]<<" ";
+		output_file<<(*simulation_mesh_->getVertex(i))[2]<<endl;
+	}
+	output_file<<"*ELEMENTS"<<endl;
+	output_file<<"TET"<<endl;
+	output_file<<simulation_mesh_->getNumElements()<<" 4 0"<<endl;
+	for(unsigned int i=0;i<simulation_mesh_->getNumElements();++i)
+	{
+		output_file<<i+1;
+		for(unsigned int j=0;j<simulation_mesh_->getNumElementVertices();++j)
+		{
+			unsigned int global_idx=simulation_mesh_->getVertexIndex(i,j);
+			output_file<<" "<<global_idx+1;
+		}
+		output_file<<endl;
+	}
+	output_file.close();
 }
 
 void RealTimeExampleBasedDeformer::saveExamples(const std::string &file_name_prefix) const
 {
-    //TO DO
+	string num_str;
+	stringstream stream;
+	for(unsigned int i=0;i<example_num_;++i)
+	{
+		if(examples_[i]==NULL)
+		{
+			cout<<"Error: example mesh "<<i<<" is null.\n";
+			exit(0);
+		}
+		stream.str("");
+		stream.clear();
+		stream<<i;
+		stream>>num_str;
+		string file_name=file_name_prefix+num_str+".smesh";
+		ofstream output_file(file_name.c_str());
+		if(output_file==NULL)
+		{
+			cout<<"Error: failed to open "<<file_name<<".\n";
+			exit(1);
+		}
+		output_file<<"*VERTICES"<<endl;
+		output_file<<examples_[i]->getNumVertices()<<" 3 0 0"<<endl;
+		for(unsigned int j=0;j<examples_[i]->getNumVertices();++j)
+		{
+			output_file<<j+1<<" "<<(*examples_[i]->getVertex(j))[0]<<" ";
+			output_file<<(*examples_[i]->getVertex(j))[1]<<" ";
+			output_file<<(*examples_[i]->getVertex(j))[2]<<endl;
+		}
+		output_file<<"*ELEMENTS"<<endl;
+		output_file<<"TET"<<endl;
+		output_file<<examples_[i]->getNumElements()<<" 4 0"<<endl;
+		for(unsigned int j=0;j<examples_[i]->getNumElements();++j)
+		{
+			output_file<<j+1;
+			for(unsigned int k=0;k<examples_[i]->getNumElementVertices();++k)
+			{
+				unsigned int global_idx=examples_[i]->getVertexIndex(j,k);
+				output_file<<" "<<global_idx+1;
+			}
+			output_file<<endl;
+		}
+		output_file.close();
+	}
+
 }
 
 void RealTimeExampleBasedDeformer::saveVisualMesh(const std::string &file_name) const
 {
-    //TO DO
+    //need to be modified later
+	ObjMesh *mesh=visual_mesh_->GetMesh();
+	mesh->save(file_name.c_str(),0);
+	cout<<file_name<<"saved.\n";
 }
 
 void RealTimeExampleBasedDeformer::saveObjectEigenfunctions(const std::string &file_name) const
 {
-    //TO DO
+	if(simulation_mesh_==NULL)
+	{
+		cout<<"The simulation mesh is null.\n";
+		exit(0);
+	}
+    ofstream output_file(file_name.c_str());
+	if(!output_file)
+	{
+		cout<<"Error:unable to open file "<<output_file<<".\n";
+		return;
+	}
+	output_file<<"*eigenValues"<<endl;
+	output_file<<object_eigenfunction_num_<<endl;
+	for(unsigned int i=0;i<object_eigenfunction_num_;++i)
+	{
+		output_file<<object_eigenvalues_[i]<<" ";
+	}
+	output_file<<endl;
+	output_file<<"*eigenVectors"<<endl;
+	unsigned int vert_num=simulation_mesh_->getNumVertices();
+	output_file<<vert_num<<endl;
+	output_file<<object_eigenfunction_num_<<endl;
+	for(unsigned int i=0;i<vert_num;++i)
+	{
+		for(unsigned int j=0;j<object_eigenfunction_num_;++j)
+		{
+			output_file<<object_eigenfunctions_[j][i]<<" ";
+		}
+		output_file<<endl;
+	}
+	output_file.close();
+	cout<<"Simulation object eigen function saved.\n";
 }
 
 void RealTimeExampleBasedDeformer::saveExampleEigenfunctions(const std::string &file_name_prefix) const
 {
-    //TO DO
+	string num_str;
+	stringstream stream;
+	for(unsigned int i=0;i<example_num_;++i)
+	{
+		if(examples_[i]==NULL)
+		{
+			cout<<"Error: example mesh "<<i<<" is null.\n";
+			exit(1);
+		}
+		stream.str("");
+		stream.clear();
+		stream<<i;
+		stream>>num_str;
+		string file_name=file_name_prefix+num_str+string(".eigen");
+		cout<<file_name<<endl;
+		ofstream output_file(file_name.c_str());
+		if(!output_file)
+		{
+			cout<<"Error:unable to open file "<<output_file<<".\n";
+			return;
+		}
+		output_file<<"*eigenValues"<<endl;
+		output_file<<example_eigenfunction_num_<<endl;
+		for(unsigned int j=0;j<example_eigenfunction_num_;++j)
+		{
+			output_file<<example_eigenvalues_[i][j]<<" ";
+		}
+		output_file<<endl;
+		output_file<<"*eigenVectors"<<endl;
+		unsigned int vert_num=examples_[i]->getNumVertices();
+		output_file<<vert_num<<endl;
+		output_file<<example_eigenfunction_num_<<endl;
+		for(unsigned int j=0;j<vert_num;++j)
+		{
+			for(unsigned int k=0;k<example_eigenfunction_num_;++k)
+			{
+				output_file<<example_eigenfunctions_[i][k][j]<<" ";
+			}
+			output_file<<endl;
+		}
+		output_file.close();
+		cout<<"Example "<<i<<"eigen function saved.\n";
+	}
 }
 
+//file format of corresponding function file:
+//first line is an integer p indicating the number of corresponding functions (regions on the object)
+//the following are (1+example_pos_num)*p  lines, every (1+example_pose_num) consecutive lines are a group
+//meaning corresponding region on the object and examples
+//each line is a list of integers separated by comma, meanning the point in this region
 void RealTimeExampleBasedDeformer::loadCorrespondenceData(const std::string &file_name)
 {
-    //TO DO
+	cout<<"Load input correspondence data:\n";
+	fstream input_file(file_name.c_str());
+	if(!input_file)
+	{
+		cout<<"Error: failed to open "<<file_name<<endl;
+		exit(1);
+	}
+	//read corresponding function number from file
+	string line_str;
+	getline(input_file,line_str);
+	corresponding_function_num_=atoi(line_str.c_str());
+	//allocate space for corresponding functions, each col is a function
+	int object_eigen_vert_num=simulation_mesh_->getNumVertices();
+	object_corresponding_functions_= new double *[object_eigen_vert_num];
+	for(unsigned int i=0;i<object_eigen_vert_num;++i)
+	{
+		object_corresponding_functions_[i]=new double[corresponding_function_num_];
+		for(unsigned int j=0;j<corresponding_function_num_;++j)
+			object_corresponding_functions_[i][j]=0;
+	}
+	example_corresponding_functions_=new double **[example_num_];
+	for(unsigned int i=0;i<example_num_;++i)
+	{
+		int ex_eigen_vert_num=examples_[i]->getNumVertices();
+		example_corresponding_functions_[i]=new double *[ex_eigen_vert_num];
+		for(unsigned int j=0;j<ex_eigen_vert_num;++j)
+		{
+			example_corresponding_functions_[i][j]=new double[corresponding_function_num_];
+			for(unsigned int k=0;k<corresponding_function_num_;++k)
+				example_corresponding_functions_[i][j][k]=0;
+		}
+	}
+	//read data from file
+	for(unsigned int i=0;i<corresponding_function_num_;++i)
+	{
+		//points on the object
+		getline(input_file,line_str);
+		int j=0;
+		int points_in_region=0;
+		while(j<line_str.size())
+		{
+			int k=j;
+			while(line_str[k]!=';')
+				++k;
+			string idx_str=line_str.substr(j,k-j);
+			int idx=atoi(idx_str.c_str());
+			object_corresponding_functions_[idx][i]=1;
+			j=k+1;
+			++points_in_region;
+		}
+		if(points_in_region>1)//corresponding functions are region based
+			is_region_based_correspondence_=true;
+		for(unsigned int ex_idx=0;ex_idx<example_num_;++ex_idx)
+		{
+			//points on the examples
+			getline(input_file,line_str);
+			j=0;
+			while(j<line_str.size())
+			{
+				int k=j;
+				while(line_str[k]!=';')
+					++k;
+				string idx_str=line_str.substr(j,k-j);
+				int idx=atoi(idx_str.c_str());
+				example_corresponding_functions_[ex_idx][idx][i]=1;
+				j=k+1;
+			}
+		}
+	}
+	input_file.close();
+	cout<<"Loaded "<<corresponding_function_num_<<" corresponding functions from: "<<file_name<<endl;
 }
 
 void RealTimeExampleBasedDeformer::registerEigenfunctions()
 {
     //TO DO
+	//if eigenfunction is not loaded,return
+	if(object_eigenfunctions_==NULL)
+	{
+		cout<<"Error: object_eigenfunction is not loaded.\n";
+		exit(1);
+	}
+	int row_b = simulation_mesh_->getNumVertices();
+	int col_b = object_eigenfunction_num_;
+	//change to col order,each col is an eigenfunction
+	double **obj_eigenfunction_col=new double *[row_b];
+	double **new_obj_eigenfunction_col=new double *[row_b];
+	for(unsigned int i=0;i<row_b;++i)
+	{
+		obj_eigenfunction_col[i]=new double[col_b];
+		new_obj_eigenfunction_col[i]=new double[col_b];
+	}
+	for(unsigned int i=0;i<col_b;++i)
+		for(unsigned int j=0;j<row_b;++j)
+			obj_eigenfunction_col[j][i]=object_eigenfunctions_[i][j];
+	for(unsigned int i=0;i<example_num_;++i)
+	{
+		//if eigenfunction no t loaded, return--todo
+		double **G=object_corresponding_functions_,**F=example_corresponding_functions_[i];
+		int p=corresponding_function_num_;
+		int row_a=examples_[i]->getNumVertices();
+		int col_a=example_eigenfunction_num_;
+		double **ex_eigenfunction_col=new double *[row_a];
+		double **new_ex_eigenfunction_col=new double *[row_a];
+		for(unsigned int j=0;j<row_a;++j)
+		{
+			ex_eigenfunction_col[j]=new double[col_a];
+			new_ex_eigenfunction_col[j]=new double[col_a];
+		}
+		for(unsigned int j=0;j<col_a;++j)
+			for(unsigned int k=0;k<row_a;++k)
+				ex_eigenfunction_col[k][j]=example_eigenfunctions_[i][j][k];
+		int col=col_a<col_b?col_a:col_b;
+
+		CoupledQuasiHarmonics quasi_base_generator(ex_eigenfunction_col,obj_eigenfunction_col,example_eigenvalues_[i],
+													object_eigenvalues_,row_a,row_b,col,
+													example_vertex_volume_[i],object_vertex_volume_,F,G,p);
+		//couple example with object
+		quasi_base_generator.setObjectiveType(CoupledQuasiHarmonics::ONLY_A);
+
+		//set optimize package
+		//quasi_base_generator.setPackage(CoupledQuasiHarmonics::NLOPT);
+		quasi_base_generator.setPackage(CoupledQuasiHarmonics::OPTPP);
+
+		//set different options for region-based corresponding and point-wise corresponding
+		if(is_region_based_correspondence_)
+		{
+			quasi_base_generator.setInnerProductType(CoupledQuasiHarmonics::AREA_WEIGHTED);
+			quasi_base_generator.enableScaleCorrespondingFunction();
+		}
+		else
+		{
+			quasi_base_generator.setInnerProductType(CoupledQuasiHarmonics::STANDARD);
+			quasi_base_generator.disableScaleCorrespondingFunction();
+		}
+		//quasi_base_generator.setMu(100);
+		cout<<"Coupling object and example "<<i+1<<endl;
+		quasi_base_generator.getCoupledBases(corresponding_function_num_,new_ex_eigenfunction_col,new_obj_eigenfunction_col);
+		cout<<"Done.\n";
+
+		//transform col-order eigen-bases to row-order so that each row is one eigenfunction
+		for(unsigned int j=0;j<row_a;++j)
+			for(unsigned int k=0;k<corresponding_function_num_;++k)
+				example_eigenfunctions_[i][j][k]=new_ex_eigenfunction_col[j][k];
+
+		for(unsigned int j=0;j<row_a;++j)
+		{
+			delete[] ex_eigenfunction_col[j];
+			delete[] new_ex_eigenfunction_col[j];
+		}
+		delete[] ex_eigenfunction_col;
+		delete[] new_ex_eigenfunction_col;
+	}
 }
 
 void RealTimeExampleBasedDeformer::projectOnEigenFunctions(const VolumetricMesh *mesh, const double *displacement, const double *vertex_volume,
                                                            const double **eigenfunctions, const double *eigenvalues, unsigned int eigenfunction_num,
                                                            Vec3d *eigencoefs)
 {
-    //TO DO
+	//local example mode is not written yet
+    int vert_num=mesh->getNumVertices();
+	double scale_factor;
+	for(unsigned int i=0;i<eigenfunction_num;++i)
+	{
+		for(unsigned int j=0;j<3;++j)
+		{
+			eigencoefs[i][j]=0.0;
+		}
+		scale_factor=eigenvalues[i];
+		for(unsigned int vert_idx=0;vert_idx<vert_num;++vert_idx)
+		{
+			Vec3d vert_pos;
+			cout<<mesh->getVertex(vert_idx)<<endl;
+			cout<<mesh->getVertex(vert_idx)[vert_idx]<<endl;
+			for(unsigned int dim=0;dim<3;++dim)
+			{
+				vert_pos[dim]=(*mesh->getVertex(vert_idx))[dim]+displacement[3*vert_idx+dim];
+				eigencoefs[i][dim]+=vert_pos[dim]*eigenfunctions[i][vert_idx]*vertex_volume[vert_idx]*scale_factor;
+			}
+		}
+	}
 }
 
 void RealTimeExampleBasedDeformer::reconstructFromEigenCoefs(const double **eigenfunctions, const double *eigenvalues,const Vec3d *eigencoefs,
                                                              int eigenfunction_num, int vert_num, Vec3d *vert_pos)
 {
-    //TO DO
+    double scale_factor;
+	for(unsigned int vert_idx=0;vert_idx<vert_num;++vert_idx)
+	{
+		vert_pos[vert_idx][0]=vert_pos[vert_idx][1]=vert_pos[vert_idx][2]=0.0;
+		for(unsigned int i=0;i<eigenfunction_num;++i)
+		{
+			scale_factor=1.0/eigenvalues[i];
+			for(unsigned int dim=0;dim<3;++dim)
+			{
+				vert_pos[vert_idx][dim]+=eigencoefs[vert_idx][dim]*eigenfunctions[i][vert_idx]*scale_factor;
+			}
+		}
+	}
 }

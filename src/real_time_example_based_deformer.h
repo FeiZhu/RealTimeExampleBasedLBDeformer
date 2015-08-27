@@ -14,7 +14,8 @@
 class Vec3d;
 class VolumetricMesh;
 class SceneObjectDeformable;
-class Plane;
+class Planes;
+class CoupledQuasiHarmonics;
 
 class RealTimeExampleBasedDeformer
 {
@@ -48,7 +49,7 @@ public:
     unsigned int reducedBasisNum() const{return reduced_basis_num_;}
     unsigned int objectEigenfunctionNum() const{return object_eigenfunction_num_;}
     unsigned int exampleEigenfunctionNum() const{return example_eigenfunction_num_;}
-    const Plane* planesInScnene() const {return planes_;}
+    const Planes* planesInScnene() const {return planes_;}
 
     //registration of eigenfunctions
     void loadCorrespondenceData(const std::string &file_name);
@@ -61,7 +62,7 @@ private:
                                  Vec3d *eigencoefs);
     void reconstructFromEigenCoefs(const double **eigenfunctions, const double *eigenvalues,const Vec3d *eigencoefs,
                                    int eigenfunction_num, int vert_num, Vec3d *vert_pos);
-    
+
 private:
     //volumetric meshes
     VolumetricMesh *simulation_mesh_ = NULL;
@@ -102,7 +103,7 @@ private:
     unsigned int corresponding_function_num_ = 0;
     bool is_region_based_correspondence_ = false;
     //planes in scene, for contact
-    Plane *planes_ = NULL;
+    Planes *planes_ = NULL;
     unsigned int plane_num_ = 0;
 };
 
