@@ -27,12 +27,12 @@ public:
     void advanceStep();  //one time step
 
     //basic load && save
-    bool loadSimulationMesh(const std::string &file_name);
-    bool loadExamples(const std::string &file_name_prefix, unsigned int example_num);
-    bool loadVisualMesh(const std::string &file_name);
-    bool loadReducedBasis(const std::string &file_name);
-    bool loadObjectEigenfunctions(const std::string &file_name);
-    bool loadExampleEigenFunctions(const std::string &file_name_prefix);
+    bool loadSimulationMesh(const std::string &file_name);//.veg
+    bool loadExamples(const std::string &file_name_prefix, unsigned int example_num);//.veg
+    bool loadVisualMesh(const std::string &file_name);//.obj
+    bool loadReducedBasis(const std::string &file_name);//.basis
+    bool loadObjectEigenfunctions(const std::string &file_name);//.eigen
+    bool loadExampleEigenFunctions(const std::string &file_name_prefix);//.eigen
     bool loadPlanesInScene(const std::string &file_name, unsigned int plane_num);
     bool saveSimulationMesh(const std::string &file_name) const;
     bool saveExamples(const std::string &file_name_prefix) const;

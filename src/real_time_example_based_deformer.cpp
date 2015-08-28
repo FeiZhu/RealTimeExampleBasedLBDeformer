@@ -18,7 +18,6 @@
 RealTimeExampleBasedDeformer::RealTimeExampleBasedDeformer()
 {
     //TO DO
-
 }
 
 RealTimeExampleBasedDeformer::~RealTimeExampleBasedDeformer()
@@ -152,8 +151,7 @@ bool RealTimeExampleBasedDeformer::loadExamples(const std::string &file_name_pre
 
 bool RealTimeExampleBasedDeformer::loadVisualMesh(const std::string &file_name)
 {
-    //need to be modified later
-	visual_mesh_=new SceneObjectDeformable(file_name.c_str());
+    visual_mesh_=new SceneObjectDeformable(file_name.c_str());
     if(visual_mesh_==NULL)
     {
         std::cout<<"Error: unable to load visual mesh from "<<file_name<<std::endl;
@@ -163,7 +161,8 @@ bool RealTimeExampleBasedDeformer::loadVisualMesh(const std::string &file_name)
     return true;
 }
 
-//load reduced basis:first line is vertex_num,second line is basis num; basis are 3*vertex_num*basis_num
+//load reduced basis:first line is row_num=vertex_num,second line is col_num=basis num;
+//basis are 3*vertex_num*basis_num
 bool RealTimeExampleBasedDeformer::loadReducedBasis(const std::string &file_name)
 {
 	if(simulation_mesh_==NULL)
@@ -178,6 +177,7 @@ bool RealTimeExampleBasedDeformer::loadReducedBasis(const std::string &file_name
         return false;
 	}
     std::string temp_str;
+	//read file, save as reduced_basis_[3*vert_idx+dim][reduced_idx]
 	unsigned int reduced_row_num,reduced_col_num;
 	std::getline(input_file,temp_str);
 	reduced_row_num=atoi(temp_str.c_str());
@@ -217,10 +217,17 @@ bool RealTimeExampleBasedDeformer::loadReducedBasis(const std::string &file_name
 	input_file.close();
     return true;
 }
-
+//format:.eigencoef
+//first line:*eigenValues; second line:eigenvalues_num; third line: eigen values
+//*eigenVectors; eigenfunctions_row_num, eigenfunctions_col_num
 bool RealTimeExampleBasedDeformer::loadObjectEigenfunctions(const std::string &file_name)
 {
 	std::cout<<"Load object eigenfunction:\n";
+	if(object_eigenfunction_num_==0)
+	{
+		std::cout<<"Eigenfunction num for simulation object is zero.\n";
+		return false;
+	}
     std::fstream input_file(file_name.c_str());
 	if(!input_file)
 	{
@@ -228,6 +235,7 @@ bool RealTimeExampleBasedDeformer::loadObjectEigenfunctions(const std::string &f
 		return false;
 	}
     std::string temp_str;
+	//read file,save as object_eigenvalues_[eigen_idx]
 	while(std::getline(input_file,temp_str))
 	{
 		if(temp_str.compare(0,12,string("*eigenValues"))==0)
@@ -249,6 +257,7 @@ bool RealTimeExampleBasedDeformer::loadObjectEigenfunctions(const std::string &f
 	}
 	std::cout<<std::endl;
 	str_num=0;
+	//read eigenvectors, save as object_eigenfunctions_[eigen_idx][vert_idx]
 	while(std::getline(input_file,temp_str))
 	{
 		if(temp_str.compare(0,13,string("*eigenVectors"))==0)
@@ -275,12 +284,9 @@ bool RealTimeExampleBasedDeformer::loadObjectEigenfunctions(const std::string &f
 	while((!input_file.eof())&&(input_file.peek()!=std::ifstream::traits_type::eof()))
 	{
 		++total_str_num;
-	//	std::cout<<"a";
 		double temp_value1;
 		input_file>>temp_value1;
-		//std::cout<<temp_value1;
 		object_eigenfunctions_[str_num][line_num]=temp_value1;
-		//std::cout<<str_num<<","<<line_num<<":"<<temp_value1<<std::endl;
 		if(str_num>=object_eigenfunction_num_-1)
 		{
 			str_num=0;
@@ -301,7 +307,7 @@ bool RealTimeExampleBasedDeformer::loadExampleEigenFunctions(const std::string &
    	std::cout<<"Load example eigenfunctions:\n";
 	if(example_num_==0)
 	{
-		std::cout<<"example num is zero.\n";
+		std::cout<<"eigenfunction num for examples is zero.\n";
 		return false;
 	}
 	example_eigenfunctions_ = new double **[example_num_];
@@ -314,6 +320,7 @@ bool RealTimeExampleBasedDeformer::loadExampleEigenFunctions(const std::string &
 		adaptor.clear();
 		adaptor<<ex_num;
 		adaptor>>file_num_str;
+		//read file, file format is .eigen,
 		file_name=file_name_prefix+file_num_str+std::string(".eigen");
         std::fstream input_file(file_name.c_str());
 		if(!input_file)
@@ -322,6 +329,7 @@ bool RealTimeExampleBasedDeformer::loadExampleEigenFunctions(const std::string &
 			return false;
 		}
         std::string temp_str;
+		//read eigenvalues first,save as example_eigenvalues_[ex_idx][eigen_idx]
 		while(std::getline(input_file,temp_str))
 		{
 			if(temp_str.compare(0,12,std::string("*eigenValues"))==0)
@@ -345,6 +353,7 @@ bool RealTimeExampleBasedDeformer::loadExampleEigenFunctions(const std::string &
 			if(str_num>=example_eigenfunction_num_)
 				break;
 		}
+		//read eigenvectors, save as example_eigenfunctions_[ex_idx][eigen_idx][vert_idx]
 		while(std::getline(input_file,temp_str))
 		{
 			if(temp_str.compare(0,13,std::string("*eigenVectors"))==0)
@@ -496,6 +505,11 @@ bool RealTimeExampleBasedDeformer::saveExamples(const std::string &file_name_pre
 bool RealTimeExampleBasedDeformer::saveVisualMesh(const std::string &file_name) const
 {
     //need to be modified later
+	if(visual_mesh_==NULL)
+	{
+		std::cout<<"Error: the visual mesh is null.\n";
+		return false;
+	}
 	ObjMesh *mesh=visual_mesh_->GetMesh();
 	mesh->save(file_name.c_str(),0);
 	std::cout<<file_name<<"saved.\n";
@@ -509,12 +523,18 @@ bool RealTimeExampleBasedDeformer::saveObjectEigenfunctions(const std::string &f
 		std::cout<<"The simulation mesh is null.\n";
 		return false;
 	}
+	if((object_eigenfunctions_==NULL)||(object_eigenvalues_==NULL))
+	{
+		std::cout<<"Eigenfunctions or eigenvalues for object is null.\n";
+		return false;
+	}
     std::ofstream output_file(file_name.c_str());
 	if(!output_file)
 	{
 		std::cout<<"Error:unable to open file "<<file_name<<".\n";
 		return false;
 	}
+	//write eigenvalues first
 	output_file<<"*eigenValues"<<std::endl;
 	output_file<<object_eigenfunction_num_<<std::endl;
 	for(unsigned int i=0;i<object_eigenfunction_num_;++i)
@@ -522,6 +542,7 @@ bool RealTimeExampleBasedDeformer::saveObjectEigenfunctions(const std::string &f
 		output_file<<object_eigenvalues_[i]<<" ";
 	}
 	output_file<<std::endl;
+	//write eigenvectors
 	output_file<<"*eigenVectors"<<std::endl;
 	unsigned int vert_num=simulation_mesh_->getNumVertices();
 	output_file<<vert_num<<std::endl;
@@ -550,6 +571,11 @@ bool RealTimeExampleBasedDeformer::saveExampleEigenfunctions(const std::string &
 			std::cout<<"Error: example mesh "<<i<<" is null.\n";
 			return false;
 		}
+		if((example_eigenfunctions_[i]==NULL)||(example_eigenvalues_[i]==NULL))
+		{
+			std::cout<<"Error: eigenfunction or eigenvalue for example "<<i<<" is null.\n";
+			return false;
+		}
 		stream.str("");
 		stream.clear();
 		stream<<i;
@@ -562,6 +588,7 @@ bool RealTimeExampleBasedDeformer::saveExampleEigenfunctions(const std::string &
 			std::cout<<"Error:unable to open file "<<file_name<<".\n";
 			return false;
 		}
+		//write file,eigenvalues first
 		output_file<<"*eigenValues"<<std::endl;
 		output_file<<example_eigenfunction_num_<<std::endl;
 		for(unsigned int j=0;j<example_eigenfunction_num_;++j)
@@ -569,6 +596,7 @@ bool RealTimeExampleBasedDeformer::saveExampleEigenfunctions(const std::string &
 			output_file<<example_eigenvalues_[i][j]<<" ";
 		}
 		output_file<<std::endl;
+		//write eigenvectors
 		output_file<<"*eigenVectors"<<std::endl;
 		unsigned int vert_num=examples_[i]->getNumVertices();
 		output_file<<vert_num<<std::endl;
@@ -670,11 +698,45 @@ bool RealTimeExampleBasedDeformer::loadCorrespondenceData(const std::string &fil
 
 bool RealTimeExampleBasedDeformer::registerEigenfunctions()
 {
-    //TO DO
-	//if eigenfunction is not loaded,return
 	if(object_eigenfunctions_==NULL)
 	{
 		std::cout<<"Error: object_eigenfunction is not loaded.\n";
+		return false;
+	}
+	if(simulation_mesh_==NULL)
+	{
+		std::cout<<"Error: simulation tet mesh is not loaded.\n";
+		return false;
+	}
+	if(example_num_==0)
+	{
+		std::cout<<"Error: example num is zero.\n";
+		return false;
+	}
+	else
+	{
+		for(unsigned int i=0;i<example_num_;++i)
+		{
+			if(examples_[i]==NULL)
+			{
+				std::cout<<"Error: example "<<i<<" tet mesh is not loaded.\n";
+				return false;
+			}
+			if(example_eigenfunctions_[i]==NULL)
+			{
+				std::cout<<"Error: eigenfunction of example "<<i<<" is not loaded.\n";
+				return false;
+			}
+			if(example_corresponding_functions_[i]==NULL)
+			{
+				std::cout<<"Error: example "<<i<<" corresponding function is not loaded.\n";
+				return false;
+			}
+		}
+	}
+	if(object_corresponding_functions_==NULL)
+	{
+		std::cout<<"Error: object corresponding functions is not loaded.\n";
 		return false;
 	}
 	int row_b = simulation_mesh_->getNumVertices();
@@ -692,7 +754,6 @@ bool RealTimeExampleBasedDeformer::registerEigenfunctions()
 			obj_eigenfunction_col[j][i]=object_eigenfunctions_[i][j];
 	for(unsigned int i=0;i<example_num_;++i)
 	{
-		//if eigenfunction no t loaded, return--todo
 		double **G=object_corresponding_functions_,**F=example_corresponding_functions_[i];
 		int p=corresponding_function_num_;
 		int row_a=examples_[i]->getNumVertices();
