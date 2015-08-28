@@ -35,14 +35,14 @@
  	//real_time_example_based_deformer.loadReducedBasis(reduced_file_name);
     //corresponding functions test:
     //first step
-    real_time_example_based_deformer.loadCorrespondenceData(corresponding_file_name);
+    //real_time_example_based_deformer.loadCorrespondenceData(corresponding_file_name);
     //second step:generate new eigenfunction for examples
-    real_time_example_based_deformer.loadSimulationMesh(file_name);
-    real_time_example_based_deformer.loadExamples(file_name_prefix);
-    real_time_example_based_deformer.loadObjectEigenfunctions(object_eigen_file_name);
-    real_time_example_based_deformer.loadExampleEigenFunctions(example_eigen_file_name_predix);
-    real_time_example_based_deformer.registerEigenfunctions();
+    //real_time_example_based_deformer.loadSimulationMesh(file_name);
+    //real_time_example_based_deformer.loadExamples(file_name_prefix);
+    //real_time_example_based_deformer.loadObjectEigenfunctions(object_eigen_file_name);
+    //real_time_example_based_deformer.loadExampleEigenFunctions(example_eigen_file_name_predix);
+    //real_time_example_based_deformer.registerEigenfunctions();
     //third step:save new eigenfunctions for examples_
-    real_time_example_based_deformer.saveExampleEigenfunctions(write_example_eigen_file_name_predix);
+    //real_time_example_based_deformer.saveExampleEigenfunctions(write_example_eigen_file_name_predix);
  	return 1;
  }
