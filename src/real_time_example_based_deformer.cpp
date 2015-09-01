@@ -15,6 +15,8 @@
 #include "planes.h"
 #include "real_time_example_based_deformer.h"
 
+namespace RTLB{
+
 RealTimeExampleBasedDeformer::RealTimeExampleBasedDeformer()
 {
     //TO DO
@@ -407,6 +409,12 @@ bool RealTimeExampleBasedDeformer::loadPlanesInScene(const std::string &file_nam
     return true;
 }
 
+bool RealTimeExampleBasedDeformer::loadFixedVertices(const std::string &file_name)
+{
+	//TO DO
+	return false;
+}
+
 bool RealTimeExampleBasedDeformer::saveSimulationMesh(const std::string &file_name) const
 {
     if(simulation_mesh_==NULL)
@@ -796,3 +804,5 @@ void RealTimeExampleBasedDeformer::reconstructFromEigenCoefs(const double **eige
 		}
 	}
 }
+
+}  //namespace RTLB

@@ -11,6 +11,8 @@
 
 #include <string>
 
+namespace RTLB{
+
 class Vec3d;
 class VolumetricMesh;
 class SceneObjectDeformable;
@@ -34,6 +36,7 @@ public:
     bool loadObjectEigenfunctions(const std::string &file_name);
     bool loadExampleEigenFunctions(const std::string &file_name_prefix);
     bool loadPlanesInScene(const std::string &file_name, unsigned int plane_num);
+    bool loadFixedVertices(const std::string &file_name);
     bool saveSimulationMesh(const std::string &file_name) const;
     bool saveExamples(const std::string &file_name_prefix) const;
     bool saveVisualMesh(const std::string &file_name) const;
@@ -50,6 +53,8 @@ public:
     unsigned int objectEigenfunctionNum() const{return object_eigenfunction_num_;}
     unsigned int exampleEigenfunctionNum() const{return example_eigenfunction_num_;}
     const Planes* planesInScnene() const {return planes_;}
+    unsigned int fixedVertexNum() const{return fixed_vertex_num_;}
+    unsigned int* fixedVertexPtr() const{return fixed_vertices_;}
 
     //registration of eigenfunctions
     bool loadCorrespondenceData(const std::string &file_name);
@@ -76,6 +81,8 @@ private:
     double *external_force_ = NULL;
     double gravity_ = -9.8;
     double time_step_ = 1.0/30;
+    unsigned int fixed_vertex_num_ = 0;
+    unsigned int *fixed_vertices_ = NULL;
     //reduced simulation data
     unsigned int reduced_basis_num_ = 0;
     double **reduced_basis_ = NULL;
@@ -106,5 +113,7 @@ private:
     Planes *planes_ = NULL;
     unsigned int plane_num_ = 0;
 };
+
+} //namespace RTLB
 
 #endif //REAL_TIME_EXAMPLE_BASED_DEFORMER_H_
