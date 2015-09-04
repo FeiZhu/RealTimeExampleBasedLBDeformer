@@ -11,13 +11,13 @@
 
 #include <string>
 
-namespace RTLB{
-
 class Vec3d;
 class VolumetricMesh;
 class SceneObjectDeformable;
 class Planes;
 class CoupledQuasiHarmonics;
+
+namespace RTLB{
 
 class RealTimeExampleBasedDeformer
 {

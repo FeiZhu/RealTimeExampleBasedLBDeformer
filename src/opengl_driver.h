@@ -10,11 +10,12 @@
 
 #include <string>
 
-namespace RTLB{
-
 class GLUI;
 class SphericalCamera;
 class Lighting;
+
+namespace RTLB{
+
 class RealTimeExampleBasedDeformer;
 
 class OpenGLDriver
@@ -24,11 +25,14 @@ public:
     ~OpenGLDriver();
 
 private:
-    OpenGLDriver* activeInstance();
+    static OpenGLDriver* activeInstance();
+    //init functions
     void initGLUT();
     void initGLUI();
     void initConfigurations(const std::string &config_file_name);
     void initSimulation();
+    void initCamera();
+    void initGraphics();
     //callback functions
     static void displayFunction(void);
     static void idleFunction(void);
@@ -39,6 +43,8 @@ private:
     static void mouseFunction(int button, int state, int x, int y);
     //GLUI callback methods
     void exitApplication(int code);
+    //misc
+    void drawAxis(double axis_length) const;
 private:
     static OpenGLDriver *active_instance_;
     //simulation

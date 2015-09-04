@@ -40,7 +40,7 @@
 #include <assert.h>
 #include "objMesh.h"
 
-//flags for ObjMeshRender: 
+//flags for ObjMeshRender:
 //geometry mode
 #define OBJMESHRENDER_TRIANGLES (1 << 0)
 #define OBJMESHRENDER_EDGES (1 << 1)
@@ -152,4 +152,3 @@ protected:
 };
 
 #endif
-

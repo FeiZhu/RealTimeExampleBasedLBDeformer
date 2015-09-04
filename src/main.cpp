@@ -11,6 +11,6 @@
 int main()
 {
     std::string config_file_name("test.config");
-    RTLB::OpenGLDriver(config_file_name);
+    RTLB::OpenGLDriver driver(config_file_name);
     return 0;
 }
