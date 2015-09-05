@@ -17,8 +17,8 @@ os_name=platform.system()
 os_architecture=platform.architecture()[0]
 
 #BUILD TYPE
-build_type='release'
-#build_type='debug'
+build_type='Release'
+#build_type='Debug'
 
 #SRC ROOT DIRECTORY
 src_dir = './src/'

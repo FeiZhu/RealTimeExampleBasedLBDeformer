@@ -6,6 +6,7 @@
  */
 
 #include <cassert>
+#include <cstdlib>
 #include <cstdio>
 #include "GL/freeglut.h"
 #include "GL/glui.h"
@@ -20,20 +21,23 @@ OpenGLDriver* OpenGLDriver::active_instance_ = NULL;
 
 OpenGLDriver::OpenGLDriver(const std::string &config_file_name)
     :simulator_(NULL), pause_simulation_(true), example_num_(0),
-     gravity_(-9.8), time_step_(1.0/30), glui_(NULL),
-     window_id_(-1),window_width_(800),window_height_(600),
+     gravity_(-9.8), time_step_(1.0/30),
+     window_name_("Example-based Simulator"),window_id_(-1),
+     window_width_(800),window_height_(600),
      znear_(0.01),zfar_(10.0),camera_radius_(17.5),
      camera_longitude_(-60.0),camera_lattitude_(20.0),
      camera_(NULL), lighting_(NULL), left_button_down_(false),
      middle_button_down_(false), right_button_down_(false),
      render_axis_(true), render_vertices_(false), render_wireframe_(true),
-     render_fixed_vertices_(true), render_eigenfunction_(false)
+     render_fixed_vertices_(true), render_eigenfunction_(false),
+     glui_(NULL)
 {
     if(active_instance_)
         delete active_instance_;
     active_instance_ = this;
     //TO DO: init everything and enter mainloop
     initGLUT();
+    initGLUI();
     initGraphics();
     glutMainLoop();
 }
@@ -71,7 +75,12 @@ void OpenGLDriver::initGLUT()
 
 void OpenGLDriver::initGLUI()
 {
+    glui_ = GLUI_Master.create_glui("Controls",0,window_width_+52,0);
     //TO DO: init GLUI control panel
+    //exit button
+    glui_->add_button("Exit",0,exitApplication);
+    glui_->sync_live();
+    glui_->set_main_gfx_window(window_id_);
 }
 
 void OpenGLDriver::initSimulation()
@@ -112,6 +121,8 @@ void OpenGLDriver::initGraphics()
     glEnable(GL_LINE_SMOOTH);
 
     reshapeFunction(window_width_,window_height_);
+    //init camera
+    initCamera();
 
     //printf ("Graphics initialization complete.\n")
 }
@@ -154,7 +165,7 @@ void OpenGLDriver::keyboardFunction(unsigned char key, int x, int y)
     switch(key)
     {
     case 27: //ESC, exit
-        active_instance->exitApplication(0);
+        exitApplication(0);
         break;
     case 'a': //render axis
         active_instance->render_axis_ = !(active_instance->render_axis_);
@@ -241,6 +252,15 @@ void OpenGLDriver::mouseFunction(int button, int state, int x, int y)
 void OpenGLDriver::exitApplication(int code)
 {
     //TO DO: release memories
+    OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
+    assert(active_instance);
+    if(active_instance->simulator_)
+        delete active_instance->simulator_;
+    if(active_instance->camera_)
+        delete active_instance->camera_;
+    if(active_instance->lighting_)
+        delete active_instance->lighting_;
+    exit(0);
 }
 
 void OpenGLDriver::drawAxis(double axis_length) const

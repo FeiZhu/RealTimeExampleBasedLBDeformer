@@ -42,7 +42,7 @@ private:
     static void motionFunction(int x, int y);
     static void mouseFunction(int button, int state, int x, int y);
     //GLUI callback methods
-    void exitApplication(int code);
+    static void exitApplication(int code);
     //misc
     void drawAxis(double axis_length) const;
 private:
@@ -64,7 +64,6 @@ private:
     //window
     std::string window_name_;
     int window_id_;
-    GLUI *glui_;
     unsigned int window_width_;
     unsigned int window_height_;
     //camera
@@ -77,6 +76,7 @@ private:
     SphericalCamera *camera_;
     //light
     Lighting *lighting_;
+    std::string lighting_config_file_name_;
     //mouse
     int mouse_pos_[2];
     bool left_button_down_;
@@ -89,6 +89,7 @@ private:
     bool render_fixed_vertices_;
     bool render_eigenfunction_;
     //glui controls
+    GLUI *glui_;
 };
 
 }  //namespace RTLB
