@@ -413,8 +413,34 @@ bool RealTimeExampleBasedDeformer::loadPlanesInScene(const std::string &file_nam
 
 bool RealTimeExampleBasedDeformer::loadFixedVertices(const std::string &file_name)
 {
-	//TO DO
-	return false;
+	if(file_name=="")
+	{
+		std::cout<<"Error: cannot read "<<file_name<<".\n";
+		return false;
+	}
+	std::fstream input_file(file_name);
+	if(!input_file)
+	{
+		std::cout<<"Error: failed to open "<<file_name<<" .\n";
+		return false;
+	}
+	std::cout<<"Load fixed vertices file:\n";
+	string temp_str;
+	std::vector<unsigned int> fixed_vertices_vector;
+	while((!input_file.eof())&&(input_file.peek()!=std::ifstream::traits_type::eof()))
+	{
+		input_file>>temp_str;
+		fixed_vertices_vector.push_back(atoi(temp_str.c_str()));
+	}
+	fixed_vertex_num_=fixed_vertices_vector.size();
+	fixed_vertices_=new unsigned int[fixed_vertices_vector.size()];
+	for(unsigned int i=0;i<fixed_vertices_vector.size();++i)
+	{
+		fixed_vertices_[i]=fixed_vertices_vector[i];
+	}
+	input_file.close();
+	std::cout<<"Load fixed vertices file done.\n";
+	return true;
 }
 
 bool RealTimeExampleBasedDeformer::saveSimulationMesh(const std::string &file_name) const
