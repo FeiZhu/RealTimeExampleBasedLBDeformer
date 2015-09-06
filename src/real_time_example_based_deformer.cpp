@@ -417,6 +417,12 @@ bool RealTimeExampleBasedDeformer::loadFixedVertices(const std::string &file_nam
 	return false;
 }
 
+bool RealTimeExampleBasedDeformer::loadObjectCubicaData(const std::string &file_name)
+{
+	//TO DO
+	return false;
+}
+
 bool RealTimeExampleBasedDeformer::saveSimulationMesh(const std::string &file_name) const
 {
     if(simulation_mesh_==NULL)
@@ -614,6 +620,12 @@ bool RealTimeExampleBasedDeformer::saveExampleEigenfunctions(const std::string &
 		std::cout<<"Example "<<i<<" eigen function saved.\n";
 	}
 	return true;
+}
+
+const VolumetricMesh* RealTimeExampleBasedDeformer::exampleMesh(unsigned int example_idx) const
+{
+	assert(example_idx < example_num_);
+	return examples_[example_idx];
 }
 
 //file format of corresponding function file:

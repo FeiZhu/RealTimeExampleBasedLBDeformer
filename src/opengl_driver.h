@@ -42,54 +42,69 @@ private:
     static void motionFunction(int x, int y);
     static void mouseFunction(int button, int state, int x, int y);
     //GLUI callback methods
+    static void updateRenderMesh(int code);
+    static void updateCurrentExample(int code);
+    static void changeSimulationMode(int code);
+    static void loadObjectEigenfunctions(int code);
+    static void saveObjectEigenfunctions(int code);
+    static void loadExampleEigenfunctions(int code);
+    static void saveExampleEigenfunctions(int code);
+    static void loadReducedBasis(int code);
+    static void loadObjectCubicaData(int code);
     static void exitApplication(int code);
     //misc
     void drawAxis(double axis_length) const;
 private:
     static OpenGLDriver *active_instance_;
     //simulation
-    RealTimeExampleBasedDeformer *simulator_;
-    bool pause_simulation_;
-    std::string simulation_mesh_file_name_;
-    std::string example_file_name_prefix_;
-    unsigned int example_num_;
-    std::string visual_mesh_file_name_;
-    std::string reduced_basis_file_name_;
-    std::string object_eigen_file_name_;
-    std::string example_eigen_file_name_;
-    std::string plane_file_name_;
-    std::string correspondence_file_name_;
-    double gravity_;
-    double time_step_;
+    RealTimeExampleBasedDeformer *simulator_ = NULL;
+    bool pause_simulation_ = true;
+    std::string simulation_mesh_file_name_ = std::string("None");
+    std::string example_file_name_prefix_ = std::string("None");
+    unsigned int example_num_ = 0;
+    std::string visual_mesh_file_name_ = std::string("None");
+    std::string reduced_basis_file_name_ = std::string("None");
+    std::string object_eigen_file_name_ = std::string("None");
+    std::string example_eigen_file_name_ = std::string("None");
+    std::string plane_file_name_ = std::string("None");
+    std::string correspondence_file_name_ = std::string("None");
+    double gravity_ = -9.8;
+    double time_step_ = 1.0/30;
     //window
-    std::string window_name_;
-    int window_id_;
-    unsigned int window_width_;
-    unsigned int window_height_;
+    std::string window_name_ = std::string("Example-based Simulator");
+    int window_id_ = -1;
+    unsigned int window_width_ = 800;
+    unsigned int window_height_ = 600;
     //camera
-    double znear_;
-    double zfar_;
-    double camera_radius_;
+    double znear_ = 0.01;
+    double zfar_ = 10.0;
+    double camera_radius_ = 17.5;
     double focus_position_[3];
-    double camera_longitude_;
-    double camera_lattitude_;
-    SphericalCamera *camera_;
+    double camera_longitude_ = -60.0;
+    double camera_lattitude_ = 20.0;
+    SphericalCamera *camera_ = NULL;
     //light
-    Lighting *lighting_;
-    std::string lighting_config_file_name_;
+    Lighting *lighting_ = NULL;
+    std::string lighting_config_file_name_ = std::string("None");
     //mouse
     int mouse_pos_[2];
-    bool left_button_down_;
-    bool middle_button_down_;
-    bool right_button_down_;
-    //render
-    bool render_axis_;
-    bool render_vertices_;
-    bool render_wireframe_;
-    bool render_fixed_vertices_;
-    bool render_eigenfunction_;
+    bool left_button_down_ = false;
+    bool middle_button_down_ = false;
+    bool right_button_down_ = false;
+    //render switches
+    bool render_axis_ = true;
+    bool render_vertices_ = false;
+    bool render_wireframe_ = true;
+    bool render_fixed_vertices_ = true;
+    bool render_eigenfunction_ = false;
+    enum RenderMeshType{
+        VISUAL_MESH = 0,
+        OBJECT_EIGEN_MESH,
+        EXAMPLE_MESH
+    };
+    RenderMeshType render_mesh_type_ = VISUAL_MESH;
     //glui controls
-    GLUI *glui_;
+    GLUI *glui_ = NULL;
 };
 
 }  //namespace RTLB

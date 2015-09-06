@@ -20,17 +20,6 @@ namespace RTLB{
 OpenGLDriver* OpenGLDriver::active_instance_ = NULL;
 
 OpenGLDriver::OpenGLDriver(const std::string &config_file_name)
-    :simulator_(NULL), pause_simulation_(true), example_num_(0),
-     gravity_(-9.8), time_step_(1.0/30),
-     window_name_("Example-based Simulator"),window_id_(-1),
-     window_width_(800),window_height_(600),
-     znear_(0.01),zfar_(10.0),camera_radius_(17.5),
-     camera_longitude_(-60.0),camera_lattitude_(20.0),
-     camera_(NULL), lighting_(NULL), left_button_down_(false),
-     middle_button_down_(false), right_button_down_(false),
-     render_axis_(true), render_vertices_(false), render_wireframe_(true),
-     render_fixed_vertices_(true), render_eigenfunction_(false),
-     glui_(NULL)
 {
     if(active_instance_)
         delete active_instance_;
@@ -39,6 +28,8 @@ OpenGLDriver::OpenGLDriver(const std::string &config_file_name)
     initGLUT();
     initGLUI();
     initGraphics();
+    initConfigurations(config_file_name);
+    initSimulation();
     glutMainLoop();
 }
 
@@ -76,7 +67,12 @@ void OpenGLDriver::initGLUT()
 void OpenGLDriver::initGLUI()
 {
     glui_ = GLUI_Master.create_glui("Controls",0,window_width_+52,0);
-    //TO DO: init GLUI control panel
+    //init GLUI control panel
+    GLUI_Panel *display_mode_panel = glui_->add_panel("Display Mode",GLUI_PANEL_EMBOSSED);
+    display_mode_panel->set_alignment(GLUI_ALIGN_LEFT);
+    //switch render mesh
+    //GLUI_RadioGroup *display_mode_radio_group = glui_->add_radiogroup_to_panel(display_mode_panel,)
+
     //exit button
     glui_->add_button("Exit",0,exitApplication);
     glui_->sync_live();
@@ -247,6 +243,51 @@ void OpenGLDriver::mouseFunction(int button, int state, int x, int y)
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
 
+}
+
+void OpenGLDriver::updateRenderMesh(int code)
+{
+    //TO DO
+}
+
+void OpenGLDriver::updateCurrentExample(int code)
+{
+    //TO DO
+}
+
+void OpenGLDriver::changeSimulationMode(int code)
+{
+    //TO DO
+}
+
+void OpenGLDriver::loadObjectEigenfunctions(int code)
+{
+    //TO DO
+}
+
+void OpenGLDriver::saveObjectEigenfunctions(int code)
+{
+    //TO DO
+}
+
+void OpenGLDriver::loadExampleEigenfunctions(int code)
+{
+    //TO DO
+}
+
+void OpenGLDriver::saveExampleEigenfunctions(int code)
+{
+    //TO DO
+}
+
+void OpenGLDriver::loadReducedBasis(int code)
+{
+    //TO DO
+}
+
+void OpenGLDriver::loadObjectCubicaData(int code)
+{
+    //TO DO
 }
 
 void OpenGLDriver::exitApplication(int code)

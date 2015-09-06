@@ -37,6 +37,7 @@ public:
     bool loadExampleEigenFunctions(const std::string &file_name_prefix);//.eigen
     bool loadPlanesInScene(const std::string &file_name, unsigned int plane_num);
     bool loadFixedVertices(const std::string &file_name);
+    bool loadObjectCubicaData(const std::string &file_name);
     bool saveSimulationMesh(const std::string &file_name) const;
     bool saveExamples(const std::string &file_name_prefix) const;
     bool saveVisualMesh(const std::string &file_name) const;
@@ -55,6 +56,9 @@ public:
     const Planes* planesInScnene() const {return planes_;}
     unsigned int fixedVertexNum() const{return fixed_vertex_num_;}
     unsigned int* fixedVertexPtr() const{return fixed_vertices_;}
+    const VolumetricMesh* simulationMesh() const{return simulation_mesh_;}
+    const VolumetricMesh* exampleMesh(unsigned int example_idx) const;
+    const SceneObjectDeformable* visualMesh() const{return visual_mesh_;}
 
     //registration of eigenfunctions
     bool loadCorrespondenceData(const std::string &file_name);
@@ -88,6 +92,9 @@ private:
     double **reduced_basis_ = NULL;
     double *reduced_displacement_ = NULL;
     double *reduced_velocity_ = NULL;
+    //cubica data
+    unsigned int object_cubica_ele_num_ = 0;
+    unsigned int *object_cubica_elements_ = NULL;
     //eigenfunction data
     double **object_eigenfunctions_ = NULL;
     double *object_eigenvalues_ = NULL;
