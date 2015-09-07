@@ -78,7 +78,7 @@ RealTimeExampleBasedDeformer::~RealTimeExampleBasedDeformer()
 	}
 	if(planes_==NULL)
 		delete[] planes_;
-
+	delete [] fixed_vertices_;
 }
 
 void RealTimeExampleBasedDeformer::setupSimulation()
@@ -445,8 +445,48 @@ bool RealTimeExampleBasedDeformer::loadFixedVertices(const std::string &file_nam
 
 bool RealTimeExampleBasedDeformer::loadObjectCubicaData(const std::string &file_name)
 {
-	//TO DO
-	return false;
+	std::fstream input_file(file_name.c_str());
+	if(!input_file)
+	{
+		std::cout<<"Error: failed to open file "<<file_name<<".\n";
+		return false;
+	}
+	string temp_str;
+	std::getline(input_file,temp_str);
+	object_cubica_ele_num_=atoi(temp_str.c_str());
+	object_cubica_elements_ = new unsigned int[object_cubica_ele_num_];
+	object_cubica_weight_ = new double [object_cubica_ele_num_];
+	while(std::getline(input_file,temp_str))
+	{
+		if(temp_str.compare(0,6,string("*tetID"))==0)
+			break;
+	}
+	unsigned int str_num=0;
+	while((!input_file.eof())&&(input_file.peek()!=std::ifstream::traits_type::eof()))
+	{
+		unsigned int temp_value;
+		input_file>>temp_value;
+		object_cubica_elements_[str_num]=temp_value;
+		str_num++;
+		if(str_num>=object_cubica_ele_num_)
+			break;
+	}
+	while(std::getline(input_file,temp_str))
+	{
+		if(temp_str.compare(0,10,string("*tetWeight"))==0)
+			break;
+	}
+	str_num=0;
+	while((!input_file.eof())&&(input_file.peek()!=std::ifstream::traits_type::eof()))
+	{
+		double temp_value;
+		input_file>>temp_value;
+		object_cubica_weight_[str_num]=temp_value;
+		++str_num;
+		if(str_num>=object_cubica_ele_num_)
+			break;
+	}
+	return true;
 }
 
 bool RealTimeExampleBasedDeformer::saveSimulationMesh(const std::string &file_name) const

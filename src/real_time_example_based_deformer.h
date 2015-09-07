@@ -95,6 +95,7 @@ private:
     //cubica data
     unsigned int object_cubica_ele_num_ = 0;
     unsigned int *object_cubica_elements_ = NULL;
+    double *object_cubica_weight_ = NULL;
     //eigenfunction data
     double **object_eigenfunctions_ = NULL;
     double *object_eigenvalues_ = NULL;
