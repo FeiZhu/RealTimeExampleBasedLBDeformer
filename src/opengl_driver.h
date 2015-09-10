@@ -105,6 +105,8 @@ private:
     RenderMeshType render_mesh_type_ = VISUAL_MESH;
     //glui controls
     GLUI *glui_ = NULL;
+    unsigned int current_example_index_ = 0;
+    unsigned int example_with_eigen_num_ = 0;
 };
 
 }  //namespace RTLB

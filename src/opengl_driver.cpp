@@ -8,6 +8,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstdio>
+#include <sstream>
 #include "GL/freeglut.h"
 #include "GL/glui.h"
 #include "camera.h"
@@ -71,8 +72,49 @@ void OpenGLDriver::initGLUI()
     GLUI_Panel *display_mode_panel = glui_->add_panel("Display Mode",GLUI_PANEL_EMBOSSED);
     display_mode_panel->set_alignment(GLUI_ALIGN_LEFT);
     //switch render mesh
-    //GLUI_RadioGroup *display_mode_radio_group = glui_->add_radiogroup_to_panel(display_mode_panel,)
-
+    GLUI_RadioGroup *display_mode_radio_group = glui_->add_radiogroup_to_panel(display_mode_panel,
+                                                        (int*)&render_mesh_type_,0,updateRenderMesh);
+    glui_->add_radiobutton_to_group(display_mode_radio_group,"Visual Mesh");
+    glui_->add_radiobutton_to_group(display_mode_radio_group,"Object Eigen Mesh");
+    if(example_num_ > 0)
+        glui_->add_radiobutton_to_group(display_mode_radio_group,"Example Mesh");
+    //example pose information
+    GLUI_Panel *examples_panel = glui_->add_panel("Examples",GLUI_PANEL_EMBOSSED);
+    examples_panel->set_alignment(GLUI_ALIGN_LEFT);
+    std::stringstream adaptor;
+    adaptor<<example_num_;
+    std::string example_pose_num_str, static_text_content("Number of examples: ");
+    adaptor>>example_pose_num_str;
+    static_text_content += example_pose_num_str;
+    glui_->add_statictext_to_panel(examples_panel,static_text_content.c_str());
+    if(example_num_ > 0)
+    {
+        GLUI_Spinner *example_index_spinner = glui_->add_spinner_to_panel(examples_panel,"Current example index: ",
+                                                  GLUI_SPINNER_INT,&current_example_index_,0,updateCurrentExample);
+        example_index_spinner->set_int_limits(0,example_num_-1,GLUI_LIMIT_CLAMP);
+    }
+    //eigenfunction information
+    GLUI_Panel *eigen_panel = glui_->add_panel("Laplace-Beltrami Eigenfunctions",GLUI_PANEL_EMBOSSED);
+    eigen_panel->set_alignment(GLUI_ALIGN_LEFT);
+    std::string eigenfunction_num_str;
+    if(example_num_ > 0)
+    {
+        adaptor.clear();
+        adaptor<<simulator_->exampleEigenfunctionNum();
+        adaptor>>eigenfunction_num_str;
+        static_text_content.clear();
+        static_text_content = std::string("Number of eigenfunctions for examples: ");
+        static_text_content += eigenfunction_num_str;
+        glui_->add_statictext_to_panel(eigen_panel,static_text_content.c_str());
+        adaptor.clear();
+        adaptor<<example_with_eigen_num_;
+        std::string example_with_eigen_num_str;
+        adaptor>>example_with_eigen_num_str;
+        static_text_content.clear();
+        static_text_content = std::string("Examples with eigenfunctions loaded: ");
+        static_text_content += example_with_eigen_num_str;
+        //TO DO
+    }
     //exit button
     glui_->add_button("Exit",0,exitApplication);
     glui_->sync_live();
