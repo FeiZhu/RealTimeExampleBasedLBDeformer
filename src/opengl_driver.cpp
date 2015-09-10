@@ -4,7 +4,7 @@
  * @author: Fei Zhu
  *
  */
-
+#include <iostream>
 #include <cassert>
 #include <cstdlib>
 #include <cstdio>
@@ -25,6 +25,7 @@ OpenGLDriver::OpenGLDriver(const std::string &config_file_name)
     if(active_instance_)
         delete active_instance_;
     active_instance_ = this;
+
     //TO DO: init everything and enter mainloop
     initGLUT();
     initGLUI();
@@ -304,32 +305,70 @@ void OpenGLDriver::changeSimulationMode(int code)
 
 void OpenGLDriver::loadObjectEigenfunctions(int code)
 {
-    //TO DO
+    OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
+    assert(active_instance);
+    if(!active_instance->simulator_->loadObjectEigenfunctions(active_instance->object_eigen_file_name_))
+    {
+        std::cout<<"Error: load object eigenfunctions failed.\n";
+        return;
+    }
 }
 
 void OpenGLDriver::saveObjectEigenfunctions(int code)
 {
     //TO DO
+    OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
+    assert(active_instance);
+    if(!active_instance->simulator_->saveObjectEigenfunctions(active_instance->example_file_name_prefix_))
+    {
+        std::cout<<"Error: load example eigenfunctions failed.\n";
+        return;
+    }
 }
 
 void OpenGLDriver::loadExampleEigenfunctions(int code)
 {
-    //TO DO
+    OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
+    assert(active_instance);
+    if(!active_instance->simulator_->loadExampleEigenFunctions(active_instance->example_file_name_prefix_))
+    {
+        std::cout<<"Error: load example eigenfunctions failed.\n";
+        return;
+    }
 }
 
 void OpenGLDriver::saveExampleEigenfunctions(int code)
 {
     //TO DO
+    OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
+    assert(active_instance);
+    if(!active_instance->simulator_->saveExampleEigenfunctions(active_instance->example_file_name_prefix_));
+    {
+        std::cout<<"Error: failed to save example eigenfunctions.\n";
+        return;
+    }
 }
 
 void OpenGLDriver::loadReducedBasis(int code)
 {
-    //TO DO
+    OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
+    assert(active_instance);
+    if(!active_instance->simulator_->loadReducedBasis(active_instance->reduced_basis_file_name_))
+    {
+        std::cout<<"Error: load reduced basis failed.\n";
+        return;
+    }
 }
 
 void OpenGLDriver::loadObjectCubicaData(int code)
 {
-    //TO DO
+    OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
+    assert(active_instance);
+    if(!active_instance->simulator_->loadObjectCubicaData(active_instance->object_cubica_file_name_))
+    {
+        std::cout<<"Error: load cubica data failed.\n";
+        return;
+    }
 }
 
 void OpenGLDriver::exitApplication(int code)

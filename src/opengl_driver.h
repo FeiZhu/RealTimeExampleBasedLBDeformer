@@ -66,6 +66,7 @@ private:
     std::string reduced_basis_file_name_ = std::string("None");
     std::string object_eigen_file_name_ = std::string("None");
     std::string example_eigen_file_name_ = std::string("None");
+    std::string object_cubica_file_name_ = std::string("None");
     std::string plane_file_name_ = std::string("None");
     std::string correspondence_file_name_ = std::string("None");
     double gravity_ = -9.8;
