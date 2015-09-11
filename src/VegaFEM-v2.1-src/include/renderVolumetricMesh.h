@@ -39,6 +39,7 @@ class RenderVolumetricMesh
 public:
   RenderVolumetricMesh();
 
+  void RenderVertexColorMap(VolumetricMesh *volumetricMesh, double *f, double *u = NULL); //Fei Zhu
   void Render(VolumetricMesh * volumetricMesh, int wireframe=0, double * u = NULL);
   void RenderWireframe(VolumetricMesh * volumetricMesh);
   void RenderSolidAndWireframe(VolumetricMesh * volumetricMesh);
@@ -57,7 +58,7 @@ public:
   void RenderDeformation(VolumetricMesh * volumetricMesh, double * u);
   void RenderWireframeDeformation(VolumetricMesh * volumetricMesh, double * u);
   void RenderSolidAndWireframeDeformation(VolumetricMesh * volumetricMesh, double * u);
-  void RenderVertexDeformed(VolumetricMesh * volumetricMesh, int ver, double * u);  
+  void RenderVertexDeformed(VolumetricMesh * volumetricMesh, int ver, double * u);
 
   // controls how different material groups are rendered
   void SetFlatRenderingMode(); // all colored white

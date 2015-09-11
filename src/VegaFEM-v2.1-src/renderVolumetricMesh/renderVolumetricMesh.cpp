@@ -33,6 +33,7 @@
   #include <windows.h>
 #endif
 
+#include <limits>
 #include "openGL-headers.h"
 #include "renderVolumetricMesh.h"
 #include "volumetricMeshENuMaterial.h"
@@ -150,7 +151,7 @@ void RenderVolumetricMesh::RenderTet(VolumetricMesh * volumetricMesh, int el, in
       RENDERVTX(0);
       RENDERVTX(1);
       RENDERVTX(3);
-    glEnd();    
+    glEnd();
   }
 }
 
@@ -164,7 +165,7 @@ void RenderVolumetricMesh::RenderCube(VolumetricMesh * volumetricMesh, int el, i
   Vec3d v1 = *(volumetricMesh->getVertex(el,1));
   Vec3d v3 = *(volumetricMesh->getVertex(el,3));
   Vec3d v4 = *(volumetricMesh->getVertex(el,4));
-    
+
   Vec3d axisX = norm(v1-v0);
   Vec3d axisY = norm(v3-v0);
   Vec3d axisZ = norm(v4-v0);
@@ -199,8 +200,8 @@ void RenderVolumetricMesh::JetColorMap(double x, double color[3])
     color[1] = 0;
     color[2] = 0;
     return;
-  } 
-  else if (x < 0.125) 
+  }
+  else if (x < 0.125)
   {
     a = x / 0.125;
     color[0] = 0;
@@ -208,7 +209,7 @@ void RenderVolumetricMesh::JetColorMap(double x, double color[3])
     color[2] = 0.5 + 0.5 * a;
     return;
   }
-  else if (x < 0.375) 
+  else if (x < 0.375)
   {
     a = (x - 0.125) / 0.25;
     color[0] = 0;
@@ -216,23 +217,23 @@ void RenderVolumetricMesh::JetColorMap(double x, double color[3])
     color[2] = 1;
     return;
   }
-  else if (x < 0.625) 
-  {         
+  else if (x < 0.625)
+  {
     a = (x - 0.375) / 0.25;
     color[0] = a;
     color[1] = 1;
     color[2] = 1 - a;
     return;
-  }     
-  else if (x < 0.875) 
+  }
+  else if (x < 0.875)
   {
     a = (x - 0.625) / 0.25;
     color[0] = 1;
     color[1] = 1 - a;
     color[2] = 0;
     return;
-  }     
-  else if (x <= 1.0) 
+  }
+  else if (x <= 1.0)
   {
     a = (x - 0.875) / 0.125;
     color[0] = 1 - 0.5 * a;
@@ -247,6 +248,172 @@ void RenderVolumetricMesh::JetColorMap(double x, double color[3])
     color[2] = 1;
     return;
   }
+}
+
+//Fei Zhu
+void RenderVolumetricMesh::RenderVertexColorMap(VolumetricMesh *volumetricMesh, double *f, double *u)
+{
+    glDisable(GL_LIGHTING);
+
+    int meshType = 0;
+    if (volumetricMesh->getElementType() == CubicMesh::elementType())
+    meshType = 1;
+    if (volumetricMesh->getElementType() == TetMesh::elementType())
+    meshType = 2;
+    //get max and min value of vertex function value
+    double min_f = (std::numeric_limits<double>::max)();
+    double max_f = std::numeric_limits<double>::lowest();
+    for(unsigned int vert_idx = 0; vert_idx < volumetricMesh->getNumVertices(); ++vert_idx)
+    {
+        min_f = min_f > f[vert_idx] ? f[vert_idx] : min_f;
+        max_f = max_f > f[vert_idx] ? max_f : f[vert_idx];
+    }
+    for(unsigned int ele_idx = 0; ele_idx < volumetricMesh->getNumElements(); ++ele_idx)
+    {
+        //get the color of element vertices
+        double vert_color[8][3];
+        double vert_pos[8][3];
+        for(unsigned int local_idx = 0; local_idx < volumetricMesh->getNumElementVertices(); ++local_idx)
+        {
+            int v_idx = volumetricMesh->getVertexIndex(ele_idx,local_idx);
+            double normalized_f = max_f - min_f > 1.0e-6 ? (f[v_idx] - min_f)/(max_f - min_f) : 0;
+            JetColorMap(normalized_f,vert_color[local_idx]);
+            Vec3d pos = *(volumetricMesh->getVertex(v_idx));
+            vert_pos[local_idx][0] = pos[0];
+            vert_pos[local_idx][1] = pos[1];
+            vert_pos[local_idx][2] = pos[2];
+            if(u)
+            {
+                vert_pos[local_idx][0] += u[3*v_idx+0];
+                vert_pos[local_idx][1] += u[3*v_idx+1];
+                vert_pos[local_idx][2] += u[3*v_idx+2];
+            }
+        }
+        if(meshType == 1)  //cubic mesh
+        {
+            glBegin(GL_TRIANGLES);
+
+            glColor3f(vert_color[0][0],vert_color[0][1],vert_color[0][2]);
+            glVertex3f(vert_pos[0][0],vert_pos[0][1],vert_pos[0][2]); // front
+            glColor3f(vert_color[1][0],vert_color[1][1],vert_color[1][2]);
+            glVertex3f(vert_pos[1][0],vert_pos[1][1],vert_pos[1][2]);
+            glColor3f(vert_color[5][0],vert_color[5][1],vert_color[5][2]);
+            glVertex3f(vert_pos[5][0],vert_pos[5][1],vert_pos[5][2]);
+
+            glColor3f(vert_color[0][0],vert_color[0][1],vert_color[0][2]);
+            glVertex3f(vert_pos[0][0],vert_pos[0][1],vert_pos[0][2]);
+            glColor3f(vert_color[5][0],vert_color[5][1],vert_color[5][2]);
+            glVertex3f(vert_pos[5][0],vert_pos[5][1],vert_pos[5][2]);
+            glColor3f(vert_color[4][0],vert_color[4][1],vert_color[4][2]);
+            glVertex3f(vert_pos[4][0],vert_pos[4][1],vert_pos[4][2]);
+
+            glColor3f(vert_color[3][0],vert_color[3][1],vert_color[3][2]);
+            glVertex3f(vert_pos[3][0],vert_pos[3][1],vert_pos[3][2]); // back
+            glColor3f(vert_color[6][0],vert_color[6][1],vert_color[6][2]);
+            glVertex3f(vert_pos[6][0],vert_pos[6][1],vert_pos[6][2]);
+            glColor3f(vert_color[2][0],vert_color[2][1],vert_color[2][2]);
+            glVertex3f(vert_pos[2][0],vert_pos[2][1],vert_pos[2][2]);
+
+            glColor3f(vert_color[7][0],vert_color[7][1],vert_color[7][2]);
+            glVertex3f(vert_pos[7][0],vert_pos[7][1],vert_pos[7][2]);
+            glColor3f(vert_color[6][0],vert_color[6][1],vert_color[6][2]);
+            glVertex3f(vert_pos[6][0],vert_pos[6][1],vert_pos[6][2]);
+            glColor3f(vert_color[3][0],vert_color[3][1],vert_color[3][2]);
+            glVertex3f(vert_pos[3][0],vert_pos[3][1],vert_pos[3][2]);
+
+            glColor3f(vert_color[1][0],vert_color[1][1],vert_color[1][2]);
+            glVertex3f(vert_pos[1][0],vert_pos[1][1],vert_pos[1][2]); // right
+            glColor3f(vert_color[2][0],vert_color[2][1],vert_color[2][2]);
+            glVertex3f(vert_pos[2][0],vert_pos[2][1],vert_pos[2][2]);
+            glColor3f(vert_color[6][0],vert_color[6][1],vert_color[6][2]);
+            glVertex3f(vert_pos[6][0],vert_pos[6][1],vert_pos[6][2]);
+
+            glColor3f(vert_color[1][0],vert_color[1][1],vert_color[1][2]);
+            glVertex3f(vert_pos[1][0],vert_pos[1][1],vert_pos[1][2]);
+            glColor3f(vert_color[6][0],vert_color[6][1],vert_color[6][2]);
+            glVertex3f(vert_pos[6][0],vert_pos[6][1],vert_pos[6][2]);
+            glColor3f(vert_color[5][0],vert_color[5][1],vert_color[5][2]);
+            glVertex3f(vert_pos[5][0],vert_pos[5][1],vert_pos[5][2]);
+
+            glColor3f(vert_color[0][0],vert_color[0][1],vert_color[0][2]);
+            glVertex3f(vert_pos[0][0],vert_pos[0][1],vert_pos[0][2]); // left
+            glColor3f(vert_color[7][0],vert_color[7][1],vert_color[7][2]);
+            glVertex3f(vert_pos[7][0],vert_pos[7][1],vert_pos[7][2]);
+            glColor3f(vert_color[3][0],vert_color[3][1],vert_color[3][2]);
+            glVertex3f(vert_pos[3][0],vert_pos[3][1],vert_pos[3][2]);
+
+            glColor3f(vert_color[4][0],vert_color[4][1],vert_color[4][2]);
+            glVertex3f(vert_pos[4][0],vert_pos[4][1],vert_pos[4][2]);
+            glColor3f(vert_color[7][0],vert_color[7][1],vert_color[7][2]);
+            glVertex3f(vert_pos[7][0],vert_pos[7][1],vert_pos[7][2]);
+            glColor3f(vert_color[0][0],vert_color[0][1],vert_color[0][2]);
+            glVertex3f(vert_pos[0][0],vert_pos[0][1],vert_pos[0][2]);
+
+            glColor3f(vert_color[4][0],vert_color[4][1],vert_color[4][2]);
+            glVertex3f(vert_pos[4][0],vert_pos[4][1],vert_pos[4][2]); // top
+            glColor3f(vert_color[5][0],vert_color[5][1],vert_color[5][2]);
+            glVertex3f(vert_pos[5][0],vert_pos[5][1],vert_pos[5][2]);
+            glColor3f(vert_color[6][0],vert_color[6][1],vert_color[6][2]);
+            glVertex3f(vert_pos[6][0],vert_pos[6][1],vert_pos[6][2]);
+
+            glColor3f(vert_color[4][0],vert_color[4][1],vert_color[4][2]);
+            glVertex3f(vert_pos[4][0],vert_pos[4][1],vert_pos[4][2]);
+            glColor3f(vert_color[6][0],vert_color[6][1],vert_color[6][2]);
+            glVertex3f(vert_pos[6][0],vert_pos[6][1],vert_pos[6][2]);
+            glColor3f(vert_color[7][0],vert_color[7][1],vert_color[7][2]);
+            glVertex3f(vert_pos[7][0],vert_pos[7][1],vert_pos[7][2]);
+
+            glColor3f(vert_color[0][0],vert_color[0][1],vert_color[0][2]);
+            glVertex3f(vert_pos[0][0],vert_pos[0][1],vert_pos[0][2]); // bottom
+            glColor3f(vert_color[2][0],vert_color[2][1],vert_color[2][2]);
+            glVertex3f(vert_pos[2][0],vert_pos[2][1],vert_pos[2][2]);
+            glColor3f(vert_color[1][0],vert_color[1][1],vert_color[1][2]);
+            glVertex3f(vert_pos[1][0],vert_pos[1][1],vert_pos[1][2]);
+
+            glColor3f(vert_color[3][0],vert_color[3][1],vert_color[3][2]);
+            glVertex3f(vert_pos[3][0],vert_pos[3][1],vert_pos[3][2]);
+            glColor3f(vert_color[2][0],vert_color[2][1],vert_color[2][2]);
+            glVertex3f(vert_pos[2][0],vert_pos[2][1],vert_pos[2][2]);
+            glColor3f(vert_color[0][0],vert_color[0][1],vert_color[0][2]);
+            glVertex3f(vert_pos[0][0],vert_pos[0][1],vert_pos[0][2]);
+
+            glEnd();
+        }
+        else if(meshType == 2)  //tet mesh
+        {
+            glBegin(GL_TRIANGLES);
+
+            glColor3f(vert_color[0][0],vert_color[0][1],vert_color[0][2]);
+            glVertex3f(vert_pos[0][0],vert_pos[0][1],vert_pos[0][2]);
+            glColor3f(vert_color[1][0],vert_color[1][1],vert_color[1][2]);
+            glVertex3f(vert_pos[1][0],vert_pos[1][1],vert_pos[1][2]);
+            glColor3f(vert_color[2][0],vert_color[2][1],vert_color[2][2]);
+            glVertex3f(vert_pos[2][0],vert_pos[2][1],vert_pos[2][2]);
+
+            glColor3f(vert_color[1][0],vert_color[1][1],vert_color[1][2]);
+            glVertex3f(vert_pos[1][0],vert_pos[1][1],vert_pos[1][2]);
+            glColor3f(vert_color[2][0],vert_color[2][1],vert_color[2][2]);
+            glVertex3f(vert_pos[2][0],vert_pos[2][1],vert_pos[2][2]);
+            glColor3f(vert_color[3][0],vert_color[3][1],vert_color[3][2]);
+            glVertex3f(vert_pos[3][0],vert_pos[3][1],vert_pos[3][2]);
+
+            glColor3f(vert_color[0][0],vert_color[0][1],vert_color[0][2]);
+            glVertex3f(vert_pos[0][0],vert_pos[0][1],vert_pos[0][2]);
+            glColor3f(vert_color[2][0],vert_color[2][1],vert_color[2][2]);
+            glVertex3f(vert_pos[2][0],vert_pos[2][1],vert_pos[2][2]);
+            glColor3f(vert_color[3][0],vert_color[3][1],vert_color[3][2]);
+            glVertex3f(vert_pos[3][0],vert_pos[3][1],vert_pos[3][2]);
+
+            glColor3f(vert_color[0][0],vert_color[0][1],vert_color[0][2]);
+            glVertex3f(vert_pos[0][0],vert_pos[0][1],vert_pos[0][2]);
+            glColor3f(vert_color[1][0],vert_color[1][1],vert_color[1][2]);
+            glVertex3f(vert_pos[1][0],vert_pos[1][1],vert_pos[1][2]);
+            glColor3f(vert_color[3][0],vert_color[3][1],vert_color[3][2]);
+            glVertex3f(vert_pos[3][0],vert_pos[3][1],vert_pos[3][2]);
+            
+            glEnd();
+        }
+    }
 }
 
 void RenderVolumetricMesh::Render(VolumetricMesh * volumetricMesh, int wireframe, double * u)
@@ -306,15 +473,15 @@ void RenderVolumetricMesh::Render(VolumetricMesh * volumetricMesh, int wireframe
     {
       VolumetricMesh::Region * region = volumetricMesh->getRegion(ss);
 
-      int materialIndex = region->getMaterialIndex(); 
+      int materialIndex = region->getMaterialIndex();
       double color[3];
-      //JetColorMap(materialIndex * multiplicator, color); 
+      //JetColorMap(materialIndex * multiplicator, color);
       double gray = 1.0 - 0.5 * (numActualMaterials - 1 - materialOrder[materialIndex]) * multiplicator;
       color[0] = gray;
       color[1] = gray;
       color[2] = gray;
 
-      int setIndex = region->getSetIndex(); 
+      int setIndex = region->getSetIndex();
       VolumetricMesh::Set * elementSet = volumetricMesh->getSet(setIndex);
       set<int> elements;
       elementSet->getElements(elements);
@@ -327,7 +494,7 @@ void RenderVolumetricMesh::Render(VolumetricMesh * volumetricMesh, int wireframe
           glColor3f(color[0], color[1], color[2]);
 
         int el = *iter;
-   
+
         if (u == NULL)
         {
           if (meshType == 1)
@@ -397,12 +564,12 @@ void RenderVolumetricMesh::Render(VolumetricMesh * volumetricMesh, int wireframe
           colorR = (E - minE) / (maxE - minE);
         else
           colorR = 1;
-    
+
         if (maxnu > minnu + 1E-10)
           colorG = (nu - minnu) / (maxnu - minnu);
         else
           colorG = 1;
-  
+
         if (maxDensity > minDensity + 1E-10)
           colorB = (density - minDensity) / (maxDensity - minDensity);
         else
@@ -506,7 +673,7 @@ void RenderVolumetricMesh::RenderVertices
   glEnd();
 }
 
-void RenderVolumetricMesh::RenderVertices(VolumetricMesh * volumetricMesh, 
+void RenderVolumetricMesh::RenderVertices(VolumetricMesh * volumetricMesh,
                                   int * vertices, int numVertices, bool oneIndexed)
 {
   glBegin(GL_POINTS);
@@ -616,7 +783,7 @@ void RenderVolumetricMesh::UnitCube()
 {
   glBegin(GL_TRIANGLES);
 
-  glNormal3f(0,-1,0);  
+  glNormal3f(0,-1,0);
 
   glVertex3f(0,0,0); // front
   glVertex3f(1,0,0);
@@ -626,7 +793,7 @@ void RenderVolumetricMesh::UnitCube()
   glVertex3f(1,0,1);
   glVertex3f(0,0,1);
 
-  glNormal3f(0,1,0);  
+  glNormal3f(0,1,0);
 
   glVertex3f(0,1,0); // back
   glVertex3f(1,1,1);
@@ -636,7 +803,7 @@ void RenderVolumetricMesh::UnitCube()
   glVertex3f(1,1,1);
   glVertex3f(0,1,0);
 
-  glNormal3f(1,0,0);  
+  glNormal3f(1,0,0);
 
   glVertex3f(1,0,0); // right
   glVertex3f(1,1,0);
@@ -646,7 +813,7 @@ void RenderVolumetricMesh::UnitCube()
   glVertex3f(1,1,1);
   glVertex3f(1,0,1);
 
-  glNormal3f(-1,0,0);  
+  glNormal3f(-1,0,0);
 
   glVertex3f(0,0,0); // left
   glVertex3f(0,1,1);
@@ -656,7 +823,7 @@ void RenderVolumetricMesh::UnitCube()
   glVertex3f(0,1,1);
   glVertex3f(0,0,0);
 
-  glNormal3f(0,0,1);  
+  glNormal3f(0,0,1);
 
   glVertex3f(0,0,1); // top
   glVertex3f(1,0,1);
@@ -666,7 +833,7 @@ void RenderVolumetricMesh::UnitCube()
   glVertex3f(1,1,1);
   glVertex3f(0,1,1);
 
-  glNormal3f(0,0,-1);  
+  glNormal3f(0,0,-1);
 
   glVertex3f(0,0,0); // bottom
   glVertex3f(1,1,0);
@@ -681,7 +848,7 @@ void RenderVolumetricMesh::UnitCube()
 
 void RenderVolumetricMesh::UnitCubeWireframe()
 {
-  glBegin(GL_LINES); 
+  glBegin(GL_LINES);
     glVertex3f(0,0,0);
     glVertex3f(1,0,0);
     glVertex3f(0,1,0);
@@ -726,7 +893,7 @@ void RenderVolumetricMesh::CubeDeformable(double u0x,double u0y,double u0z,
 {
   glBegin(GL_TRIANGLES);
 
-  glNormal3f(0,-1,0);  
+  glNormal3f(0,-1,0);
 
   glVertex3f(u0x,u0y,u0z); // front
   glVertex3f(u1x,u1y,u1z);
@@ -736,7 +903,7 @@ void RenderVolumetricMesh::CubeDeformable(double u0x,double u0y,double u0z,
   glVertex3f(u5x,u5y,u5z);
   glVertex3f(u4x,u4y,u4z);
 
-  glNormal3f(u3x,u3y,u3z);  
+  glNormal3f(u3x,u3y,u3z);
 
   glVertex3f(u3x,u3y,u3z); // back
   glVertex3f(u6x,u6y,u6z);
@@ -746,7 +913,7 @@ void RenderVolumetricMesh::CubeDeformable(double u0x,double u0y,double u0z,
   glVertex3f(u6x,u6y,u6z);
   glVertex3f(u3x,u3y,u3z);
 
-  glNormal3f(u1x,u1y,u1z);  
+  glNormal3f(u1x,u1y,u1z);
 
   glVertex3f(u1x,u1y,u1z); // right
   glVertex3f(u2x,u2y,u2z);
@@ -756,7 +923,7 @@ void RenderVolumetricMesh::CubeDeformable(double u0x,double u0y,double u0z,
   glVertex3f(u6x,u6y,u6z);
   glVertex3f(u5x,u5y,u5z);
 
-  glNormal3f(-1,0,0);  
+  glNormal3f(-1,0,0);
 
   glVertex3f(u0x,u0y,u0z); // left
   glVertex3f(u7x,u7y,u7z);
@@ -766,7 +933,7 @@ void RenderVolumetricMesh::CubeDeformable(double u0x,double u0y,double u0z,
   glVertex3f(u7x,u7y,u7z);
   glVertex3f(u0x,u0y,u0z);
 
-  glNormal3f(u4x,u4y,u4z);  
+  glNormal3f(u4x,u4y,u4z);
 
   glVertex3f(u4x,u4y,u4z); // top
   glVertex3f(u5x,u5y,u5z);
@@ -776,7 +943,7 @@ void RenderVolumetricMesh::CubeDeformable(double u0x,double u0y,double u0z,
   glVertex3f(u6x,u6y,u6z);
   glVertex3f(u7x,u7y,u7z);
 
-  glNormal3f(0,0,-1);  
+  glNormal3f(0,0,-1);
 
   glVertex3f(u0x,u0y,u0z); // bottom
   glVertex3f(u2x,u2y,u2z);
@@ -799,7 +966,7 @@ void RenderVolumetricMesh::CubeWireframeDeformable(double u0x,double u0y,double 
 			double u7x,double u7y,double u7z
 					)
 {
-  glBegin(GL_LINES); 
+  glBegin(GL_LINES);
     glVertex3f(u0x,u0y,u0z);
     glVertex3f(u1x,u1y,u1z);
     glVertex3f(u3x,u3y,u3z);
@@ -855,7 +1022,7 @@ void RenderVolumetricMesh::TetDeformable(double u0x,double u0y,double u0z,
     RENDERVTXALT(0);
     RENDERVTXALT(1);
     RENDERVTXALT(3);
-  glEnd();    
+  glEnd();
 }
 
 void RenderVolumetricMesh::TetWireframeDeformable(double u0x,double u0y,double u0z,
@@ -884,4 +1051,3 @@ void RenderVolumetricMesh::TetWireframeDeformable(double u0x,double u0y,double u
     RENDERVTXALT(3);
   glEnd();
 }
-
