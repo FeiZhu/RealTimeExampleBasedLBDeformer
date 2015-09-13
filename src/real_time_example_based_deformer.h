@@ -16,6 +16,7 @@ class VolumetricMesh;
 class SceneObjectDeformable;
 class Planes;
 class CoupledQuasiHarmonics;
+class ConfigFile;
 
 namespace RTLB{
 
@@ -53,6 +54,7 @@ public:
     unsigned int reducedBasisNum() const{return reduced_basis_num_;}
     unsigned int objectEigenfunctionNum() const{return object_eigenfunction_num_;}
     unsigned int exampleEigenfunctionNum() const{return example_eigenfunction_num_;}
+    unsigned int correspondingFunctionNum() const{return corresponding_function_num_;}
     const Planes* planesInScnene() const {return planes_;}
     unsigned int fixedVertexNum() const{return fixed_vertex_num_;}
     unsigned int* fixedVertexPtr() const{return fixed_vertices_;}
@@ -119,7 +121,7 @@ private:
     bool is_region_based_correspondence_ = false;
     //planes in scene, for contact
     Planes *planes_ = NULL;
-    unsigned int plane_num_ = 0;
+    unsigned int plane_num_ = 0;    
 };
 
 } //namespace RTLB

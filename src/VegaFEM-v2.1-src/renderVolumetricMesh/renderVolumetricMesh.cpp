@@ -262,7 +262,7 @@ void RenderVolumetricMesh::RenderVertexColorMap(VolumetricMesh *volumetricMesh, 
     meshType = 2;
     //get max and min value of vertex function value
     double min_f = (std::numeric_limits<double>::max)();
-    double max_f = std::numeric_limits<double>::lowest();
+    double max_f = (std::numeric_limits<double>::max)();
     for(unsigned int vert_idx = 0; vert_idx < volumetricMesh->getNumVertices(); ++vert_idx)
     {
         min_f = min_f > f[vert_idx] ? f[vert_idx] : min_f;
@@ -410,7 +410,7 @@ void RenderVolumetricMesh::RenderVertexColorMap(VolumetricMesh *volumetricMesh, 
             glVertex3f(vert_pos[1][0],vert_pos[1][1],vert_pos[1][2]);
             glColor3f(vert_color[3][0],vert_color[3][1],vert_color[3][2]);
             glVertex3f(vert_pos[3][0],vert_pos[3][1],vert_pos[3][2]);
-            
+
             glEnd();
         }
     }

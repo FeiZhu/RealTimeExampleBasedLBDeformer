@@ -33,7 +33,7 @@
 
   A "spherical" camera is a camera that is located at location (R, Phi, Theta), in spherical coordinates, away from some focus position. It is pointed towards the focus position. It is useful for orbiting a fixed location (focus position) in interactive applications.
 
-  cameraPosition = focusPosition + 
+  cameraPosition = focusPosition +
    [ R * cos(Phi) * cos (Theta), R * sin(Theta), -R * sin(Phi) * cos (Theta) ]
 
 */
@@ -49,14 +49,14 @@
 
 SphericalCamera::SphericalCamera(double R, double Phi, double Theta, double * focusPosition_, double * up_, double movementSensitivity_, double camera2WorldScalingFactor_): R0(R), Phi0(Phi), Theta0(Theta), movementSensitivity(movementSensitivity_), camera2WorldScalingFactor(camera2WorldScalingFactor_)
 {
-  focusPosition[0] = focusPosition_[0]; 
-  focusPosition[1] = focusPosition_[1]; 
+  focusPosition[0] = focusPosition_[0];
+  focusPosition[1] = focusPosition_[1];
   focusPosition[2] = focusPosition_[2];
-  up[0] = up_[0]; 
-  up[1] = up_[1]; 
+  up[0] = up_[0];
+  up[1] = up_[1];
   up[2] = up_[2];
-  origin[0] = 0.0; 
-  origin[1] = 0.0; 
+  origin[0] = 0.0;
+  origin[1] = 0.0;
   origin[2] = 0.0;
   Reset();
 }
@@ -85,7 +85,7 @@ void SphericalCamera::MoveUp(double amount)
 void SphericalCamera::ZoomIn(double amount)
 {
   R -= amount * movementSensitivity;
-  
+
 /*
   if (R < fabs(movementSensitivity))
     R = fabs(movementSensitivity);
@@ -121,7 +121,7 @@ void SphericalCamera::Reset() // resets position to defaults
 }
 
 void SphericalCamera::SetFocusPosition(double focusPosition_[3])
-{ 
+{
   focusPosition[0] = focusPosition_[0];
   focusPosition[1] = focusPosition_[1];
   focusPosition[2] = focusPosition_[2];
@@ -129,25 +129,25 @@ void SphericalCamera::SetFocusPosition(double focusPosition_[3])
   ComputeLocalCoordinateSystem();
 }
 
-void SphericalCamera::SetPosition(double r, double phi, double theta) 
-{ 
-  R = r; 
-  Phi = phi; 
-  Theta = theta; 
+void SphericalCamera::SetPosition(double r, double phi, double theta)
+{
+  R = r;
+  Phi = phi;
+  Theta = theta;
   ComputeCameraPosition();
   ComputeLocalCoordinateSystem();
 }
 
 void SphericalCamera::Look()
 {
-  gluLookAt( cameraPosition[0], cameraPosition[1], cameraPosition[2], 
+  gluLookAt( cameraPosition[0], cameraPosition[1], cameraPosition[2],
     focusPosition[0], focusPosition[1], focusPosition[2], 
     up[0], up[1], up[2]);
 }
 
 void SphericalCamera::ComputeCameraPosition()
 {
-  //cameraPosition = focusPosition + 
+  //cameraPosition = focusPosition +
   //  Vec3f(R * cos(Phi) * cos (Theta), R * sin(Theta), -R * sin(Phi) * cos (Theta));
 
   cameraPosition[0] = focusPosition[0] + R * cos(Phi) * cos (Theta);
@@ -252,7 +252,7 @@ void SphericalCamera::CameraRotation2WorldRotation2D(double * c, double * w)
   // c is in row-major format
   // 0  1  2
   // 3  4  5
-  // 6  7  8 
+  // 6  7  8
 
   // w = cameraMatrix * c
   w[0] = c[0] * xAxis2D[0] + c[6] * yAxis2D[0];
@@ -273,7 +273,7 @@ void SphericalCamera::CameraRotation2WorldRotation2D(float * c, float * w)
   // c is in row-major format
   // 0  1  2
   // 3  4  5
-  // 6  7  8 
+  // 6  7  8
 
   // w = cameraMatrix * c
   w[0] = c[0] * xAxis2D[0] + c[6] * yAxis2D[0];
@@ -290,36 +290,36 @@ void SphericalCamera::CameraRotation2WorldRotation2D(float * c, float * w)
 }
 
 void SphericalCamera::CameraVector2WorldVector2D(double * c, double * w)
-{ 
+{
   w[0] = origin[0] + ( c[0] * xAxis2D[0] + c[2] * yAxis2D[0] ) * camera2WorldScalingFactor;
   w[1] = origin[1] + c[1] * camera2WorldScalingFactor;
   w[2] = origin[2] + ( c[0] * xAxis2D[1] + c[2] * yAxis2D[1] ) * camera2WorldScalingFactor;
 }
 
 void SphericalCamera::CameraVector2WorldVector2D(double c0, double c1, double c2, double * w)
-{ 
+{
   w[0] = origin[0] + ( c0 * xAxis2D[0] + c2 * yAxis2D[0] ) * camera2WorldScalingFactor;
   w[1] = origin[1] + c1 * camera2WorldScalingFactor;
   w[2] = origin[2] + ( c0 * xAxis2D[1] + c2 * yAxis2D[1] ) * camera2WorldScalingFactor;
 }
 
 void SphericalCamera::CameraVector2WorldVector_OrientationOnly2D(double * c, double * w)
-{ 
+{
   w[0] = ( c[0] * xAxis2D[0] + c[2] * yAxis2D[0] ) * camera2WorldScalingFactor;
   w[1] = c[1] * camera2WorldScalingFactor;
   w[2] = ( c[0] * xAxis2D[1] + c[2] * yAxis2D[1] ) * camera2WorldScalingFactor;
 }
 
 void SphericalCamera::CameraVector2WorldVector_OrientationOnly2D(double c0, double c1, double c2, double * w)
-{ 
+{
   w[0] = ( c0 * xAxis2D[0] + c2 * yAxis2D[0] ) * camera2WorldScalingFactor;
   w[1] = c1 * camera2WorldScalingFactor;
   w[2] = ( c0 * xAxis2D[1] + c2 * yAxis2D[1] ) * camera2WorldScalingFactor;
 }
 
 void SphericalCamera::CameraVector2WorldVector_OrientationOnly3D(double c0, double c1, double c2, double * w)
-{ 
-  // cameraPosition = focusPosition + 
+{
+  // cameraPosition = focusPosition +
   //   (R * cos(Phi) * cos (Theta), R * sin(Theta), -R * sin(Phi) * cos (Theta));
 
   // w = c0 * xAxis + c1 * yAxis + c2 * zAxis
@@ -412,7 +412,7 @@ void SphericalCamera::DetermineCameraParameters( double centerX, double centerY,
   *focusZ = centerZ;
 
   *cameraRadius = modelRadius * 3;
-  
+
   *zNear = *cameraRadius * 0.01;
   *zFar = *cameraRadius * 100;
 }
@@ -547,7 +547,7 @@ void SphericalCamera::CameraTransform2WorldTransform2D_NoScaling_ColumnMajor(flo
 }
 
 void SphericalCamera::GetFocusPosition(double focusPosition_[3])
-{ 
+{
   focusPosition_[0] = focusPosition[0];
   focusPosition_[1] = focusPosition[1];
   focusPosition_[2] = focusPosition[2];
@@ -572,5 +572,3 @@ void SphericalCamera::MoveFocusUp(double amount)
   focusPos[2] += amount * yAxis[2];
   SetFocusPosition(focusPos);
 }
-
-

@@ -33,7 +33,7 @@
 
   A "spherical" camera is a camera that is located at location (R, Phi, Theta), in spherical coordinates, away from some focus position. It is pointed towards the focus position. It is useful for orbiting a fixed location (focus position) in interactive applications.
 
-  cameraPosition = focusPosition + 
+  cameraPosition = focusPosition +
    [ R * cos(Phi) * cos (Theta), R * sin(Theta), -R * sin(Phi) * cos (Theta) ]
 
 */
@@ -49,7 +49,7 @@ class SphericalCamera
 {
 public:
 
-  // R is the camera distance from the focus position 
+  // R is the camera distance from the focus position
   // Phi, Theta are camera longitude and lattitude (in radians)
   // focusPosition is the 3D camera focus position (e.g., [0, 0, 0])
   // up is the 3D up vector (e.g., [0, 1, 0])
@@ -80,7 +80,7 @@ public:
 
   void SetDefault(); // set current camera position as the default position
   void Reset(); // reset camera position to the default position
-  
+
   // save/load current camera position to/from a file
   void SavePosition(const char * filename);
   void LoadPosition(const char * filename);
@@ -120,9 +120,9 @@ public:
   void CameraRotation2WorldRotation2D(double * c, double * w);
 
   // converts 4x4 row-major camera-space transform matrix to 4x4 row-major world-space transform matrix
-  void CameraTransform2WorldTransform2D(double * c, double * w); 
-  void CameraTransform2WorldTransform2D(float * c, float * w); 
-  void CameraTransform2WorldTransform2D_ColumnMajor(float * c, float * w); 
+  void CameraTransform2WorldTransform2D(double * c, double * w);
+  void CameraTransform2WorldTransform2D(float * c, float * w);
+  void CameraTransform2WorldTransform2D_ColumnMajor(float * c, float * w);
   void CameraTransform2WorldTransform2D_NoScaling_ColumnMajor(float * c, float * w);
 
   // transform vector given in the world coordinate system into the camera coordinate system
@@ -172,4 +172,3 @@ protected:
 };
 
 #endif
-

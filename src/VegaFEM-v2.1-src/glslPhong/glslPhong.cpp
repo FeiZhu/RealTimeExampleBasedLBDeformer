@@ -179,10 +179,10 @@ void GLSLPhong::checkError(GLint status, const char *msg)
 
 void GLSLPhong::checkShaderCompilation(GLint shaderID)
 {
-  GLint blen = 0; 
+  GLint blen = 0;
   GLsizei slen = 0;
 
-  glGetShaderiv(shaderID, GL_INFO_LOG_LENGTH , &blen);       
+  glGetShaderiv(shaderID, GL_INFO_LOG_LENGTH , &blen);
 
   if (blen > 1)
   {
@@ -298,7 +298,7 @@ GLSLPhong::~GLSLPhong()
 
 void GLSLPhong::Enable()
 {
-  GLenum lightArray[8] = { 
+  GLenum lightArray[8] = {
     GL_LIGHT0, GL_LIGHT1, GL_LIGHT2, GL_LIGHT3,
     GL_LIGHT4, GL_LIGHT5, GL_LIGHT6, GL_LIGHT7 };
   int programID = 0;
@@ -316,4 +316,3 @@ void GLSLPhong::Disable()
 {
   glUseProgram(0);
 }
-
