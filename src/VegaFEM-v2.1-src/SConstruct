@@ -40,11 +40,11 @@ lib_names=get_immediate_subdirectories(lib_src_root_path)
 glui_src_files=Split('glui_add_controls.cpp glui_string.cpp glui.cpp glui_bitmap_img_data.cpp glui_bitmaps.cpp glui_button.cpp glui_edittext.cpp glui_commandline.cpp glui_checkbox.cpp glui_node.cpp glui_radio.cpp glui_statictext.cpp glui_panel.cpp glui_separator.cpp glui_spinner.cpp glui_control.cpp glui_column.cpp glui_translation.cpp glui_rotation.cpp glui_mouse_iaction.cpp glui_listbox.cpp glui_rollout.cpp glui_window.cpp arcball.cpp algebra3.cpp quaternion.cpp viewmodel.cpp glui_treepanel.cpp glui_tree.cpp glui_textbox.cpp glui_scrollbar.cpp glui_list.cpp glui_filebrowser.cpp')
 
 #builders
-compile=Builder(action='g++ -o $TARGET $SOURCE -c -O3 -DNDEBUG -I '+lib_inc_path)   
+compile=Builder(action='g++ -o $TARGET $SOURCE -c -O3 -std=c++11 -DNDEBUG -I '+lib_inc_path)   
 arc_lib=Builder(action='ar rcs $TARGET $SOURCES')
 #need mkl on linux
 if os_name == 'Linux':
-    compile=Builder(action='g++ -o $TARGET $SOURCE -c -O3 -DNDEBUG -I '+lib_inc_path+' -I '+mkl_inc_path)   
+    compile=Builder(action='g++ -o $TARGET $SOURCE -c -O3 -std=c++11 -DNDEBUG -I '+lib_inc_path+' -I '+mkl_inc_path)   
    
 
 #environment
