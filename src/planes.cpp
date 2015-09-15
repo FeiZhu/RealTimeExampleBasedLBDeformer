@@ -18,7 +18,7 @@ Planes::Planes(const char* config_file_name,unsigned int plane_number):plane_num
     plane_diffuse.resize(plane_number);
     plane_specular.resize(plane_number);
     plane_shininess.resize(plane_number);
-	
+
     for(int plane_index=0;plane_index<plane_number;++plane_index)
     {
 	char option_name[128];
@@ -95,7 +95,31 @@ void Planes::render()
 	}
     }
 }
-
+void Planes::resolveContact(ObjMesh *mesh,double *forces)
+{
+    int vert_num=mesh->getNumVertices();
+    double threshold=0.01*mesh->getDiameter();//the threshold to start resolve contact
+    memset(forces,0.0,sizeof(double)*3*vert_num);
+    for(int plane_index=0;plane_index<plane_number;++plane_index)
+    {
+	if(!plane_enabled[plane_index])
+	    continue;
+	Vec3d unit_plane_normal=norm(plane_normal[plane_index]);//normalize the plane normal
+	for(int vert_index=0;vert_index<vert_num;++vert_index)
+	{
+	    Vec3d rel_vec=mesh->getPosition(vert_index)-plane_center[plane_index];
+	    double dist_vec=dot(rel_vec,unit_plane_normal);
+	    if(dist_vec<threshold)//close than a threshold or penetrated
+	    {
+		if(dist_vec<0)
+		    dist_vec=-dist_vec;
+		forces[3*vert_index+0]+=plane_bounce[plane_index]*dist_vec*unit_plane_normal[0];
+		forces[3*vert_index+1]+=plane_bounce[plane_index]*dist_vec*unit_plane_normal[1];
+		forces[3*vert_index+2]+=plane_bounce[plane_index]*dist_vec*unit_plane_normal[2];
+	    }
+	}
+    }
+}
 void Planes::resolveContact(const ObjMesh *mesh/*,double *forces*/,const double *vel,double *u_new,double *vel_new)
 {
     int vert_num=mesh->getNumVertices();
@@ -189,19 +213,19 @@ void Planes::renderPlane(int plane_index)
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular);
     glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, current_shininess);
 
-    //the transformation between the plane and the x-z plane 
+    //the transformation between the plane and the x-z plane
     //transform x-z plane to the plane
     float rotate_around_y[16],rotate_around_z[16],translate[16];
     memset(rotate_around_y,0.0f,sizeof(float)*16);
     memset(rotate_around_z,0.0f,sizeof(float)*16);
     memset(translate,0.0f,sizeof(float)*16);
-	
+
     translate[0]=translate[5]=translate[10]=translate[15]=1.0f;
     translate[12]=current_center[0];
     translate[13]=current_center[1];
     translate[14]=current_center[2];
 
-    rotate_around_y[5]=rotate_around_y[15]=1.0f;	
+    rotate_around_y[5]=rotate_around_y[15]=1.0f;
     Vec3d normal_xz=Vec3d(current_normal[0],0.0,current_normal[2]);
     Vec3d x_axis=Vec3d(1.0,0.0,0.0);
     double normal_xz_len=len(normal_xz);

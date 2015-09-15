@@ -73,7 +73,7 @@ double NeoHookeanIsotropicMaterial::ComputeEnergy(int elementIndex, double * inv
 {
   double IC = invariants[0];
   double IIIC = invariants[2];
-  double J = sqrt(IIIC); 
+  double J = sqrt(IIIC);
   double logJ = log(J);
   // Note: computation of J and logJ will fail for an inverted element.
   // The IsotropicHyperelasticFEM class will prevent inversions (assuming proper
@@ -121,4 +121,3 @@ double NeoHookeanIsotropicMaterial::GetCompressionResistanceFactor(int elementIn
 {
   return EdivNuFactor[elementIndex];
 }
-

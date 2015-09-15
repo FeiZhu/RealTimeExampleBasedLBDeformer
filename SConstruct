@@ -76,9 +76,12 @@ target_filename='RealTimeExampleBasedLBDeformer'+build_type
 #LIB FILES
 lib_files=[]
 #VegaFEM LIBS
-vega_libs = 'sceneObject elasticForceModel forceModel loadList insertRows lighting performanceCounter \
-             configFile renderVolumetricMesh volumetricMesh getopts camera graph isotropicHyperelasticFEM stvk corotationalLinearFEM \
-             polarDecomposition massSpringSystem objMesh sparseSolver matrix matrixIO modalMatrix sparseMatrix minivector integrator integratorSparse  glslPhong imageIO objMesh reducedElasticForceModel reducedForceModel reducedStvk sceneObjectReduced  		       '
+vega_libs = 'sceneObjectReduced sceneObject reducedElasticForceModel elasticForceModel reducedForceModel forceModel loadList \
+	     integratorSparse sparseSolver integrator \
+	     insertRows lighting performanceCounter configFile renderVolumetricMesh volumetricMesh openGLHelper getopts camera graph \
+	     isotropicHyperelasticFEM reducedStvk stvk corotationalLinearFEM polarDecomposition massSpringSystem objMesh \
+	      sparseMatrix modalMatrix matrix matrixIO  minivector glslPhong imageIO \
+             objMesh'
 lib_files.append(Split(vega_libs))
 #NLOPT,OPT++ LIBS
 lib_files.append('nlopt')

@@ -226,6 +226,7 @@ bool RealTimeExampleBasedDeformer::loadObjectEigenfunctions(const std::string &f
 {
 	std::cout<<"Load object eigenfunction:\n";
     std::fstream input_file(file_name.c_str());
+	
 	if(!input_file)
 	{
 		std::cout<<"Error: Cannot open file "<<file_name<<std::endl;

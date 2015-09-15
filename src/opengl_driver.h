@@ -24,12 +24,6 @@ class SceneObjectDeformable;
 class ConfigFile;
 class planes;
 class Graph;
-class SparseMatrix;
-class StVKElementABCD;
-class IsotropicMaterial;
-class IsotropicHyperelasticFEM;
-class CorotationalLinearFEM;
-class RenderVolumetricMesh;
 
 namespace RTLB{
 
@@ -61,6 +55,7 @@ private:
     //GLUI callback methods
     static void updateRenderMesh(int code);
     static void updateCurrentExample(int code);
+    static void changeCurrentEigenIndex(int code);
     static void changeSimulationMode(int code);
     static void loadObjectEigenfunctions(int code);
     static void saveObjectEigenfunctions(int code);
@@ -73,6 +68,8 @@ private:
     static void registerEigenfunctions(int code);
     //misc
     void drawAxis(double axis_length) const;
+    void drawIndexColorTable() const;
+    void setEigenfunctionColors();
 private:
     static const unsigned int string_length=1024;
     static OpenGLDriver *active_instance_;
@@ -104,21 +101,24 @@ private:
     //char objectEigen
     char object_affected_vertices_file_name_[string_length];
     char example_affected_vertices_file_name_[string_length];
+    char extra_objects_file_name_base_[string_length];
 
     bool add_gravity_=false;
     double gravity_ = -9.8;
     double time_step_ = 1.0/30;
+    int time_step_counter_=0;
     float newmark_beta_=0.25;
     float newmark_gamma_=0.5;
     float damping_mass_coef_=0.0;
     float damping_stiffness_coef_=0.0;
     float damping_laplacian_coef_=0.0;
-    double integrator_epsilon_=1.0e-6;
+    double epsilon_=1.0e-12;//numerical accuracy in this file
+    double integrator_epsilon_=1.0e-6;//numerical accuracy used in integrator
     double deformable_object_compliance_=1.0;
     double example_stiffness_scale_=1.0;//the stiffness used to compute example force is scaled
     int max_iterations_=1;
-    int force_neighbor_size_=3;
-    int solver_threads_num_=1;
+    int force_neighbor_size_=3;//the influence range of the integration force
+    int solver_threads_num_=1;//number of threads used for integration solver
     double principal_stretch_threshold_=-DBL_MAX;
     bool enable_eigen_weight_control_=false;    //enable the explicit weight control
     int corotational_linearFEM_warp_=1;
@@ -127,12 +127,19 @@ private:
 
     VolumetricMesh *simulation_mesh_=NULL;
     VolumetricMesh **example_mesh_=NULL;
-    VolumetricMesh *current_simulation_mesh_=NULL;
+    VolumetricMesh *current_example_mesh_=NULL;
     TetMesh *tet_mesh_=NULL;
     unsigned int simulation_vertices_num_ = 0;
     RenderVolumetricMesh *render_volumetric_mesh_=NULL;
-    SceneObjectDeformable *rendering_mesh_=NULL;
+    SceneObjectDeformable *render_surface_mesh_=NULL;
     SceneObjectDeformable *visual_mesh_=NULL;
+    double *u_render_surface_=NULL;
+    //total volume and per-vertex volume
+    double object_volume_ = 0;
+    double *object_vertex_volume_ = NULL;
+    double *example_volume_ = NULL;
+    double **example_vertex_volume_ = NULL;
+
     Graph *mesh_graph_ = NULL;
     SparseMatrix *mass_matrix_=NULL;
     SparseMatrix *laplacian_matrix_=NULL;
@@ -147,7 +154,7 @@ private:
     IntegratorBase *integrator_base_=NULL;
     IntegratorBaseSparse *integrator_base_sparse_=NULL;
 
-    int pull_vertex_=-1; //the index of vertex pulled by user
+    int pulled_vertex_=-1; //the index of vertex pulled by user
     double *u_=NULL;
     double *vel_=NULL;
     double *u_initial_=NULL;
@@ -160,6 +167,11 @@ private:
     int *fixed_dofs_=NULL;
     int force_loads_num_=0;
     double *force_loads_=NULL;
+    int object_interpolation_element_vertices_num_=0;
+    int *object_interpolation_vertices_=NULL;
+    double *object_interpolation_weights_=NULL;
+    int extra_objects_num_=0;
+    SceneObjectDeformable **extra_objects_=NULL;
     //window
     std::string window_name_ = std::string("Example-based Simulator");
     int window_id_ = -1;
@@ -181,6 +193,10 @@ private:
     bool left_button_down_ = false;
     bool middle_button_down_ = false;
     bool right_button_down_ = false;
+    int shift_pressed_=0;
+    int alt_pressed_=0;
+    int ctrl_pressed_=0;
+    int drag_start_x_,drag_start_y_;
     //render switches
     unsigned int enable_textures_=0;
     bool render_axis_ = true;
@@ -188,6 +204,10 @@ private:
     bool render_wireframe_ = true;
     bool render_fixed_vertices_ = true;
     bool render_eigenfunction_ = false;
+    bool isrender_surface_mesh_ = true;
+    bool isrender_volumetric_mesh_ = false;
+    bool isrender_example_eigen_ = false;
+    bool isrender_object_eigen_ = false;
     char solver_method_[string_length];
     enum RenderMeshType{
         VISUAL_MESH = 0,
@@ -222,14 +242,14 @@ private:
     DeformableObjectType deformable_object_type_ = UNSPECIFIED;
     //glui controls
     GLUI *glui_ = NULL;
-    GLUI_StaticText *glui_object_surface_eigenfunctions_loaded;
-    GLUI_StaticText *glui_example_with_eigenfunctions_loaded;
-    GLUI_StaticText *glui_current_example_eigenfunctions_loaded;
-    GLUI_StaticText *glui_rendering_eigenfunctions_enabled;
-    GLUI_Spinner *render_eigen_index_spinner;
-    GLUI_Button *change_simulation_mode_button;
-    unsigned int current_example_index_ = 1;
-    unsigned int example_with_eigen_num_ = 0;
+    GLUI_StaticText *glui_object_surface_eigenfunctions_loaded_;
+    GLUI_StaticText *glui_example_with_eigenfunctions_loaded_;
+    GLUI_StaticText *glui_current_example_eigenfunctions_loaded_;
+    GLUI_StaticText *glui_rendering_eigenfunctions_enabled_;
+    GLUI_Spinner *render_eigen_index_spinner_;
+    GLUI_Button *change_simulation_mode_button_;
+    unsigned int current_example_index_ = 0;
+    unsigned int current_render_eigen_idx_=0;
     unsigned int save_eigenfunction_num_ = 0;
     ConfigFile config_file_;
 };
