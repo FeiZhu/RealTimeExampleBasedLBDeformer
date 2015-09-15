@@ -62,9 +62,7 @@ public:
     const VolumetricMesh* exampleMesh(unsigned int example_idx) const;
     const SceneObjectDeformable* visualMesh() const{return visual_mesh_;}
     double** objectEigenFunctions() const{return object_eigenfunctions_;}
-    double* objectEigenValues() const{return object_eigenvalues_;}
     double*** exampleEigenFunctions() const{return example_eigenfunctions_;}
-    double** exampleEigenValues() const{return example_eigenvalues_;}
 
     //registration of eigenfunctions
     bool loadCorrespondenceData(const std::string &file_name);

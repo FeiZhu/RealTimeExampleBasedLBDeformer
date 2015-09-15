@@ -26,7 +26,6 @@
  * LICENSE.TXT for more details.                                         *
  *                                                                       *
  *************************************************************************/
-
 #include <float.h>
 
 #ifdef WIN32
@@ -262,7 +261,7 @@ void RenderVolumetricMesh::RenderVertexColorMap(VolumetricMesh *volumetricMesh, 
     meshType = 2;
     //get max and min value of vertex function value
     double min_f = (std::numeric_limits<double>::max)();
-    double max_f = (std::numeric_limits<double>::max)();
+    double max_f = (-1.0)*((std::numeric_limits<double>::max)());
     for(unsigned int vert_idx = 0; vert_idx < volumetricMesh->getNumVertices(); ++vert_idx)
     {
         min_f = min_f > f[vert_idx] ? f[vert_idx] : min_f;

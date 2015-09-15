@@ -1400,7 +1400,8 @@ void OpenGLDriver::setEigenfunctionColors()
         }
         eigenfunction=simulator_->objectEigenFunctions()[current_render_eigen_idx_-1];
 
-        render_volumetric_mesh_->RenderVertexColorMap(simulation_mesh_,eigenfunction,simulator_->objectEigenValues());
+        render_volumetric_mesh_->RenderVertexColorMap(simulation_mesh_,eigenfunction);
+        
         //render_volumetric_mesh_->RenderSolidAndWireframe(simulation_mesh_);
         //eigenfunction_dim=simulation_mesh_->getNumVertices();
     }
