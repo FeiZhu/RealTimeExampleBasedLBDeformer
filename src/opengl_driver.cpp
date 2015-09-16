@@ -85,8 +85,10 @@ void OpenGLDriver::initConfigurations(const std::string &config_file_name)
     config_file_.addOption("exampleNum",&example_num_);
     config_file_.addOption("exampleEigunfunctionNum",&example_eigenfunction_num_);
     config_file_.addOption("objectEigenfunctionNum",&object_eigenfunction_num_);
-    config_file_.addOptionOptional("exampleEigenFunctionFilenameBase",example_eigen_file_name_,"none");
+    config_file_.addOptionOptional("exampleEigenFunctionFilenameBase",example_eigen_file_name_prefix_,"none");
     config_file_.addOptionOptional("objectEigenFunctionFilename",object_eigen_file_name_,"none");
+    config_file_.addOptionOptional("savedExampleEigenFunctionFilenameBase",output_eigen_file_name_prefix_,"none");
+    config_file_.addOptionOptional("savedObjectEigenFunctionFilename",output_object_eigen_file_name_,"none");
     config_file_.addOptionOptional("correspondingFunctionFilename",corresponding_file_name_,"none");
     //output
     //config_file_.addOptionOptional("outputFilenameBase",output_file_name_,"output");
@@ -320,8 +322,11 @@ void OpenGLDriver::initSimulation()
     if((deformable_object_type_==STVK)||(deformable_object_type_==COROTLINFEM)||(deformable_object_type_==LINFEM)||(deformable_object_type_==INVERTIBLEFEM))
     {
         std::cout<<"Loading object volumetric mesh from file "<<simulation_mesh_file_name_<<".\n";
-        simulation_mesh_=VolumetricMeshLoader::load(simulation_mesh_file_name_);
-        if(simulation_mesh_==NULL)
+        if(simulator_->loadSimulationMesh(simulation_mesh_file_name_))
+        {
+            simulation_mesh_=simulator_->simulationMesh();
+        }
+        else
         {
             std::cout<<"Error: unable to load the object simulation mesh from "<<simulation_mesh_file_name_<<".\n";
             exit(1);
@@ -607,36 +612,20 @@ void OpenGLDriver::initSimulation()
     //load example volumetric meshes
     if(example_num_>0)
     {
+        simulator_->setExampleNum(example_num_);
         example_mesh_=new VolumetricMesh *[example_num_];
     	example_mesh_=new VolumetricMesh *[example_num_];
     	example_volume_=new double[example_num_];
     	example_vertex_volume_=new double *[example_num_];
-        std::stringstream stream;
-        for(unsigned int i=0;i<example_num_;++i)
+        if(simulator_->loadExamples(example_file_name_prefix_,example_num_))
         {
-            std::string example_idx_str;
-            stream.str("");
-            stream.clear();
-            stream<<i;
-            stream>>example_idx_str;
-            std::string example_file_name=example_file_name_prefix_+example_idx_str+std::string(".veg");
-            example_mesh_[i]=VolumetricMeshLoader::load(example_file_name.c_str());
-            if(example_mesh_[i]==NULL)
-            {
-                std::cout<<"Error: unable to load the example mesh from "<<example_file_name<<std::endl;
-                exit(1);
-            }
-            example_volume_[i]=example_mesh_[i]->getVolume();
-    		std::cout<<i<<":"<<example_volume_[i]<<std::endl;
-    		example_vertex_volume_[i]=new double[example_mesh_[i]->getNumVertices()];
-    		for(unsigned int ele_idx=0;ele_idx<example_mesh_[i]->getNumElements();++ele_idx)
-    		{
-    			for(unsigned int j=0;j<example_mesh_[i]->getNumElementVertices();++j)
-    			{
-    				unsigned int global_idx=example_mesh_[i]->getVertexIndex(ele_idx,j);
-    				example_vertex_volume_[i][global_idx]+=example_mesh_[i]->getElementVolume(ele_idx);
-    			}
-    		}
+            for(unsigned int i=0;i<example_num_;++i)
+                example_mesh_[i]=simulator_->exampleMesh(i);
+        }
+        else
+        {
+            std::cout<<"Error: unable to load the example simulation mesh from "<<simulation_mesh_file_name_<<".\n";
+            exit(1);
         }
         current_example_index_=1;
         current_example_mesh_=example_mesh_[0];
@@ -721,11 +710,11 @@ void OpenGLDriver::displayFunction()
         glStencilFunc(GL_ALWAYS,0,~(0u));
     }
     //render eigenfunction
-    if(active_instance->render_eigenfunction_)
-    {
-        //active_instance->render_volumetric_mesh_->RenderVertexColorMap(active_instance->simulation_mesh_,);
+     if(active_instance->render_eigenfunction_)
+     {
+    //     //active_instance->render_volumetric_mesh_->RenderVertexColorMap(active_instance->simulation_mesh_,);
         active_instance->drawIndexColorTable();//draw color table at left bottom corner of the window
-    }
+     }
 
     //render extra objects
     if(active_instance->extra_objects_num_>0)//render the extra objects in sceneObjectDeformable
@@ -768,25 +757,33 @@ void OpenGLDriver::displayFunction()
         }
         else
         {
-            glDisable(GL_LIGHTING);
-            glColor3f(0.0,0.5,0.0);
-            active_instance->render_volumetric_mesh_->Render(active_instance->simulation_mesh_);
-            if(active_instance->render_vertices_)
+            if((active_instance->render_eigenfunction_)&&(active_instance->isrender_object_eigen_))
+            {
+                active_instance->render_volumetric_mesh_->RenderVertexColorMap(active_instance->simulation_mesh_,
+                                active_instance->simulator_->objectEigenFunctions()[active_instance->current_render_eigen_idx_-1]);
+            }
+            else
             {
                 glDisable(GL_LIGHTING);
-                glColor3f(0.5,0.0,0.0);
-                glPointSize(8.0);
-                active_instance->render_volumetric_mesh_->RenderVertices(active_instance->simulation_mesh_);
-                glEnable(GL_LIGHTING);
+                glColor3f(0.0,0.5,0.0);
+                active_instance->render_volumetric_mesh_->Render(active_instance->simulation_mesh_);
+                if(active_instance->render_vertices_)
+                {
+                    glDisable(GL_LIGHTING);
+                    glColor3f(0.5,0.0,0.0);
+                    glPointSize(8.0);
+                    active_instance->render_volumetric_mesh_->RenderVertices(active_instance->simulation_mesh_);
+                    glEnable(GL_LIGHTING);
+                }
+                if(active_instance->render_wireframe_)
+                {
+                    glDisable(GL_LIGHTING);
+                    glColor3f(0.0,0.0,0.0);
+                    active_instance->render_volumetric_mesh_->RenderWireframe(active_instance->simulation_mesh_);
+                    glEnable(GL_LIGHTING);
+                }
+                glDisable(GL_BLEND);
             }
-            if(active_instance->render_wireframe_)
-            {
-                glDisable(GL_LIGHTING);
-                glColor3f(0.0,0.0,0.0);
-                active_instance->render_volumetric_mesh_->RenderWireframe(active_instance->simulation_mesh_);
-                glEnable(GL_LIGHTING);
-            }
-            glDisable(GL_BLEND);
         }
         active_instance->isrender_surface_mesh_=false;
     }
@@ -799,25 +796,33 @@ void OpenGLDriver::displayFunction()
         }
         else
         {
-            glDisable(GL_LIGHTING);
-            glColor3f(0.0,0.5,0.0);
-            active_instance->render_volumetric_mesh_->Render(active_instance->example_mesh_[active_instance->current_example_index_-1]);
-            if(active_instance->render_vertices_)
+            if((active_instance->render_eigenfunction_)&&(active_instance->isrender_example_eigen_))
+            {
+                active_instance->render_volumetric_mesh_->RenderVertexColorMap(active_instance->example_mesh_[active_instance->current_example_index_-1],
+                                active_instance->simulator_->exampleEigenFunctions()[active_instance->current_example_index_-1][active_instance->current_render_eigen_idx_-1]);
+            }
+            else
             {
                 glDisable(GL_LIGHTING);
-                glColor3f(0.5,0.0,0.0);
-                glPointSize(8.0);
-                active_instance->render_volumetric_mesh_->RenderVertices(active_instance->example_mesh_[active_instance->current_example_index_-1]);
-                glEnable(GL_LIGHTING);
+                glColor3f(0.0,0.5,0.0);
+                active_instance->render_volumetric_mesh_->Render(active_instance->example_mesh_[active_instance->current_example_index_-1]);
+                if(active_instance->render_vertices_)
+                {
+                    glDisable(GL_LIGHTING);
+                    glColor3f(0.5,0.0,0.0);
+                    glPointSize(8.0);
+                    active_instance->render_volumetric_mesh_->RenderVertices(active_instance->example_mesh_[active_instance->current_example_index_-1]);
+                    glEnable(GL_LIGHTING);
+                }
+                if(active_instance->render_wireframe_)
+                {
+                    glDisable(GL_LIGHTING);
+                    glColor3f(0.0,0.0,0.0);
+                    active_instance->render_volumetric_mesh_->RenderWireframe(active_instance->example_mesh_[active_instance->current_example_index_-1]);
+                    glEnable(GL_LIGHTING);
+                }
+                glDisable(GL_BLEND);
             }
-            if(active_instance->render_wireframe_)
-            {
-                glDisable(GL_LIGHTING);
-                glColor3f(0.0,0.0,0.0);
-                active_instance->render_volumetric_mesh_->RenderWireframe(active_instance->example_mesh_[active_instance->current_example_index_-1]);
-                glEnable(GL_LIGHTING);
-            }
-            glDisable(GL_BLEND);
         }
         active_instance->isrender_surface_mesh_=false;
     }
@@ -1023,14 +1028,22 @@ void OpenGLDriver::keyboardFunction(unsigned char key, int x, int y)
     case 'e': //render eigenfunctions
         active_instance->render_eigenfunction_ = !(active_instance->render_eigenfunction_);
         std::string static_text_content("Rendering eigenfunctions enabled: ");
-        if(active_instance->render_eigenfunction_)
+        if((active_instance->render_mesh_type_==OBJECT_EIGEN_MESH)&&(active_instance->isrender_object_eigen_))
         {
             static_text_content+="Yes";
-            active_instance->setEigenfunctionColors();
+            active_instance->render_volumetric_mesh_->RenderVertexColorMap(active_instance->simulation_mesh_,
+                            active_instance->simulator_->objectEigenFunctions()[active_instance->current_render_eigen_idx_-1]);
+        }
+        else if((active_instance->render_mesh_type_==EXAMPLE_MESH)&&(active_instance->isrender_example_eigen_))
+        {
+            active_instance->render_volumetric_mesh_->RenderVertexColorMap(active_instance->example_mesh_[active_instance->current_example_index_-1],
+                            active_instance->simulator_->exampleEigenFunctions()[active_instance->current_example_index_-1][active_instance->current_render_eigen_idx_-1]);
         }
         else
         {
-            static_text_content="No";
+            static_text_content+="No";
+            active_instance->render_eigenfunction_=false;
+            std::cout<<"Error: eigenFunctions unloaded.\n";
         }
         active_instance->glui_rendering_eigenfunctions_enabled_->set_name(static_text_content.c_str());
         break;
@@ -1155,52 +1168,32 @@ void OpenGLDriver::updateRenderMesh(int code)
     std::cout<<"updateRenderMesh function:\n";
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
-
-    std::cout<<"active_instance:"<<active_instance->render_mesh_type_<<"\n";
     if(active_instance->render_mesh_type_==VISUAL_MESH)
     {
-        active_instance->render_surface_mesh_=active_instance->visual_mesh_;
-        active_instance->render_surface_mesh_->Render();
         active_instance->isrender_volumetric_mesh_=false;
         active_instance->isrender_surface_mesh_=true;
         active_instance->render_eigen_index_spinner_->set_int_limits(-1,-1,GLUI_LIMIT_CLAMP);
-     }
+    }
     else if(active_instance->render_mesh_type_==OBJECT_EIGEN_MESH)
     {
-        if(active_instance->simulation_mesh_==NULL)
+        if(active_instance->isrender_object_eigen_)
         {
-            std::cout<<"Error: object simulation mesh is null.\n";
-            exit(1);
+            active_instance->render_eigen_index_spinner_->set_int_limits(1,active_instance->object_eigenfunction_num_,
+                                                            GLUI_LIMIT_CLAMP);
         }
         else
-        {
-            //active_instance->render_volumetric_mesh_->Render(active_instance->simulation_mesh_);
-            active_instance->render_volumetric_mesh_->RenderWireframe(active_instance->simulation_mesh_);
-            if(active_instance->isrender_object_eigen_)
-                active_instance->render_eigen_index_spinner_->set_int_limits(1,active_instance->object_eigenfunction_num_,GLUI_LIMIT_CLAMP);
-            else
-                active_instance->render_eigen_index_spinner_->set_int_limits(-1,-1,GLUI_LIMIT_CLAMP);
-            active_instance->isrender_volumetric_mesh_=true;
-            active_instance->isrender_surface_mesh_=false;
-        }
+            active_instance->render_eigen_index_spinner_->set_int_limits(-1,-1,GLUI_LIMIT_CLAMP);
+        active_instance->isrender_volumetric_mesh_=true;
+        active_instance->isrender_surface_mesh_=false;
     }
     else if(active_instance->render_mesh_type_==EXAMPLE_MESH)
     {
-        if(active_instance->example_mesh_[active_instance->current_example_index_-1]==NULL)
-        {
-            std::cout<<"Error: example volumetric mesh is null.\n";
-            exit(1);
-        }
+        if(active_instance->isrender_example_eigen_)
+            active_instance->render_eigen_index_spinner_->set_int_limits(1,active_instance->example_eigenfunction_num_,GLUI_LIMIT_CLAMP);
         else
-        {
-            active_instance->render_volumetric_mesh_->Render(active_instance->example_mesh_[active_instance->current_example_index_-1]);
-            if(active_instance->isrender_example_eigen_)
-                active_instance->render_eigen_index_spinner_->set_int_limits(1,active_instance->example_eigenfunction_num_,GLUI_LIMIT_CLAMP);
-            else
-                active_instance->render_eigen_index_spinner_->set_int_limits(-1,-1,GLUI_LIMIT_CLAMP);
-            active_instance->isrender_volumetric_mesh_=true;
-            active_instance->isrender_surface_mesh_=false;
-        }
+            active_instance->render_eigen_index_spinner_->set_int_limits(-1,-1,GLUI_LIMIT_CLAMP);
+        active_instance->isrender_volumetric_mesh_=true;
+        active_instance->isrender_surface_mesh_=false;
     }
     else
     {
@@ -1223,8 +1216,7 @@ void OpenGLDriver::changeCurrentEigenIndex(int code)
 {
     OpenGLDriver* active_instance=OpenGLDriver::activeInstance();
     assert(active_instance);
-    if(active_instance->render_eigenfunction_)
-        active_instance->setEigenfunctionColors();
+    active_instance->updateRenderMesh(code);
 }
 void OpenGLDriver::changeSimulationMode(int code)
 {
@@ -1251,10 +1243,9 @@ void OpenGLDriver::loadObjectEigenfunctions(int code)
 
 void OpenGLDriver::saveObjectEigenfunctions(int code)
 {
-    //TO DO
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
-    if(!active_instance->simulator_->saveObjectEigenfunctions(active_instance->example_file_name_prefix_))
+    if(!active_instance->simulator_->saveObjectEigenfunctions(active_instance->output_object_eigen_file_name_))
     {
         std::cout<<"Error: load example eigenfunctions failed.\n";
         return;
@@ -1265,6 +1256,7 @@ void OpenGLDriver::loadExampleEigenfunctions(int code)
 {
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
+    std::cout<<"example-prefix:"<<active_instance->example_file_name_prefix_<<"\n";
     if(!active_instance->simulator_->loadExampleEigenFunctions(active_instance->example_file_name_prefix_))
     {
         std::cout<<"Error: load example eigenfunctions failed.\n";
@@ -1282,7 +1274,7 @@ void OpenGLDriver::saveExampleEigenfunctions(int code)
     //TO DO
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
-    if(!active_instance->simulator_->saveExampleEigenfunctions(active_instance->example_file_name_prefix_));
+    if(!active_instance->simulator_->saveExampleEigenfunctions(active_instance->output_eigen_file_name_prefix_));
     {
         std::cout<<"Error: failed to save example eigenfunctions.\n";
         return;
@@ -1384,86 +1376,6 @@ void OpenGLDriver::drawIndexColorTable() const
     }
     glDrawPixels(20, 128, GL_RGB, GL_FLOAT, refband);
     glPopMatrix();
-}
-void OpenGLDriver::setEigenfunctionColors()
-{
-    //not done yet
-    double *eigenfunction=NULL;
-    int eigenfunction_dim=0;
-    //isrender_volumetric_mesh_=false;
-    if(render_mesh_type_==OBJECT_EIGEN_MESH)
-    {
-        if(!isrender_object_eigen_)
-        {
-            std::cout<<"Error: object eigenfuncion unloaded.\n";
-            return;
-        }
-        eigenfunction=simulator_->objectEigenFunctions()[current_render_eigen_idx_-1];
-
-        render_volumetric_mesh_->RenderVertexColorMap(simulation_mesh_,eigenfunction);
-        
-        //render_volumetric_mesh_->RenderSolidAndWireframe(simulation_mesh_);
-        //eigenfunction_dim=simulation_mesh_->getNumVertices();
-    }
-    else if(render_mesh_type_==EXAMPLE_MESH)
-    {
-        if(!isrender_example_eigen_)
-        {
-            std::cout<<"Error: example eigenfunctions unloaded.\n";
-            return;
-        }
-        eigenfunction=simulator_->exampleEigenFunctions()[current_example_index_-1][current_render_eigen_idx_-1];
-        //eigenfunction_dim=example_mesh_[current_example_index_-1]->getNumVertices();
-    }
-    else
-    {
-        std::cout<<"Error: current surface is for rendering only. No eigenfunctions loaded.\n";
-        return;
-    }
-    //std::cout<<eigenfunction_dim<<"--------------\n";
-    //vector<Vec3d> custom_colors(eigenfunction_dim);
-    // double min_value=eigenfunction[0],max_value=eigenfunction[0];
-    // std::cout<<min_value<<","<<max_value<<"\n";
-    // for(int i=1;i<eigenfunction_dim;++i)//plot colors relatively
-    // {
-    //     if(eigenfunction[i]>max_value)
-    //         max_value=eigenfunction[i];
-    //     if(eigenfunction[i]<min_value)
-    //         min_value=eigenfunction[i];
-    // }
-    // std::cout<<min_value<<","<<max_value<<"\n";
-    // for(int i=0;i<eigenfunction_dim;++i)
-    // {
-    //     double numerator=(eigenfunction[i]-min_value)*63;
-    //     double denominator=max_value-min_value;
-    //     int color_table_index=0;
-    //     if(denominator>epsilon_)
-    //     {
-    //         while(denominator<1.0)//for numerical reasons, avoid extremely small denominator
-    //         {
-    //             numerator*=100.0;
-    //             denominator*=100.0;
-    //         }
-    //         color_table_index=numerator/denominator;
-    //     }
-    //     Vec3d color(ColorTable::Color_Table[color_table_index]);
-    //     custom_colors[i]=color;
-    // }
-
-    //isrender_volumetric_mesh_=false;
-    // if(render_mesh_type_==OBJECT_EIGEN_MESH)
-    // {
-    //     std::cout<<"aaaaaaaaaa\n";
-    //     render_volumetric_mesh_->RenderVertexColorMap(simulation_mesh_,eigenfunction,simulator_->objectEigenValues());
-    //     std::cout<<"Bbbbb\n";
-    // }
-    // else if(render_mesh_type_==EXAMPLE_MESH)
-    // {
-    //     render_volumetric_mesh_->RenderVertexColorMap(example_mesh_[current_example_index_-1],eigenfunction,simulator_->exampleEigenValues()[current_example_index_-1]);
-    // }
-    // else
-    // {}
-
 }
 
 }  //namespace RTLB

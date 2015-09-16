@@ -43,8 +43,12 @@ ex
 ex
 *objectEigenFunctionFilename
 bar.eigen
-#*correspondingFunctionFilename
-
+*correspondingFunctionFilename
+bar.ini
+*savedExampleEigenFunctionFilenameBase
+new_ex
+*savedObjectEigenFunctionFilename
+new_bar.eigen
 #*objectCubicaFilename
 
 *massMatrixFilename

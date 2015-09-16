@@ -226,7 +226,7 @@ bool RealTimeExampleBasedDeformer::loadObjectEigenfunctions(const std::string &f
 {
 	std::cout<<"Load object eigenfunction:\n";
     std::fstream input_file(file_name.c_str());
-	
+
 	if(!input_file)
 	{
 		std::cout<<"Error: Cannot open file "<<file_name<<std::endl;
@@ -689,7 +689,7 @@ bool RealTimeExampleBasedDeformer::saveExampleEigenfunctions(const std::string &
 	return true;
 }
 
-const VolumetricMesh* RealTimeExampleBasedDeformer::exampleMesh(unsigned int example_idx) const
+ VolumetricMesh* RealTimeExampleBasedDeformer::exampleMesh(unsigned int example_idx) const
 {
 	assert(example_idx < example_num_);
 	return examples_[example_idx];
@@ -708,6 +708,7 @@ bool RealTimeExampleBasedDeformer::loadCorrespondenceData(const std::string &fil
 		std::cout<<"Error: the simulation mesh is null.\n";
 		return false;
 	}
+	std::cout<<simulation_mesh_->getNumVertices()<<"\n";
 	if(example_num_==0)
 	{
 		std::cout<<"Error: the input example num is zero.\n";
@@ -738,6 +739,7 @@ bool RealTimeExampleBasedDeformer::loadCorrespondenceData(const std::string &fil
 	//save as object_corresponding_functions_[vert_idx][cor_region_idx];
 	//save as example_corresponding_functions_[ex_idx][vert_idx][cor_region_idx];
 	int object_eigen_vert_num=simulation_mesh_->getNumVertices();
+	//std::cout<<"1"<<std::endl;
 	object_corresponding_functions_= new double *[object_eigen_vert_num];
 	for(unsigned int i=0;i<object_eigen_vert_num;++i)
 	{
@@ -745,6 +747,7 @@ bool RealTimeExampleBasedDeformer::loadCorrespondenceData(const std::string &fil
 		for(unsigned int j=0;j<corresponding_function_num_;++j)
 			object_corresponding_functions_[i][j]=0;
 	}
+	//std::cout<<"2"<<std::endl;
 	example_corresponding_functions_=new double **[example_num_];
 	for(unsigned int i=0;i<example_num_;++i)
 	{
@@ -771,7 +774,7 @@ bool RealTimeExampleBasedDeformer::loadCorrespondenceData(const std::string &fil
 				++k;
 			std::string idx_str=line_str.substr(j,k-j);
 			int idx=atoi(idx_str.c_str());
-			object_corresponding_functions_[idx][i]=1;
+			object_corresponding_functions_[idx-1][i]=1;
 			j=k+1;
 			++points_in_region;
 		}
@@ -789,7 +792,7 @@ bool RealTimeExampleBasedDeformer::loadCorrespondenceData(const std::string &fil
 					++k;
 				std::string idx_str=line_str.substr(j,k-j);
 				int idx=atoi(idx_str.c_str());
-				example_corresponding_functions_[ex_idx][idx][i]=1;
+				example_corresponding_functions_[ex_idx][idx-1][i]=1;
 				j=k+1;
 			}
 		}
@@ -808,7 +811,7 @@ bool RealTimeExampleBasedDeformer::registerEigenfunctions()
 	}
 	if(simulation_mesh_==NULL)
 	{
-		std::cout<<"Error: simulation tet mesh is not loaded.\n";
+		std::cout<<"Error: simulation volumetric mesh is not loaded.\n";
 		return false;
 	}
 	if(example_num_==0)
@@ -843,7 +846,7 @@ bool RealTimeExampleBasedDeformer::registerEigenfunctions()
 		return false;
 	}
 	int row_b =simulation_mesh_->getNumVertices();
-	object_vertex_volume_=new double [row_b];
+	//object_vertex_volume_=new double [row_b];
 	int col_b = object_eigenfunction_num_;
 	//change to col order,each col is an eigenfunction
 	double **obj_eigenfunction_col=new double *[row_b];
@@ -853,15 +856,11 @@ bool RealTimeExampleBasedDeformer::registerEigenfunctions()
 		obj_eigenfunction_col[i]=new double[col_b];
 		new_obj_eigenfunction_col[i]=new double[col_b];
 	}
+	std::cout<<"col_b:"<<col_b<<",row_b:"<<row_b<<"\n";
 	for(unsigned int i=0;i<col_b;++i)
-	{
 		for(unsigned int j=0;j<row_b;++j)
-		{
 			obj_eigenfunction_col[j][i]=object_eigenfunctions_[i][j];
-			//std::cout<<obj_eigenfunction_col[j][i]<<",";
-		}
-		//std::cout<<endl;
-	}
+
 	for(unsigned int i=0;i<example_num_;++i)
 	{
 		double **G=object_corresponding_functions_,**F=example_corresponding_functions_[i];
@@ -876,17 +875,11 @@ bool RealTimeExampleBasedDeformer::registerEigenfunctions()
 			new_ex_eigenfunction_col[j]=new double[col_a];
 		}
 		for(unsigned int j=0;j<col_a;++j)
-		{
 			for(unsigned int k=0;k<row_a;++k)
-			{
 				ex_eigenfunction_col[k][j]=example_eigenfunctions_[i][j][k];
-				//std::cout<<ex_eigenfunction_col[k][j]<<",";
-			}
-			//std::cout<<endl;
-		}
-		example_vertex_volume_[i]=new double [row_a];
 
 		int col=col_a<col_b?col_a:col_b;
+		std::cout<<"col:"<<col_a<<",col_b:"<<col_b<<"\n";
 		CoupledQuasiHarmonics quasi_base_generator(ex_eigenfunction_col,obj_eigenfunction_col,example_eigenvalues_[i],
 													object_eigenvalues_,row_a,row_b,col,
 													example_vertex_volume_[i],object_vertex_volume_,F,G,p);
@@ -916,10 +909,7 @@ bool RealTimeExampleBasedDeformer::registerEigenfunctions()
 		//transform col-order eigen-bases to row-order so that each row is one eigenfunction
 		for(unsigned int j=0;j<row_a;++j)
 			for(unsigned int k=0;k<corresponding_function_num_;++k)
-			{
-				example_eigenfunctions_[i][j][k]=new_ex_eigenfunction_col[j][k];
-				//std::cout<<new_ex_eigenfunction_col[j][k]<<",";
-			}
+				example_eigenfunctions_[i][k][j]=new_ex_eigenfunction_col[j][k];
 
 
 		for(unsigned int j=0;j<row_a;++j)
@@ -929,20 +919,6 @@ bool RealTimeExampleBasedDeformer::registerEigenfunctions()
 		}
 		delete[] ex_eigenfunction_col;
 		delete[] new_ex_eigenfunction_col;
-	}
-
-
-	for(unsigned int i=0;i<example_num_;++i)
-	{
-		for(unsigned int j=0;j<example_eigenfunction_num_;++j)
-		{
-			for(unsigned int k=0;k<10;++k)
-			{
-				std::cout<<example_eigenfunctions_[i][j][k]<<",";
-			}
-			std::cout<<endl;
-		}
-		std::cout<<"-----------------"<<endl;
 	}
     return true;
 }

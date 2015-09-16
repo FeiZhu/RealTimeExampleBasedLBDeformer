@@ -47,6 +47,7 @@ public:
 
     //get && set
     unsigned int exampleNum() const{return example_num_;}
+    void setExampleNum(int num) {example_num_=num;}
     double gravity() const {return gravity_;}
     void setGravity(double gravity){ gravity_ = gravity;}
     double timeStep() const {return time_step_;}
@@ -58,14 +59,14 @@ public:
     const Planes* planesInScnene() const {return planes_;}
     unsigned int fixedVertexNum() const{return fixed_vertex_num_;}
     unsigned int* fixedVertexPtr() const{return fixed_vertices_;}
-    const VolumetricMesh* simulationMesh() const{return simulation_mesh_;}
-    const VolumetricMesh* exampleMesh(unsigned int example_idx) const;
+     VolumetricMesh* simulationMesh() const{return simulation_mesh_;}
+     VolumetricMesh* exampleMesh(unsigned int example_idx) const;
     const SceneObjectDeformable* visualMesh() const{return visual_mesh_;}
     double** objectEigenFunctions() const{return object_eigenfunctions_;}
     double*** exampleEigenFunctions() const{return example_eigenfunctions_;}
 
     //registration of eigenfunctions
-    bool loadCorrespondenceData(const std::string &file_name);
+    bool loadCorrespondenceData(const std::string &file_name);//the vertex is 1-indexed;
     bool registerEigenfunctions();
 
 private:

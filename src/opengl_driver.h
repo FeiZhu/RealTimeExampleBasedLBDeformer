@@ -69,7 +69,6 @@ private:
     //misc
     void drawAxis(double axis_length) const;
     void drawIndexColorTable() const;
-    void setEigenfunctionColors();
 private:
     static const unsigned int string_length=1024;
     static OpenGLDriver *active_instance_;
@@ -84,7 +83,9 @@ private:
     char visual_mesh_file_name_[string_length];
     char reduced_basis_file_name_[string_length];
     char object_eigen_file_name_[string_length];
-    char example_eigen_file_name_[string_length];
+    char example_eigen_file_name_prefix_[string_length];
+    char output_object_eigen_file_name_[string_length];
+    char output_eigen_file_name_prefix_[string_length];
     char object_interpolation_file_name_[string_length];
     char object_cubica_file_name_[string_length];
     char fixed_vertex_file_name_[string_length];

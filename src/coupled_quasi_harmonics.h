@@ -19,7 +19,7 @@ void nloptConstraint(unsigned int m, double *result, unsigned int n, const doubl
 //opt++ stuff
 void optppObjective(int mode, int n, const ColumnVector &x, double &f_x, ColumnVector &grad_x, int &result, void *my_func_data);
 void optppConstraint(int mode, int n, const ColumnVector &x, ColumnVector &c_x, Matrix &c_grad_x, int &result);
-void initOptpp(int n, ColumnVector &x);  
+void initOptpp(int n, ColumnVector &x);
 
 class CoupledQuasiHarmonics
 {
@@ -35,7 +35,7 @@ public:
     CoupledQuasiHarmonics(double **input_base_a, double **input_base_b, double *input_eigenvalue_a, double *input_eigenvalue_b,int input_row_a, int input_row_b, int input_col,
                           double *input_vertex_area_a, double *input_vertex_area_b, double **input_F, double **input_G,int input_p);
     ~CoupledQuasiHarmonics();
-    //@new_col: the number of coupled eigenfunctions for each shape, must be smaller than input 
+    //@new_col: the number of coupled eigenfunctions for each shape, must be smaller than input
     //@new_base_a,new_base_b: pointer to the new eigenfunctions, space allocated by the caller, each column is an eigenfunction
     //@return_value: if <0, failure
     int getCoupledBases(int new_col, double **new_base_a, double **new_base_b);
@@ -60,7 +60,7 @@ public:
 
     //***********************************************Opt++ stuff********************************************************
     friend void optppObjective(int mode, int n, const ColumnVector &x, double &f_x, ColumnVector &grad_x, int &result, void *my_func_data);
-    friend void optppConstraint(int mode, int n, const ColumnVector &x, ColumnVector &c_x, Matrix &c_grad_x, int &result);  
+    friend void optppConstraint(int mode, int n, const ColumnVector &x, ColumnVector &c_x, Matrix &c_grad_x, int &result);
     friend void initOptpp(int n, ColumnVector &x);
     //******************************************************************************************************************
 
@@ -100,7 +100,7 @@ protected:
     int offterm_type;
     int objective_type;
     bool scale_base;//scale base_a and base_b to the same scale
-    bool scale_corresponding_function;// in case if binary functions representing corresponding regions are provided, 
+    bool scale_corresponding_function;// in case if binary functions representing corresponding regions are provided,
                                       // F and G can be normalized by factor which approximately equals to the area of the region
     int inner_product_type;//decide whether inner product of F and Phi needs to be area weighted
     vector<double> coupling_scale;//set different coupling strength for different eigenfunctions, default all 1

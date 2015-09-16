@@ -26,6 +26,7 @@
  * LICENSE.TXT for more details.                                         *
  *                                                                       *
  *************************************************************************/
+#include <iostream>
 #include <float.h>
 
 #ifdef WIN32
