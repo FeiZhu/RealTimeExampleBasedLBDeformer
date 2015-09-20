@@ -1,15 +1,11 @@
 /*
   Code author: Fei Zhu
   zhuf@graphics.pku.edu.cn
-
   A class that constructs arbitrary number of planes from a text configuration file.
   Usage: read the configuration file during initialization (using the constructor)
-
   The configuration file syntax supports the following parameters (listed with their types):
-
   Plane-specific parameters:
   --------------------------
-
   enable (int)
   bounce (double)
   center_X (double)
@@ -26,7 +22,6 @@
   diffuseIntensity (double)
   specularIntensity (double)
   shininessIntensity (double)
-
 */
 
 #ifndef _PLANES_H_

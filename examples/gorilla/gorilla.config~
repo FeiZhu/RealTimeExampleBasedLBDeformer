@@ -1,7 +1,7 @@
 *solver
-#implicitBackwardEuler
+implicitBackwardEuler
 #implicitNewmark
-Euler
+#Euler
 
 *deformableModel
 #StVK
@@ -18,13 +18,13 @@ neoHookean
 #StVK
 
 *simulationMeshFilename
-bar.veg
+gorilla.veg
 
 *objectRenderSurfaceMeshFilename
-bar.obj
+gorilla_render.obj
 
 *objectInterpolationFilename
-bar.interp
+gorilla.interp
 
 *exampleFilenameBase
 ex
@@ -34,25 +34,25 @@ ex
 
 
 *exampleNum
-2
+1
 *exampleEigunfunctionNum
 7
 *objectEigenfunctionNum
 7
 *exampleEigenFunctionFilenameBase
-new-ex
+ex
 *objectEigenFunctionFilename
-bar.eigen
+gorilla.eigen
 *correspondingFunctionFilename
-bar.ini
+new-gorilla.ini
 *savedExampleEigenFunctionFilenameBase
-new-ex
+new_ex
 *savedObjectEigenFunctionFilename
-new_bar.eigen
+new2_gorilla.eigen
 #*objectCubicaFilename
 
 *massMatrixFilename
-bar.mass
+gorilla.mass
 
 #*objectAffectedVerticesFilename
 
@@ -62,12 +62,11 @@ bar.mass
 #.bou
 
 *planeNumber
-0
-*planesFilename
-plane.config
+10*planesFilename
+planes.config
 
 *lightingCOnfigFilename
-bar.lighting
+gorilla.lighting
 
 #*forceLoadsFilename
 #.load
@@ -77,16 +76,16 @@ bar.lighting
 #*initialVelocityFilename
 
 *addGravity
-false
+true
 
 *gravity
--9.8
+98
 
 *dampingMassCoef
-0.1
+0.0
 
 *dampingStiffnessCoef
-0.015
+0.0
 
 *exampleStiffnessScale
 5.0e-3
@@ -109,13 +108,13 @@ true
 2
 
 *cameraRadius
-5.0
+70.0
 
 *cameraLongitude
 -90.0
 
 *cameraLattitude
-15.8434
+5.8434
 
 *focusPositionX
 0.0

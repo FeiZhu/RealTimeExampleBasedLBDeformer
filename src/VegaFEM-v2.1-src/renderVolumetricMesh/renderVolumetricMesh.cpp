@@ -276,7 +276,7 @@ void RenderVolumetricMesh::RenderVertexColorMap(VolumetricMesh *volumetricMesh, 
         for(unsigned int local_idx = 0; local_idx < volumetricMesh->getNumElementVertices(); ++local_idx)
         {
             int v_idx = volumetricMesh->getVertexIndex(ele_idx,local_idx);
-            double normalized_f = max_f - min_f > 1.0e-6 ? (f[v_idx] - min_f)/(max_f - min_f) : 0;
+            double normalized_f = (max_f - min_f) > 1.0e-6 ? (f[v_idx] - min_f)/(max_f - min_f) : 0;
             JetColorMap(normalized_f,vert_color[local_idx]);
             Vec3d pos = *(volumetricMesh->getVertex(v_idx));
             vert_pos[local_idx][0] = pos[0];
@@ -292,7 +292,7 @@ void RenderVolumetricMesh::RenderVertexColorMap(VolumetricMesh *volumetricMesh, 
         if(meshType == 1)  //cubic mesh
         {
             glBegin(GL_TRIANGLES);
-
+            std::cout<<vert_color[5][0]<<std::endl;
             glColor3f(vert_color[0][0],vert_color[0][1],vert_color[0][2]);
             glVertex3f(vert_pos[0][0],vert_pos[0][1],vert_pos[0][2]); // front
             glColor3f(vert_color[1][0],vert_color[1][1],vert_color[1][2]);

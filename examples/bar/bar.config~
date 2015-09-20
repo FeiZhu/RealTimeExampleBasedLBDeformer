@@ -36,9 +36,9 @@ ex
 *exampleNum
 2
 *exampleEigunfunctionNum
-6
+7
 *objectEigenfunctionNum
-6
+7
 *exampleEigenFunctionFilenameBase
 ex
 *objectEigenFunctionFilename
@@ -46,7 +46,7 @@ bar.eigen
 *correspondingFunctionFilename
 bar.ini
 *savedExampleEigenFunctionFilenameBase
-new_ex
+new-ex
 *savedObjectEigenFunctionFilename
 new_bar.eigen
 #*objectCubicaFilename
@@ -109,7 +109,7 @@ true
 2
 
 *cameraRadius
-70.0
+5.0
 
 *cameraLongitude
 -90.0
@@ -121,7 +121,7 @@ true
 0.0
 
 *focusPositionY
--5.0
+0.0
 
 *focusPositionZ
 0.0

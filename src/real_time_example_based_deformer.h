@@ -10,6 +10,8 @@
 #define REAL_TIME_EXAMPLE_BASED_DEFORMER_H_
 
 #include <string>
+#include "optimization.h"
+using alglib::real_1d_array;
 
 class Vec3d;
 class VolumetricMesh;
@@ -25,7 +27,9 @@ class RealTimeExampleBasedDeformer
 public:
     RealTimeExampleBasedDeformer();
     ~RealTimeExampleBasedDeformer();
-
+private:
+    static RealTimeExampleBasedDeformer* activeInstance();
+public:
     void setupSimulation();  //preprocess
     void advanceStep();  //one time step
 
@@ -62,22 +66,33 @@ public:
      VolumetricMesh* simulationMesh() const{return simulation_mesh_;}
      VolumetricMesh* exampleMesh(unsigned int example_idx) const;
     const SceneObjectDeformable* visualMesh() const{return visual_mesh_;}
+    double* objectVertexVolume() const{return object_vertex_volume_;}
+    double** exampleVertexVolume() const{return example_vertex_volume_;}
     double** objectEigenFunctions() const{return object_eigenfunctions_;}
+    double* objectEigenValues() const{return object_eigenvalues_;}
     double*** exampleEigenFunctions() const{return example_eigenfunctions_;}
+    double** exampleEigenValues() const{return example_eigenvalues_;}
+    Vec3d* objectEigencoefs() const{return object_eigencoefs_;}
+    Vec3d** exampleEigencoefs() const{return example_eigencoefs_;}
+    void setEnableEigenWeightControl(bool enable_value){enable_eigen_weight_control_=enable_value;}
 
     //registration of eigenfunctions
     bool loadCorrespondenceData(const std::string &file_name);//the vertex is 1-indexed;
     bool registerEigenfunctions();
 
-private:
+
     //project && unproject with eigenfunctions
-    void projectOnEigenFunctions(const VolumetricMesh *mesh, const double *displacement, const double *vertex_volume,
-                                 const double **eigenfunctions, const double *eigenvalues, unsigned int eigenfunction_num,
+    void projectOnEigenFunctions(VolumetricMesh *mesh, double *displacement, double *vertex_volume,
+                                 double **eigenfunctions, double *eigenvalues, unsigned int eigenfunction_num,
                                  Vec3d *eigencoefs);
     void reconstructFromEigenCoefs(const double **eigenfunctions, const double *eigenvalues,const Vec3d *eigencoefs,
                                    int eigenfunction_num, int vert_num, Vec3d *vert_pos);
+    void projectOnExampleManifold(Vec3d *object_eigencoefs, Vec3d *target_eigencoefs);
+    static void evaluateObjectiveAndGradient1(const real_1d_array &x, double &func, real_1d_array &grad, void *ptr);
+    static void evaluateObjectiveAndGradient2(const real_1d_array &x,double &func, real_1d_array &grad, void *ptr);
 
 private:
+    static RealTimeExampleBasedDeformer *active_instance_;
     //volumetric meshes
     VolumetricMesh *simulation_mesh_ = NULL;
     VolumetricMesh **examples_ = NULL;
@@ -90,8 +105,14 @@ private:
     double *external_force_ = NULL;
     double gravity_ = -9.8;
     double time_step_ = 1.0/30;
+    double epsilon_=1.0e-12;
+    double integrator_epsilon_=1.0e-6;
+    double last_initial_weight_=1.5;//useful when explicit weight control enable
     unsigned int fixed_vertex_num_ = 0;
     unsigned int *fixed_vertices_ = NULL;
+    bool enable_eigen_weight_control_=false;
+    bool pure_example_linear_interpolation_=false;
+
     //reduced simulation data
     unsigned int reduced_basis_num_ = 0;
     double **reduced_basis_ = NULL;

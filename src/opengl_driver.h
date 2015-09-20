@@ -66,6 +66,7 @@ private:
     static void exitApplication(int code);
     static void loadCorrespondenceData(int code);
     static void registerEigenfunctions(int code);
+    static void resetDeformation(int code);
     //misc
     void drawAxis(double axis_length) const;
     void drawIndexColorTable() const;
@@ -78,6 +79,7 @@ private:
     int example_num_ = 0;
     int example_eigenfunction_num_ = 0;
     int object_eigenfunction_num_ = 0;
+    //int coupled_eigenfunction_num_ = 0;
     char simulation_mesh_file_name_[string_length];
     char example_file_name_prefix_[string_length];
     char visual_mesh_file_name_[string_length];
@@ -125,6 +127,7 @@ private:
     int corotational_linearFEM_warp_=1;
     int central_difference_tangential_damping_update_mode_=1;
     int positive_definite_=0;
+    double last_initial_weight_=1.5;//useful when explicit weight control enabled
 
     VolumetricMesh *simulation_mesh_=NULL;
     VolumetricMesh **example_mesh_=NULL;
@@ -140,6 +143,15 @@ private:
     double *object_vertex_volume_ = NULL;
     double *example_volume_ = NULL;
     double **example_vertex_volume_ = NULL;
+    Vec3d *object_eigencoefs_ = NULL;//the coefficients of the object projected onto the eigenfunctions
+    Vec3d **example_eigencoefs_ = NULL;//the coefficients of the example geometry projected onto the eigenfunctions
+    Vec3d *initial_object_eigencoefs_ = NULL;
+    Vec3d *target_eigencoefs_ = NULL;
+
+    //deformation
+    double *example_guided_forces_=NULL;
+    double *example_guided_deformation_=NULL;
+    double *target_initial_deformation_=NULL;
 
     Graph *mesh_graph_ = NULL;
     SparseMatrix *mass_matrix_=NULL;
@@ -174,7 +186,7 @@ private:
     int extra_objects_num_=0;
     SceneObjectDeformable **extra_objects_=NULL;
     //window
-    std::string window_name_ = std::string("Example-based Simulator");
+    std::string window_name_ = std::string("Real-time example-based Simulator");
     int window_id_ = -1;
     int window_width_ = 800;
     int window_height_ = 600;
@@ -207,8 +219,10 @@ private:
     bool render_eigenfunction_ = false;
     bool isrender_surface_mesh_ = true;
     bool isrender_volumetric_mesh_ = false;
-    bool isrender_example_eigen_ = false;
-    bool isrender_object_eigen_ = false;
+    bool isload_example_eigen_ = false;
+    bool isload_object_eigen_ = false;
+    bool isload_correspondence_data_ = false;
+    bool enable_example_simulation_ = false;
     char solver_method_[string_length];
     enum RenderMeshType{
         VISUAL_MESH = 0,

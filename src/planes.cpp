@@ -104,7 +104,9 @@ void Planes::resolveContact(ObjMesh *mesh,double *forces)
     {
 	if(!plane_enabled[plane_index])
 	    continue;
+    std::cout<<"1";
 	Vec3d unit_plane_normal=norm(plane_normal[plane_index]);//normalize the plane normal
+    std::cout<<"2";
 	for(int vert_index=0;vert_index<vert_num;++vert_index)
 	{
 	    Vec3d rel_vec=mesh->getPosition(vert_index)-plane_center[plane_index];
