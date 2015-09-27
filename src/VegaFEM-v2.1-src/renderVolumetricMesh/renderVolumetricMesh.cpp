@@ -26,7 +26,6 @@
  * LICENSE.TXT for more details.                                         *
  *                                                                       *
  *************************************************************************/
-#include <iostream>
 #include <float.h>
 
 #ifdef WIN32
@@ -292,7 +291,6 @@ void RenderVolumetricMesh::RenderVertexColorMap(VolumetricMesh *volumetricMesh, 
         if(meshType == 1)  //cubic mesh
         {
             glBegin(GL_TRIANGLES);
-            std::cout<<vert_color[5][0]<<std::endl;
             glColor3f(vert_color[0][0],vert_color[0][1],vert_color[0][2]);
             glVertex3f(vert_pos[0][0],vert_pos[0][1],vert_pos[0][2]); // front
             glColor3f(vert_color[1][0],vert_color[1][1],vert_color[1][2]);

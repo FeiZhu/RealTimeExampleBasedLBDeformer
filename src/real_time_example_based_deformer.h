@@ -11,6 +11,7 @@
 
 #include <string>
 #include "optimization.h"
+#include "mat3d.h"
 using alglib::real_1d_array;
 
 class Vec3d;
@@ -42,7 +43,8 @@ public:
     bool loadExampleEigenFunctions(const std::string &file_name_prefix);//.eigen
     bool loadPlanesInScene(const std::string &file_name, unsigned int plane_num);
     bool loadFixedVertices(const std::string &file_name);
-    bool loadObjectCubicaData(const std::string &file_name);
+    bool loadObjectCubicaData(const std::string &file_name);//tetID : 0-indexed
+    bool loadExampleCubicaData(const std::string &file_name_prefix);
     bool saveSimulationMesh(const std::string &file_name) const;
     bool saveExamples(const std::string &file_name_prefix) const;
     bool saveVisualMesh(const std::string &file_name) const;
@@ -74,23 +76,45 @@ public:
     double** exampleEigenValues() const{return example_eigenvalues_;}
     Vec3d* objectEigencoefs() const{return object_eigencoefs_;}
     Vec3d** exampleEigencoefs() const{return example_eigencoefs_;}
+    unsigned int objectCubicaEleNum() const{return object_cubica_ele_num_;}
+    unsigned int* objectCubicaElements() const{return object_cubica_elements_;}
+    double* objectCubicaWeights() const{return object_cubica_weights_;}
+    unsigned int* exampleCubicaEleNum() const{return example_cubica_ele_num_;}
+    unsigned int** exampleCubicaElements() const{return example_cubica_elements_;}
+    double** exampleCubicaWeights() const{return example_cubica_weights_;}
     void setEnableEigenWeightControl(bool enable_value){enable_eigen_weight_control_=enable_value;}
 
     //registration of eigenfunctions
     bool loadCorrespondenceData(const std::string &file_name);//the vertex is 1-indexed;
     bool registerEigenfunctions();
 
-
+    void initDisplacementMatrixOnElement(VolumetricMesh *mesh);
     //project && unproject with eigenfunctions
     void projectOnEigenFunctions(VolumetricMesh *mesh, double *displacement, double *vertex_volume,
                                  double **eigenfunctions, double *eigenvalues, unsigned int eigenfunction_num,
                                  Vec3d *eigencoefs);
-    void reconstructFromEigenCoefs(const double **eigenfunctions, const double *eigenvalues,const Vec3d *eigencoefs,
-                                   int eigenfunction_num, int vert_num, Vec3d *vert_pos);
+    void reconstructFromEigenCoefs(double **eigenfunctions, double *eigenvalues,const Vec3d *eigencoefs,
+                                   int eigenfunction_num, int vert_num, double *vert_pos);
     void projectOnExampleManifold(Vec3d *object_eigencoefs, Vec3d *target_eigencoefs);
     static void evaluateObjectiveAndGradient1(const real_1d_array &x, double &func, real_1d_array &grad, void *ptr);
     static void evaluateObjectiveAndGradient2(const real_1d_array &x,double &func, real_1d_array &grad, void *ptr);
-
+    Mat3d computeDeformGradient(const Mat3d &init_matrix,const Mat3d &deformed_matrix/*Vec3d *init_pos,Vec3d *deform_pos*/);
+    //compute the deformed energy from source pos to deformed pos
+    //we use optimizing cubature method to compute energy on reduced space
+    //solving course need the initial displacement matrix Dm, and the deformed displacement matrix Ds
+    // to consider solving time we compute the object and examples initial displacement Dm when we load volumetric meshes
+    //the last two parameters is to identify the energy we solved is for example mesh deformation or object deformation
+    void computeReducedEnergyAndGradient(VolumetricMesh *mesh,const double *init_pos,const double *displacement, const unsigned int cubica_num,
+    									const unsigned int *cubica_elements, const double *cubica_weights,const unsigned int example_flag,
+    									const unsigned int dis_ex_idx,double &energy,double *grad);
+    void computeForceOnReducedSubSpace(VolumetricMesh *mesh,const double *init_pos,const double *displacement,const unsigned int example_flag,
+    	 								const unsigned int dis_ex_idx,double *g);
+    void computeForceForSingleElementOnReducedSubSpace(const VolumetricMesh *mesh,const unsigned int ele,const double *ele_dis,unsigned int example_flag,
+						                const unsigned int dis_ex_idx,const Mat3d &H,double *g);
+private:
+    int ModifiedSVD(Mat3d & F, Mat3d & U, Vec3d & Fhat, Mat3d & V) const;    //modified SVD for inversion handling
+    // given a vector, find a unit vector that is orthogonal to it
+    void FindOrthonormalVector(Vec3d & v, Vec3d & result) const;
 private:
     static RealTimeExampleBasedDeformer *active_instance_;
     //volumetric meshes
@@ -112,6 +136,8 @@ private:
     unsigned int *fixed_vertices_ = NULL;
     bool enable_eigen_weight_control_=false;
     bool pure_example_linear_interpolation_=false;
+    Mat3d *object_init_element_dis_matrix_ = NULL;
+    Mat3d **example_init_element_dis_matrix_ = NULL;
 
     //reduced simulation data
     unsigned int reduced_basis_num_ = 0;
@@ -121,7 +147,10 @@ private:
     //cubica data
     unsigned int object_cubica_ele_num_ = 0;
     unsigned int *object_cubica_elements_ = NULL;
-    double *object_cubica_weight_ = NULL;
+    double *object_cubica_weights_ = NULL;
+    unsigned int *example_cubica_ele_num_ = NULL;
+    unsigned int **example_cubica_elements_ = NULL;
+    double **example_cubica_weights_ = NULL;
     //eigenfunction data
     double **object_eigenfunctions_ = NULL;
     double *object_eigenvalues_ = NULL;

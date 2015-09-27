@@ -40,16 +40,21 @@ ex
 *objectEigenfunctionNum
 7
 *exampleEigenFunctionFilenameBase
-ex
+new1_ex
 *objectEigenFunctionFilename
 gorilla.eigen
 *correspondingFunctionFilename
-new-gorilla.ini
+gorilla.ini
+
 *savedExampleEigenFunctionFilenameBase
-new_ex
+armadillo-ex
 *savedObjectEigenFunctionFilename
-new2_gorilla.eigen
-#*objectCubicaFilename
+gorilla.eigen
+
+*isLoadCubica
+true
+*objectCubicaFilename
+gorilla.cubature
 
 *massMatrixFilename
 gorilla.mass
@@ -62,7 +67,8 @@ gorilla.mass
 #.bou
 
 *planeNumber
-10*planesFilename
+0
+*planesFilename
 planes.config
 
 *lightingCOnfigFilename

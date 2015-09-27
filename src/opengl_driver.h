@@ -63,6 +63,7 @@ private:
     static void saveExampleEigenfunctions(int code);
     static void loadReducedBasis(int code);
     static void loadObjectCubicaData(int code);
+    static void loadExampleCubicaData(int code);
     static void exitApplication(int code);
     static void loadCorrespondenceData(int code);
     static void registerEigenfunctions(int code);
@@ -70,6 +71,7 @@ private:
     //misc
     void drawAxis(double axis_length) const;
     void drawIndexColorTable() const;
+    void testG() const;
 private:
     static const unsigned int string_length=1024;
     static OpenGLDriver *active_instance_;
@@ -89,6 +91,7 @@ private:
     char output_object_eigen_file_name_[string_length];
     char output_eigen_file_name_prefix_[string_length];
     char object_interpolation_file_name_[string_length];
+    char example_cubica_file_name_prefix_[string_length];
     char object_cubica_file_name_[string_length];
     char fixed_vertex_file_name_[string_length];
     char force_loads_file_name_[string_length];
@@ -147,25 +150,30 @@ private:
     Vec3d **example_eigencoefs_ = NULL;//the coefficients of the example geometry projected onto the eigenfunctions
     Vec3d *initial_object_eigencoefs_ = NULL;
     Vec3d *target_eigencoefs_ = NULL;
-
+    double *initial_object_configurations_ = NULL;//initial simulation mesh position,size:3n*1
+    double *deformed_object_configurations_ = NULL;//deformed simulation mesh position for each step ,size:3n*1
+    double *temp_deformed_object_dis_ = NULL;//displacement(current_configuration-target_configuration)
     //deformation
-    double *example_guided_forces_=NULL;
-    double *example_guided_deformation_=NULL;
-    double *target_initial_deformation_=NULL;
+    double *object_elastic_subspace_force_ = NULL;
+    double *object_elastic_fullspace_force_ = NULL;
+    double *example_guided_subspace_force_ = NULL;
+    double *example_guided_fullspace_force_ = NULL;
+    double *example_guided_deformation_ = NULL;
+    double *target_initial_deformation_ = NULL;
 
     Graph *mesh_graph_ = NULL;
-    SparseMatrix *mass_matrix_=NULL;
-    SparseMatrix *laplacian_matrix_=NULL;
-    SparseMatrix *laplacian_damping_matrix_=NULL;
-    StVKElementABCD *precomputed_integrals_=NULL,*example_precomputed_integrals_=NULL;
-    StVKInternalForces *stvk_internal_force_=NULL,*example_stvk_internal_force_=NULL;
-    StVKStiffnessMatrix *stvk_stiffness_matrix_=NULL,*example_stvk_stiffness_matrix_=NULL;
-    CorotationalLinearFEM *corotational_linear_fem_=NULL,*example_corotational_linear_fem_=NULL;
-    IsotropicMaterial *isotropic_material_=NULL,*example_isotropic_material_=NULL;
-    IsotropicHyperelasticFEM *isotropic_hyperelastic_fem_=NULL,*example_isotropic_hyperelastic_fem_=NULL;
-    ForceModel *force_model_;
-    IntegratorBase *integrator_base_=NULL;
-    IntegratorBaseSparse *integrator_base_sparse_=NULL;
+    SparseMatrix *mass_matrix_= NULL;
+    SparseMatrix *laplacian_matrix_ = NULL;
+    SparseMatrix *laplacian_damping_matrix_ = NULL;
+    StVKElementABCD *precomputed_integrals_ = NULL,*example_precomputed_integrals_ = NULL;
+    StVKInternalForces *stvk_internal_force_ = NULL,*example_stvk_internal_force_ = NULL;
+    StVKStiffnessMatrix *stvk_stiffness_matrix_ = NULL,*example_stvk_stiffness_matrix_=NULL;
+    CorotationalLinearFEM *corotational_linear_fem_ = NULL,*example_corotational_linear_fem_ = NULL;
+    IsotropicMaterial *isotropic_material_ = NULL,*example_isotropic_material_ = NULL;
+    IsotropicHyperelasticFEM *isotropic_hyperelastic_fem_ = NULL,*example_isotropic_hyperelastic_fem_ = NULL;
+    ForceModel *force_model_ = NULL;
+    IntegratorBase *integrator_base_ = NULL;
+    IntegratorBaseSparse *integrator_base_sparse_ = NULL;
 
     int pulled_vertex_=-1; //the index of vertex pulled by user
     double *u_=NULL;
@@ -222,6 +230,8 @@ private:
     bool isload_example_eigen_ = false;
     bool isload_object_eigen_ = false;
     bool isload_correspondence_data_ = false;
+    bool isload_cubica_ = false;
+    bool isload_example_cubica_ = false;
     bool enable_example_simulation_ = false;
     char solver_method_[string_length];
     enum RenderMeshType{
