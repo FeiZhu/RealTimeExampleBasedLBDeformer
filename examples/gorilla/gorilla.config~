@@ -55,6 +55,8 @@ gorilla.eigen
 true
 *objectCubicaFilename
 gorilla.cubature
+*exampleCubicaFilenameBase
+ex
 
 *massMatrixFilename
 gorilla.mass
@@ -82,7 +84,7 @@ gorilla.lighting
 #*initialVelocityFilename
 
 *addGravity
-true
+false
 
 *gravity
 98
@@ -105,7 +107,7 @@ true
 *deformableObjectCompliance
 100.0
 
-*maxIterations
+#*maxIterations
 
 *enableEigenWeightControl
 true

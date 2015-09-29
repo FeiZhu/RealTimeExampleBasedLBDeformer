@@ -52,6 +52,7 @@ private:
     static void specialFunction(int key, int x, int y);
     static void motionFunction(int x, int y);
     static void mouseFunction(int button, int state, int x, int y);
+    static void addGravitySwitch(bool add_gravity);
     //GLUI callback methods
     static void updateRenderMesh(int code);
     static void updateCurrentExample(int code);
@@ -110,7 +111,7 @@ private:
     char extra_objects_file_name_base_[string_length];
 
     bool add_gravity_=false;
-    double gravity_ = -9.8;
+    double gravity_ = 9.8;
     double time_step_ = 1.0/30;
     int time_step_counter_=0;
     float newmark_beta_=0.25;
