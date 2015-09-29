@@ -504,6 +504,8 @@ void OpenGLDriver::initSimulation()
             exit(1);
         }
     }
+    else
+        vel_initial_=new double[3*simulation_vertices_num_];
 
     //load force load
     if(strcmp(force_loads_file_name_,"none")!=0)
@@ -613,12 +615,12 @@ void OpenGLDriver::initSimulation()
         exit(1);
     }
 
-        // for(int i=0;i<3*simulation_vertices_num_;++i)
-        // {
-        //     u_[i]=0.0;
-        //     // u_initial_[i]=0.0;
-        //     // vel_initial_[i]=0.0;
-        // }
+    for(int i=0;i<3*simulation_vertices_num_;++i)
+    {
+        u_[i]=0.0;
+        u_initial_[i]=0.0;
+        vel_initial_[i]=0.0;
+    }
 
     //set integration parameters
     integrator_base_sparse_->SetDampingMatrix(laplacian_damping_matrix_);
@@ -647,9 +649,8 @@ void OpenGLDriver::initSimulation()
     {
         simulator_->setExampleNum(example_num_);
         example_mesh_=new VolumetricMesh *[example_num_];
-    	example_mesh_=new VolumetricMesh *[example_num_];
-    	example_volume_=new double[example_num_];
-    	example_vertex_volume_=new double *[example_num_];
+    	//example_volume_=new double[example_num_];
+    //	example_vertex_volume_=new double *[example_num_];
         if(simulator_->loadExamples(example_file_name_prefix_,example_num_))
         {
             for(unsigned int i=0;i<example_num_;++i)
@@ -674,7 +675,7 @@ void OpenGLDriver::initSimulation()
         target_eigencoefs_ = new Vec3d[object_eigenfunction_num_];
         target_initial_deformation_ = new double[3*simulation_vertices_num_];
         example_guided_deformation_ = new double[3*simulation_vertices_num_];
-        object_elastic_fullspace_force_ = new double[3*simulation_vertices_num_];
+        //object_elastic_fullspace_force_ = new double[3*simulation_vertices_num_];
         example_guided_fullspace_force_ = new double[3*simulation_vertices_num_];
 
     }
@@ -937,148 +938,150 @@ void OpenGLDriver::idleFunction()
     if(!active_instance->pause_simulation_)
     {
         //active_instance->testG();
-        // if(active_instance->left_button_down_)
-        // {
-        //     std::cout<<"pulled_vertex_:"<<active_instance->pulled_vertex_<<"\n";
-        //     if(active_instance->pulled_vertex_!=-1)
-        //     {
-        //         double force_x=active_instance->mouse_pos_[0]-active_instance->drag_start_x_;
-        //         double force_y=(-1.0)*(active_instance->mouse_pos_[1]-active_instance->drag_start_y_);
-        //         double external_force[3];
-        //         active_instance->camera_->CameraVector2WorldVector_OrientationOnly3D(force_x,force_y,0,external_force);
-        //         for(int i=0;i<3;++i)
-        //         {
-        //             external_force[i]*=active_instance->deformable_object_compliance_;
-        //         }
-        //     //    std::cout<<active_instance->pulled_vertex_<<" fx: "<<force_x<<",fy: "<<force_y<<" | "<<external_force[0]<<",";
-        //     //    std::cout<<external_force[1]<<","<<external_force[2]<<std::endl;
-        //         //register force on the pulled vertex
-        //         active_instance->f_ext_[3*(active_instance->pulled_vertex_)+0]+=external_force[0];
-        //         active_instance->f_ext_[3*(active_instance->pulled_vertex_)+1]+=external_force[1];
-        //         active_instance->f_ext_[3*(active_instance->pulled_vertex_)+2]+=external_force[2];
-        //         //distributing force over the neighboring vertices
-        //         set<int> affected_vertices;
-        //         set<int> last_layer_vertices;
-        //         affected_vertices.insert(active_instance->pulled_vertex_);
-        //         last_layer_vertices.insert(active_instance->pulled_vertex_);
-        //         for(int j=1;j<active_instance->force_neighbor_size_;++j)
-        //         {
-        //             //linear kernel
-        //             double force_magnitude=1.0*(active_instance->force_neighbor_size_-j)/active_instance->force_neighbor_size_;
-        //             set<int> new_affected_vertices;
-        //             for(set<int>::iterator iter=last_layer_vertices.begin();iter!=last_layer_vertices.end();++iter)
-        //             {
-        //                 //traverse all neighbors and check if they were already previously inserted
-        //                 int vtx=*iter;
-        //                 int deg=active_instance->mesh_graph_->GetNumNeighbors(vtx);
-        //                 for(int k=0;k<deg;++k)
-        //                 {
-        //                     int vtx_neighbor=active_instance->mesh_graph_->GetNeighbor(vtx,k);
-        //                     if(affected_vertices.find(vtx_neighbor)==affected_vertices.end())
-        //                         new_affected_vertices.insert(vtx_neighbor);
-        //                 }
-        //             }
-        //             last_layer_vertices.clear();
-        //             for(set<int>::iterator iter=new_affected_vertices.begin();iter!=new_affected_vertices.end();iter++)
-        //             {
-        //                 //apply forces
-        //                 active_instance->f_ext_[3*(*iter)+0]+=force_magnitude*external_force[0];
-        //                 active_instance->f_ext_[3*(*iter)+1]+=force_magnitude*external_force[1];
-        //                 active_instance->f_ext_[3*(*iter)+2]+=force_magnitude*external_force[2];
-        //                 //generate new layers
-        //                 last_layer_vertices.insert(*iter);
-        //                 affected_vertices.insert(*iter);
-        //             }
-        //         }
-        //     }
-        // }
-        // //apply any scripted force loads
-        // if(active_instance->time_step_counter_<active_instance->force_loads_num_)
-        // {
-        //     std::cout<<"External forces read from the text input file.\n";
-        //     for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
-        //         active_instance->f_ext_[i]+=active_instance->force_loads_[ELT(3*active_instance->simulation_vertices_num_,i,active_instance->time_step_counter_)];
-        // }
-        // //apply the force loads caused by the examples
-        // if(active_instance->enable_example_simulation_)
-        // {
-        //     //first update the object_eigencoefs_ using current object configuration
-        //     active_instance->simulator_->projectOnEigenFunctions(active_instance->simulation_mesh_,active_instance->u_,active_instance->object_vertex_volume_,
-        //                                         active_instance->simulator_->objectEigenFunctions(),active_instance->simulator_->objectEigenValues(),
-        //                                         active_instance->object_eigenfunction_num_,active_instance->object_eigencoefs_);
-        //     std::cout<<"object eigencoefs:\n";
-        //     for(int i=0;i<active_instance->object_eigenfunction_num_;++i)
-        //         std::cout<<active_instance->object_eigencoefs_[i]<<",";
-        //     //handle the case if the examples are not the same shape (only similar) with the object
-        //     //note: the first example is the rest pose of the shape used as example
-        //     for(int i=0;i<active_instance->example_num_;++i)
-        //     {
-        //         active_instance->object_eigencoefs_[i]=active_instance->object_eigencoefs_[i]-active_instance->initial_object_eigencoefs_[i]
-        //                                                 +active_instance->example_eigencoefs_[0][i];
-        //         // std::cout<<"object:"<<active_instance->object_eigencoefs_[i]<<"\n";
-        //         // std::cout<<"init_obj:"<<active_instance->initial_object_eigencoefs_[i]<<"\n";
-        //         // std::cout<<"example0:"<<active_instance->example_eigencoefs_[0][i]<<"\n";
-        //     }
-        //     std::cout<<"aaaaaaaaaaaaaaaaaaaaaaaa\n";
-        //     //project into the example manifold and get target configuration
-        //     memcpy(active_instance->target_eigencoefs_,active_instance->object_eigencoefs_,sizeof(Vec3d)*active_instance->object_eigenfunction_num_);
-        //     active_instance->simulator_->projectOnExampleManifold(active_instance->object_eigencoefs_,active_instance->target_eigencoefs_);
-        //     //compute the deformation ,from the delta object coefficients and target coefficients
-        //     //for(int i=0;i<active_instance->object_eigenfunction_num_;++i)
-        //     //    active_instance->target_eigencoefs_[i]=active_instance->object_eigencoefs_[i]-active_instance->target_eigencoefs_[i];
-        //     //reconstruct vertices position(the last parameter) from target_eigencoefs
-        //     std::cout<<"bbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n";
-        //     active_instance->simulator_->reconstructFromEigenCoefs(active_instance->simulator_->objectEigenFunctions(),active_instance->simulator_->objectEigenValues(),
-        //                                 active_instance->target_eigencoefs_,active_instance->object_eigenfunction_num_,
-        //                                 active_instance->simulation_vertices_num_,active_instance->example_guided_deformation_);
-        //     std::cout<<"cc\n";
-        //     double energy=0.0;
-        //     //compute elastic force on reduced space,E(init_object_configuration,current_configuration)
-        //     // active_instance->simulator_->computeReducedEnergyAndGradient(active_instance->simulation_mesh_,NULL,active_instance->u_,
-        //     //                             active_instance->simulator_->objectCubicaEleNum(),active_instance->simulator_->objectCubicaElements(),
-        //     //                             active_instance->simulator_->objectCubicaWeights(),0,0,energy,active_instance->object_elastic_subspace_force_);
-        //     std::cout<<"dd\n";
-        //     for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
-        //     {
-        //         //compute current configuration:
-        //         active_instance->deformed_object_configurations_[i]=active_instance->initial_object_configurations_[i]+active_instance->u_[i];
-        //         //displacement:(current_configuration-target_configuration)
-        //         active_instance->temp_deformed_object_dis_[i]=active_instance->example_guided_deformation_[i]-active_instance->deformed_object_configurations_[i];
-        //     }
-        //     std::cout<<"ee\n";
-        //     //compute simulation force on reduced space from example-based energy,E(current_configuration,target_configuration)
-        //     active_instance->simulator_->computeReducedEnergyAndGradient(active_instance->simulation_mesh_,active_instance->deformed_object_configurations_,
-        //                                 active_instance->temp_deformed_object_dis_,
-        //                                 active_instance->simulator_->objectCubicaEleNum(),active_instance->simulator_->objectCubicaElements(),
-        //                                 active_instance->simulator_->objectCubicaWeights(),0,0,energy,active_instance->example_guided_subspace_force_);
-        //     std::cout<<"ff\n";
-        //     //project subspace force to full space
-        //     for(int i=0;i<active_instance->object_eigenfunction_num_;++i)
-        //         for(int j=0;j<active_instance->simulation_vertices_num_;++j)
-        //         {
-        //             // active_instance->object_elastic_fullspace_force_[3*j]+=active_instance->object_elastic_subspace_force_[3*j]*active_instance->simulator_->objectEigenFunctions()[i][j];
-        //             // active_instance->object_elastic_fullspace_force_[3*j+1]+=active_instance->object_elastic_subspace_force_[3*j+1]*active_instance->simulator_->objectEigenFunctions()[i][j];
-        //             // active_instance->object_elastic_fullspace_force_[3*j+2]+=active_instance->object_elastic_subspace_force_[3*j+2]*active_instance->simulator_->objectEigenFunctions()[i][j];
-        //             active_instance->example_guided_fullspace_force_[3*j]+=active_instance->example_guided_subspace_force_[3*j]*active_instance->simulator_->objectEigenFunctions()[i][j];
-        //             active_instance->example_guided_fullspace_force_[3*j+1]+=active_instance->example_guided_subspace_force_[3*j+1]*active_instance->simulator_->objectEigenFunctions()[i][j];
-        //             active_instance->example_guided_fullspace_force_[3*j+2]+=active_instance->example_guided_subspace_force_[3*j+2]*active_instance->simulator_->objectEigenFunctions()[i][j];
-        //         }
-        //
-        //     //the internal forces are returned with the sign corresponding to f_int(x)
-        //     // on the left side of the equation M*x'' + f_int(x) = f_ext
-        //     //so they must to  be substracted from external forces
-        //     for(int i=0; i<3*active_instance->simulation_vertices_num_; ++i)
-        //         active_instance->f_ext_[i]-=(active_instance->example_guided_fullspace_force_[i]/*+active_instance->object_elastic_fullspace_force_[i]*/);
-        // }
-        // //apply the penalty collision forces with planes in scene
-        // if(active_instance->plane_num_>0)
-        // {
-        //     active_instance->planes_->resolveContact(active_instance->visual_mesh_->GetMesh(),active_instance->f_col_);
-        //     std::cout<<"b\n";
-        //     for(int i=0;i<active_instance->simulation_vertices_num_;++i)
-        //         active_instance->f_ext_[i]+=active_instance->f_col_[i];
-        //         std::cout<<active_instance->f_ext_[1]<<"\n";
-        // }
+        if(active_instance->left_button_down_)
+        {
+            std::cout<<"pulled_vertex_:"<<active_instance->pulled_vertex_<<"\n";
+            if(active_instance->pulled_vertex_!=-1)
+            {
+                double force_x=active_instance->mouse_pos_[0]-active_instance->drag_start_x_;
+                double force_y=(-1.0)*(active_instance->mouse_pos_[1]-active_instance->drag_start_y_);
+                double external_force[3];
+                active_instance->camera_->CameraVector2WorldVector_OrientationOnly3D(force_x,force_y,0,external_force);
+                for(int i=0;i<3;++i)
+                {
+                    external_force[i]*=active_instance->deformable_object_compliance_;
+                }
+            //    std::cout<<active_instance->pulled_vertex_<<" fx: "<<force_x<<",fy: "<<force_y<<" | "<<external_force[0]<<",";
+            //    std::cout<<external_force[1]<<","<<external_force[2]<<std::endl;
+                //register force on the pulled vertex
+                active_instance->f_ext_[3*(active_instance->pulled_vertex_)+0]+=external_force[0];
+                active_instance->f_ext_[3*(active_instance->pulled_vertex_)+1]+=external_force[1];
+                active_instance->f_ext_[3*(active_instance->pulled_vertex_)+2]+=external_force[2];
+                //distributing force over the neighboring vertices
+                set<int> affected_vertices;
+                set<int> last_layer_vertices;
+                affected_vertices.insert(active_instance->pulled_vertex_);
+                last_layer_vertices.insert(active_instance->pulled_vertex_);
+                for(int j=1;j<active_instance->force_neighbor_size_;++j)
+                {
+                    //linear kernel
+                    double force_magnitude=1.0*(active_instance->force_neighbor_size_-j)/active_instance->force_neighbor_size_;
+                    set<int> new_affected_vertices;
+                    for(set<int>::iterator iter=last_layer_vertices.begin();iter!=last_layer_vertices.end();++iter)
+                    {
+                        //traverse all neighbors and check if they were already previously inserted
+                        int vtx=*iter;
+                        int deg=active_instance->mesh_graph_->GetNumNeighbors(vtx);
+                        for(int k=0;k<deg;++k)
+                        {
+                            int vtx_neighbor=active_instance->mesh_graph_->GetNeighbor(vtx,k);
+                            if(affected_vertices.find(vtx_neighbor)==affected_vertices.end())
+                                new_affected_vertices.insert(vtx_neighbor);
+                        }
+                    }
+                    last_layer_vertices.clear();
+                    for(set<int>::iterator iter=new_affected_vertices.begin();iter!=new_affected_vertices.end();iter++)
+                    {
+                        //apply forces
+                        active_instance->f_ext_[3*(*iter)+0]+=force_magnitude*external_force[0];
+                        active_instance->f_ext_[3*(*iter)+1]+=force_magnitude*external_force[1];
+                        active_instance->f_ext_[3*(*iter)+2]+=force_magnitude*external_force[2];
+                        //generate new layers
+                        last_layer_vertices.insert(*iter);
+                        affected_vertices.insert(*iter);
+                    }
+                }
+            }
+        }
+        //apply any scripted force loads
+        if(active_instance->time_step_counter_<active_instance->force_loads_num_)
+        {
+            std::cout<<"External forces read from the text input file.\n";
+            for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
+                active_instance->f_ext_[i]+=active_instance->force_loads_[ELT(3*active_instance->simulation_vertices_num_,i,active_instance->time_step_counter_)];
+        }
+        //apply the force loads caused by the examples
+        if(active_instance->enable_example_simulation_)
+        {
+            //first update the object_eigencoefs_ using current object configuration,input is displacement, output is a shape in LB subspace
+            active_instance->simulator_->projectOnEigenFunctions(active_instance->simulation_mesh_,active_instance->u_,active_instance->simulator_->objectVertexVolume(),
+                                                active_instance->simulator_->objectEigenFunctions(),active_instance->simulator_->objectEigenValues(),
+                                                active_instance->object_eigenfunction_num_,active_instance->object_eigencoefs_);
+            std::cout<<"object eigencoefs:\n";
+            for(int i=0;i<active_instance->object_eigenfunction_num_;++i)
+                std::cout<<active_instance->object_eigencoefs_[i]<<",";
+            //handle the case if the examples are not the same shape (only similar) with the object
+            //note: the first example is the rest pose of the shape used as example
+            for(int i=0;i<active_instance->example_num_;++i)
+            {
+                active_instance->object_eigencoefs_[i]=active_instance->object_eigencoefs_[i]-active_instance->initial_object_eigencoefs_[i]
+                                                        +active_instance->example_eigencoefs_[0][i];
+                // std::cout<<"object:"<<active_instance->object_eigencoefs_[i]<<"\n";
+                // std::cout<<"init_obj:"<<active_instance->initial_object_eigencoefs_[i]<<"\n";
+                // std::cout<<"example0:"<<active_instance->example_eigencoefs_[0][i]<<"\n";
+            }
+            std::cout<<"aaaaaaaaaaaaaaaaaaaaaaaa\n";
+            //project into the example manifold and get target configuration
+            memcpy(active_instance->target_eigencoefs_,active_instance->object_eigencoefs_,sizeof(Vec3d)*active_instance->object_eigenfunction_num_);
+            active_instance->simulator_->projectOnExampleManifold(active_instance->object_eigencoefs_,active_instance->target_eigencoefs_);
+
+            //getchar();
+            //compute the deformation ,from the delta object coefficients and target coefficients
+            //for(int i=0;i<active_instance->object_eigenfunction_num_;++i)
+            //    active_instance->target_eigencoefs_[i]=active_instance->object_eigencoefs_[i]-active_instance->target_eigencoefs_[i];
+            //reconstruct vertices position(the last parameter) from target_eigencoefs
+            std::cout<<"bbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n";
+            active_instance->simulator_->reconstructFromEigenCoefs(active_instance->simulator_->objectEigenFunctions(),active_instance->simulator_->objectEigenValues(),
+                                        active_instance->target_eigencoefs_,active_instance->object_eigenfunction_num_,
+                                        active_instance->simulation_vertices_num_,active_instance->example_guided_deformation_);
+            std::cout<<"cc\n";
+            double energy=0.0;
+            //compute elastic force on reduced space,E(init_object_configuration,current_configuration)
+            // active_instance->simulator_->computeReducedEnergyAndGradient(active_instance->simulation_mesh_,NULL,active_instance->u_,
+            //                             active_instance->simulator_->objectCubicaEleNum(),active_instance->simulator_->objectCubicaElements(),
+            //                             active_instance->simulator_->objectCubicaWeights(),0,0,energy,active_instance->object_elastic_subspace_force_);
+            std::cout<<"dd\n";
+            for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
+            {
+                //compute current configuration:
+                active_instance->deformed_object_configurations_[i]=active_instance->initial_object_configurations_[i]+active_instance->u_[i];
+                //displacement:(current_configuration-target_configuration)
+                active_instance->temp_deformed_object_dis_[i]=active_instance->example_guided_deformation_[i]-active_instance->deformed_object_configurations_[i];
+            }
+            std::cout<<"ee\n";
+            //compute simulation force on reduced space from example-based energy,E(current_configuration,target_configuration)
+            active_instance->simulator_->computeReducedEnergyAndGradient(active_instance->simulation_mesh_,active_instance->deformed_object_configurations_,
+                                        active_instance->temp_deformed_object_dis_,
+                                        active_instance->simulator_->objectCubicaEleNum(),active_instance->simulator_->objectCubicaElements(),
+                                        active_instance->simulator_->objectCubicaWeights(),0,0,energy,active_instance->example_guided_subspace_force_);
+            std::cout<<"ff\n";
+            //project subspace force to full space
+            for(int i=0;i<active_instance->object_eigenfunction_num_;++i)
+                for(int j=0;j<active_instance->simulation_vertices_num_;++j)
+                {
+                    // active_instance->object_elastic_fullspace_force_[3*j]+=active_instance->object_elastic_subspace_force_[3*j]*active_instance->simulator_->objectEigenFunctions()[i][j];
+                    // active_instance->object_elastic_fullspace_force_[3*j+1]+=active_instance->object_elastic_subspace_force_[3*j+1]*active_instance->simulator_->objectEigenFunctions()[i][j];
+                    // active_instance->object_elastic_fullspace_force_[3*j+2]+=active_instance->object_elastic_subspace_force_[3*j+2]*active_instance->simulator_->objectEigenFunctions()[i][j];
+                    active_instance->example_guided_fullspace_force_[3*j]+=active_instance->example_guided_subspace_force_[3*j]*active_instance->simulator_->objectEigenFunctions()[i][j];
+                    active_instance->example_guided_fullspace_force_[3*j+1]+=active_instance->example_guided_subspace_force_[3*j+1]*active_instance->simulator_->objectEigenFunctions()[i][j];
+                    active_instance->example_guided_fullspace_force_[3*j+2]+=active_instance->example_guided_subspace_force_[3*j+2]*active_instance->simulator_->objectEigenFunctions()[i][j];
+                }
+
+            //the internal forces are returned with the sign corresponding to f_int(x)
+            // on the left side of the equation M*x'' + f_int(x) = f_ext
+            //so they must to  be substracted from external forces
+            for(int i=0; i<3*active_instance->simulation_vertices_num_; ++i)
+                active_instance->f_ext_[i]-=(active_instance->example_guided_fullspace_force_[i]/*+active_instance->object_elastic_fullspace_force_[i]*/);
+        }
+        //apply the penalty collision forces with planes in scene
+        if(active_instance->plane_num_>0)
+        {
+            active_instance->planes_->resolveContact(active_instance->visual_mesh_->GetMesh(),active_instance->f_col_);
+            std::cout<<"b\n";
+            for(int i=0;i<active_instance->simulation_vertices_num_;++i)
+                active_instance->f_ext_[i]+=active_instance->f_col_[i];
+                std::cout<<active_instance->f_ext_[1]<<"\n";
+        }
         //set forces to the integrator
         active_instance->integrator_base_sparse_->SetExternalForces(active_instance->f_ext_);
         // bool a=false;
@@ -1418,7 +1421,7 @@ void OpenGLDriver::loadObjectEigenfunctions(int code)
     memcpy(active_instance->initial_object_eigencoefs_,active_instance->simulator_->objectEigencoefs(),sizeof(Vec3d*)*active_instance->object_eigenfunction_num_);
     memcpy(active_instance->object_eigencoefs_,active_instance->initial_object_eigencoefs_,sizeof(Vec3d*)*active_instance->object_eigenfunction_num_);
 
-    active_instance->object_elastic_subspace_force_ = new double[3*active_instance->object_eigenfunction_num_];
+    //active_instance->object_elastic_subspace_force_ = new double[3*active_instance->object_eigenfunction_num_];
     active_instance->example_guided_subspace_force_ = new double[3*active_instance->object_eigenfunction_num_];
 }
 

@@ -65,8 +65,8 @@ public:
     const Planes* planesInScnene() const {return planes_;}
     unsigned int fixedVertexNum() const{return fixed_vertex_num_;}
     unsigned int* fixedVertexPtr() const{return fixed_vertices_;}
-     VolumetricMesh* simulationMesh() const{return simulation_mesh_;}
-     VolumetricMesh* exampleMesh(unsigned int example_idx) const;
+    VolumetricMesh* simulationMesh() const{return simulation_mesh_;}
+    VolumetricMesh* exampleMesh(unsigned int example_idx) const;
     const SceneObjectDeformable* visualMesh() const{return visual_mesh_;}
     double* objectVertexVolume() const{return object_vertex_volume_;}
     double** exampleVertexVolume() const{return example_vertex_volume_;}

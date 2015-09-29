@@ -143,10 +143,10 @@ private:
     SceneObjectDeformable *visual_mesh_=NULL;
     double *u_render_surface_=NULL;
     //total volume and per-vertex volume
-    double object_volume_ = 0;
-    double *object_vertex_volume_ = NULL;
-    double *example_volume_ = NULL;
-    double **example_vertex_volume_ = NULL;
+    //double object_volume_ = 0;
+    //double *object_vertex_volume_ = NULL;
+//    double *example_volume_ = NULL;
+//    double **example_vertex_volume_ = NULL;
     Vec3d *object_eigencoefs_ = NULL;//the coefficients of the object projected onto the eigenfunctions
     Vec3d **example_eigencoefs_ = NULL;//the coefficients of the example geometry projected onto the eigenfunctions
     Vec3d *initial_object_eigencoefs_ = NULL;
@@ -155,8 +155,8 @@ private:
     double *deformed_object_configurations_ = NULL;//deformed simulation mesh position for each step ,size:3n*1
     double *temp_deformed_object_dis_ = NULL;//displacement(current_configuration-target_configuration)
     //deformation
-    double *object_elastic_subspace_force_ = NULL;
-    double *object_elastic_fullspace_force_ = NULL;
+    //double *object_elastic_subspace_force_ = NULL;
+    //double *object_elastic_fullspace_force_ = NULL;
     double *example_guided_subspace_force_ = NULL;
     double *example_guided_fullspace_force_ = NULL;
     double *example_guided_deformation_ = NULL;
