@@ -82,6 +82,7 @@ private:
     int example_num_ = 0;
     int example_eigenfunction_num_ = 0;
     int object_eigenfunction_num_ = 0;
+    int reconstruct_eigenfunction_num_ = 0;
     //int coupled_eigenfunction_num_ = 0;
     char simulation_mesh_file_name_[string_length];
     char example_file_name_prefix_[string_length];

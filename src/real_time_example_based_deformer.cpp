@@ -527,6 +527,7 @@ bool RealTimeExampleBasedDeformer::loadExampleEigenFunctions(const std::string &
 				break;
 		}
 		input_file.close();
+		//example_eigenfunction_num_=2;
 		//normalize example[i] eigenfunction with respect to the s-inner product: <f,f>=1 on the volumetric vertcies
 		for(int i=0;i<example_eigenfunction_num_;++i)
 		{
@@ -1238,6 +1239,10 @@ void RealTimeExampleBasedDeformer::projectOnEigenFunctions(VolumetricMesh *mesh,
 void RealTimeExampleBasedDeformer::reconstructFromEigenCoefs(double **eigenfunctions, double *eigenvalues,const Vec3d *eigencoefs,
                                                              int eigenfunction_num, int vert_num, double *vert_pos)
 {
+	std::cout<<"before reconstruct:\n";
+	for(int i=0;i<eigenfunction_num;++i)
+		std::cout<<eigencoefs[i]<<",";
+	std::cout<<std::endl;
     double scale_factor;
 	for(unsigned int vert_idx=0;vert_idx<vert_num;++vert_idx)
 	{
@@ -1245,10 +1250,10 @@ void RealTimeExampleBasedDeformer::reconstructFromEigenCoefs(double **eigenfunct
 		for(unsigned int i=0;i<eigenfunction_num;++i)
 		{
 			scale_factor=1.0/eigenvalues[i];
-			for(unsigned int dim=0;dim<3;++dim)
-			{
-				vert_pos[3*vert_idx+dim]+=eigencoefs[i][dim]*eigenfunctions[i][vert_idx]*scale_factor;
-			}
+			vert_pos[3*vert_idx]+=eigencoefs[i][0]*eigenfunctions[i][vert_idx]*scale_factor;
+			vert_pos[3*vert_idx+1]+=eigencoefs[i][1]*eigenfunctions[i][vert_idx]*scale_factor;
+			vert_pos[3*vert_idx+2]+=eigencoefs[i][2]*eigenfunctions[i][vert_idx]*scale_factor;
+
 		}
 	}
 }
@@ -1260,18 +1265,19 @@ void RealTimeExampleBasedDeformer::projectOnExampleManifold(Vec3d *input_eigenco
 	//compute the weights by minimizing 1/2*dist(target,input)*dist(target_input), least square minimization with constraints
 	//solve this minimization using optimization solver from ALGLIB
 
-	std::cout<<"projectOnExampleManifold:-a\n";
-	for(int i=0;i<object_eigenfunction_num_;++i)
-		std::cout<<input_eigencoefs[i]<<"\n";
+	// std::cout<<"projectOnExampleManifold:-a\n";
+	// for(int i=0;i<object_eigenfunction_num_;++i)
+	// 	std::cout<<input_eigencoefs[i]<<"\n";
 
 	double *temp_buffer = new double[example_num_+1];
+	memset(temp_buffer,0.0,sizeof(double)*(example_num_+1));
 	real_1d_array target_weights;
 	target_weights.setcontent(example_num_,temp_buffer); //initial guess
 	//prepare boundarty constraints:0<=w(i)<=1, i=0...example_num-1;
 	real_1d_array lower_boundary;
 	lower_boundary.setcontent(example_num_,temp_buffer);
 	real_1d_array upper_boundary;
-	for(int i=0;i<example_num_;++i)
+	for(int i=0;i<example_num_+1;++i)
 		temp_buffer[i]=1.0;
 	upper_boundary.setcontent(example_num_,temp_buffer);
 	//prepare the equality constraints: w(0)+w(1)+...+w(example_num_-1)=1
@@ -1292,8 +1298,6 @@ void RealTimeExampleBasedDeformer::projectOnExampleManifold(Vec3d *input_eigenco
 	minbleicsetcond(state,epsg,epsf,epsx,max_iterations);
 	minbleicoptimize(state,evaluateObjectiveAndGradient1,NULL,(void*)input_eigencoefs);//the last parameter is passed to evaluateObjectiveAndGradient
 	minbleicresults(state,target_weights,report);
-
-	std::cout<<"projectOnExampleManifold:-b\n";
 	//print some information about the solve if needed
 	cout<<"Step1 converged in "<<report.iterationscount<<" iterations. Terminatin type of the solver: "<<report.terminationtype<<"\n";
 
@@ -1304,20 +1308,20 @@ void RealTimeExampleBasedDeformer::projectOnExampleManifold(Vec3d *input_eigenco
 	//note: all the parameters here need tuning for different demos
 
 	//bool is_deform_away=(last_initial_weight_-target_weights[0]>=1.0e5);
-	double lower_bound=0.5,upper_bound=0.999;
-	bool initial_weight_in_range = (target_weights[0]>lower_bound)&&(target_weights[0]<upper_bound);
-	if(enable_eigen_weight_control_&&example_num_>1)
-	{
-		double bias_factor=0.85; //different biases are used for different simulationMesh
-		//example 1 is by default the rest pose
-		double other_weight_delta=(1-bias_factor)*target_weights[0]/(example_num_-1);
-		target_weights[0]*=bias_factor;
-		for(int i=1; i<example_num_;++i)
-			target_weights[i]+=other_weight_delta;
-		last_initial_weight_=target_weights[0];
-	}
+	// double lower_bound=0.5,upper_bound=0.999;
+	// bool initial_weight_in_range = (target_weights[0]>lower_bound)&&(target_weights[0]<upper_bound);
+	// if(enable_eigen_weight_control_&&example_num_>1)
+	// {
+	// 	double bias_factor=0.85; //different biases are used for different simulationMesh
+	// 	//example 1 is by default the rest pose
+	// 	double other_weight_delta=(1-bias_factor)*target_weights[0]/(example_num_-1);
+	// 	target_weights[0]*=bias_factor;
+	// 	for(int i=1; i<example_num_;++i)
+	// 		target_weights[i]+=other_weight_delta;
+	// 	last_initial_weight_=target_weights[0];
+	// }
 	//pure_example_linear_interpolation=true;
-	cout<<"target_weights:";
+	cout<<"The target_weights in example manifold is:\n";
 	for(int i=0;i<example_num_;++i)
 		cout<<target_weights[i]<<",";
 	cout<<"\n";
@@ -1327,8 +1331,11 @@ void RealTimeExampleBasedDeformer::projectOnExampleManifold(Vec3d *input_eigenco
 	{
 		projected_eigencoefs[i][0]=projected_eigencoefs[i][1]=projected_eigencoefs[i][2]=0.0;
 		for(int j=0;j<example_num_;++j)
-			for(int k=0;k<3;++k)
-				projected_eigencoefs[i][k]+=target_weights[j]*example_eigencoefs_[j][i][k];
+		{
+			projected_eigencoefs[i][0]+=target_weights[j]*example_eigencoefs_[j][i][0];
+			projected_eigencoefs[i][1]+=target_weights[j]*example_eigencoefs_[j][i][1];
+			projected_eigencoefs[i][2]+=target_weights[j]*example_eigencoefs_[j][i][2];
+		}
 	}
 	free(temp_buffer);
 	pure_example_linear_interpolation_=true;
@@ -1351,7 +1358,7 @@ void RealTimeExampleBasedDeformer::projectOnExampleManifold(Vec3d *input_eigenco
 		new_eigencoefs.setcontent(3*object_eigenfunction_num_,temp_buffer);
 		mincgcreate(new_eigencoefs,new_state);
 		mincgsetcond(new_state,epsg,epsf,epsx,max_iterations);
-		mincgoptimize(new_state,evaluateObjectiveAndGradient2,NULL,(void*)input_data);
+	//	mincgoptimize(new_state,evaluateObjectiveAndGradient2,NULL,(void*)input_data);
 		mincgresults(new_state,new_eigencoefs,new_report);
 		//print some information about the solver if needed
 		cout<<"Step2 converged in "<<new_report.iterationscount<<" iterations. Terminatin type of the solver: "<<new_report.terminationtype<<".\n";
@@ -1362,6 +1369,10 @@ void RealTimeExampleBasedDeformer::projectOnExampleManifold(Vec3d *input_eigenco
 			for(int j=0;j<3;++j)
 				projected_eigencoefs[i][j]=new_eigencoefs[3*i+j];
 	}
+
+	std::cout<<"target_eigencoefs:\n";
+	for(int i=0;i<object_eigenfunction_num_;++i)
+		std::cout<<projected_eigencoefs[i]<<"\n";
 }
 
 //helper function, used in projectOnExampleManifold()
@@ -1370,17 +1381,26 @@ void RealTimeExampleBasedDeformer::projectOnExampleManifold(Vec3d *input_eigenco
 void RealTimeExampleBasedDeformer::evaluateObjectiveAndGradient1(const real_1d_array &x, double &func, real_1d_array &grad, void *ptr)
 {
 	std::cout<<"evaluateObjectiveAndGradient1---start:\n";
+
 	RealTimeExampleBasedDeformer* active_instance=RealTimeExampleBasedDeformer::activeInstance();
 	assert(active_instance);
-	std::cout<<"evaluateObjectiveAndGradient1-a\n";
 	Vec3d *input_eigencoefs=(Vec3d*)ptr;
 	Vec3d *temp_target_eigencoefs=new Vec3d[active_instance->example_eigenfunction_num_];
-	std::cout<<"x:";
-	for(int i=0;i<active_instance->example_num_;++i)
-	std::cout<<x[i]<<",";
-	std::cout<<std::endl;
 	//evaluate the objective function
 	func=0.0;
+	for(int i=0;i<active_instance->example_num_;++i)
+		std::cout<<"x:"<<x[i]<<",";
+	std::cout<<"\n";
+
+	// for(int i=0;i<active_instance->example_num_;++i)
+	// {
+	// 	std::cout<<i<<":\n";
+	// 	for(int j=0;j<active_instance->example_eigenfunction_num_;++j)
+	// 	{
+	// 		std::cout<<active_instance->example_eigencoefs_[i][j][0]<<","<<active_instance->example_eigencoefs_[i][j][1]<<","<<active_instance->example_eigencoefs_[i][j][2]<<","<<"\n";
+	// 	}
+	// }
+//	std::cout<<"temp_target_eigencoefs:\n";
 	for(int i=0;i<active_instance->example_eigenfunction_num_;++i)
 	{
 		temp_target_eigencoefs[i][0]=temp_target_eigencoefs[i][1]=temp_target_eigencoefs[i][2]=0.0;
@@ -1389,14 +1409,19 @@ void RealTimeExampleBasedDeformer::evaluateObjectiveAndGradient1(const real_1d_a
 			temp_target_eigencoefs[i][0]+=x[j]*active_instance->example_eigencoefs_[j][i][0];
 			temp_target_eigencoefs[i][1]+=x[j]*active_instance->example_eigencoefs_[j][i][1];
 			temp_target_eigencoefs[i][2]+=x[j]*active_instance->example_eigencoefs_[j][i][2];
+		//	std::cout<<active_instance->example_eigencoefs_[j][i]<<"\n";
 		}
+		//std::cout<<temp_target_eigencoefs[i]<<"\n";
+
 		func+=(temp_target_eigencoefs[i][0]-input_eigencoefs[i][0])*(temp_target_eigencoefs[i][0]-input_eigencoefs[i][0]);
 		func+=(temp_target_eigencoefs[i][1]-input_eigencoefs[i][1])*(temp_target_eigencoefs[i][1]-input_eigencoefs[i][1]);
 		func+=(temp_target_eigencoefs[i][2]-input_eigencoefs[i][2])*(temp_target_eigencoefs[i][2]-input_eigencoefs[i][2]);
-		std::cout<<"func:"<<func<<",\n";
+		// std::cout<<"temp_target_eigencoefs:"<<temp_target_eigencoefs[i][0]<<","<<temp_target_eigencoefs[i][1]<<","<<temp_target_eigencoefs[i][2]<<"\n";
+		// std::cout<<"input_eigencoefs:"<<input_eigencoefs[i][0]<<","<<input_eigencoefs[i][1]<<","<<input_eigencoefs[i][2]<<"\n";
 	}
-	std::cout<<"evaluateObjectiveAndGradient1-b\n";
 	func*=0.5;
+	std::cout<<"func:"<<func<<",\n";
+	std::cout<<"grad::-------------------\n";
 	//analytically evaluate the gradient of the objective function
 	for(int i=0;i<active_instance->example_num_;++i)
 	{
@@ -1407,14 +1432,14 @@ void RealTimeExampleBasedDeformer::evaluateObjectiveAndGradient1(const real_1d_a
 			grad[i]+=(temp_target_eigencoefs[j][1]-input_eigencoefs[j][1])*active_instance->example_eigencoefs_[i][j][1];
 			grad[i]+=(temp_target_eigencoefs[j][2]-input_eigencoefs[j][2])*active_instance->example_eigencoefs_[i][j][2];
 		}
+		std::cout<<i<<":"<<grad[i]<<",";
 	}
-	std::cout<<"evaluateObjectiveAndGradient1-c\n";
 	delete[] temp_target_eigencoefs;
 }
 //step2, minimization of wieghted deformation energy to the examples
 void RealTimeExampleBasedDeformer::evaluateObjectiveAndGradient2(const real_1d_array &x,double &func, real_1d_array &grad, void *ptr)
 {
-	std::cout<<"evaluateObjectiveAndGradient2---start:\n";
+	//std::cout<<"evaluateObjectiveAndGradient2---start:\n";
 	RealTimeExampleBasedDeformer* active_instance=RealTimeExampleBasedDeformer::activeInstance();
 	assert(active_instance);
 	// if(!active_instance->isload_cubica_file)
@@ -1473,7 +1498,7 @@ Mat3d RealTimeExampleBasedDeformer::computeDeformGradient(const Mat3d &init_matr
 void RealTimeExampleBasedDeformer::computeForceOnReducedSubSpace(VolumetricMesh *mesh,const double *init_pos,const double *displacement,const unsigned int example_flag,
 									const unsigned int dis_ex_idx,double *g)
 {
-	std::cout<<"computeForceOnReducedSubSpace:\n";
+//	std::cout<<"computeForceOnReducedSubSpace:\n";
 	//clear g
 	for(int i=0;i<3*object_eigenfunction_num_;++i)
 		g[i]=0.0;
@@ -1575,10 +1600,10 @@ void RealTimeExampleBasedDeformer::computeForceOnReducedSubSpace(VolumetricMesh 
 		delete[] global_idx;
 		delete[] vert_pos;
 	}
-	std::cout<<"compute g:\n";
-	for(int i=0;i<mesh->getNumVertices();++i)
-		if((fabs(forces[3*i])>1.0e-7)||(fabs(forces[3*i+1])>1.0e-7)||(fabs(forces[3*i+2])>1.0e-7))
-			std::cout<<i<<":"<<forces[3*i]<<",\n";
+	// std::cout<<"compute g:\n";
+	// for(int i=0;i<mesh->getNumVertices();++i)
+	// 	if((fabs(forces[3*i])>1.0e-7)||(fabs(forces[3*i+1])>1.0e-7)||(fabs(forces[3*i+2])>1.0e-7))
+	// 		std::cout<<i<<":"<<forces[3*i]<<",\n";
 	//project on reduced subspace
 	if(example_flag==1)
 	{
@@ -1631,9 +1656,9 @@ void RealTimeExampleBasedDeformer::computeReducedEnergyAndGradient(VolumetricMes
 									const unsigned int dis_ex_idx,double &energy,double *grad)
 {
 	std::cout<<"computeReducedEnergyAndGradient---start:\n";
-	for(int i=0;i<3*mesh->getNumVertices();++i)
-		std::cout<<displacement[i]<<",";
-	std::cout<<std::endl;
+	// for(int i=0;i<3*mesh->getNumVertices();++i)
+	// 	std::cout<<displacement[i]<<",";
+	// std::cout<<std::endl;
 	//clear grad vector
 	for(int i=0;i<3*object_eigenfunction_num_;++i)
 		grad[i]=0.0;
@@ -1658,7 +1683,7 @@ void RealTimeExampleBasedDeformer::computeReducedEnergyAndGradient(VolumetricMes
 		//std::cout<<"eleeeeeeeeeeeeeeeeeeee:"<<ele<<"\n";
 		double ele_volume=tet_mesh->getTetVolume(tet_mesh->getVertex(ele,0),tet_mesh->getVertex(ele,1),
 								tet_mesh->getVertex(ele,2),tet_mesh->getVertex(ele,3));
-		std::cout<<ele_volume<<"a\n";
+	//	std::cout<<ele_volume<<"a\n";
 		//clear new_dis to 0.0 for each element
 		for(int mesh_idx=0;mesh_idx<3*mesh->getNumVertices();++mesh_idx)
 		{
@@ -1727,7 +1752,7 @@ void RealTimeExampleBasedDeformer::computeReducedEnergyAndGradient(VolumetricMes
 		//compute energy
 		Mat3d F=computeDeformGradient(temp_init_matrix,deformed_ele_dis_matrix);
 		// std::cout<<"temp_init_matrix:"<<temp_init_matrix<<std::endl;
-		 std::cout<<"deformed_ele_dis_matrix:"<<deformed_ele_dis_matrix<<std::endl;
+		// std::cout<<"deformed_ele_dis_matrix:"<<deformed_ele_dis_matrix<<std::endl;
 		// std::cout<<"F:"<<F<<std::endl;
 		//std::cout<<"det(F):"<<det(F)<<std::endl;
 		Mat3d temp=trans(F)*F;

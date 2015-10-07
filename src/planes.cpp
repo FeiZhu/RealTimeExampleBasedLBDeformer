@@ -147,15 +147,15 @@ void Planes::resolveContact(const ObjMesh *mesh/*,double *forces*/,const double 
 			}
 			if((dot(vert_vel,unit_plane_normal)<0)&&(dist_vec<threshold))
 			{
-				/*dot(vel,unit_plane_normal)=0;
-				vel_new=vel*unit_plane_normal;*/
-				//vel_new[3*vert_index+1]=0;
+				//dot(vel,unit_plane_normal)=0;
+				vel_new=vel*unit_plane_normal;
+				vel_new[3*vert_index+1]=0;
 			}
 			//change x to handle penetrated
 			if(dist_vec<0)
 			{
-				/*u_new[0]=u_new[2]=0;
-				u_new[3*vert_index]=-rel_vec[1];*/
+				u_new[0]=u_new[2]=0;
+				u_new[3*vert_index]=-rel_vec[1];
 			}
 			//Vec3d rel_vec=mesh->getPosition(vert_index)-plane_center[plane_index];
 			//
