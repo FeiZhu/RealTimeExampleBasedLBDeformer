@@ -59,8 +59,9 @@ public:
     double timeStep() const {return time_step_;}
     void setTimeStep(double dt){time_step_ = dt;}
     unsigned int reducedBasisNum() const{return reduced_basis_num_;}
-    unsigned int objectEigenfunctionNum() const{return object_eigenfunction_num_;}
-    unsigned int exampleEigenfunctionNum() const{return example_eigenfunction_num_;}
+    //unsigned int objectEigenfunctionNum() const{return reconstruct_eigenfunction_num_;}
+    //unsigned int exampleEigenfunctionNum() const{return reconstruct_eigenfunction_num_;}
+    void setInterpolateEigenfunctionNum(int num) {interpolate_eigenfunction_num_=num;}
     unsigned int correspondingFunctionNum() const{return corresponding_function_num_;}
     const Planes* planesInScnene() const {return planes_;}
     unsigned int fixedVertexNum() const{return fixed_vertex_num_;}
@@ -93,8 +94,8 @@ public:
     void projectOnEigenFunctions(VolumetricMesh *mesh, double *displacement, double *vertex_volume,
                                  double **eigenfunctions, double *eigenvalues, unsigned int eigenfunction_num,
                                  Vec3d *eigencoefs);
-    void reconstructFromEigenCoefs(double **eigenfunctions, double *eigenvalues,const Vec3d *eigencoefs,
-                                   int eigenfunction_num, int vert_num, double *vert_pos);
+    void reconstructFromEigenCoefs(double **eigenfunctions,double *eigenvalues,Vec3d *eigencoefs,Vec3d *target_eigencoefs,
+                                 const int &eigenfunction_num,const int &input_reconstruct_eigenfunction_num,const int &vert_num, double *vert_pos);
     void projectOnExampleManifold(Vec3d *object_eigencoefs, Vec3d *target_eigencoefs);
     static void evaluateObjectiveAndGradient1(const real_1d_array &x, double &func, real_1d_array &grad, void *ptr);
     static void evaluateObjectiveAndGradient2(const real_1d_array &x,double &func, real_1d_array &grad, void *ptr);
@@ -105,12 +106,12 @@ public:
     // to consider solving time we compute the object and examples initial displacement Dm when we load volumetric meshes
     //the last two parameters is to identify the energy we solved is for example mesh deformation or object deformation
     void computeReducedEnergyAndGradient(VolumetricMesh *mesh,const double *init_pos,const double *displacement, const unsigned int cubica_num,
-    									const unsigned int *cubica_elements, const double *cubica_weights,const unsigned int example_flag,
+    									const unsigned int *cubica_elements, double *cubica_weights,const unsigned int example_flag,
     									const unsigned int dis_ex_idx,double &energy,double *grad);
     void computeForceOnReducedSubSpace(VolumetricMesh *mesh,const double *init_pos,const double *displacement,const unsigned int example_flag,
     	 								const unsigned int dis_ex_idx,double *g);
-    void computeForceForSingleElementOnReducedSubSpace(const VolumetricMesh *mesh,const unsigned int ele,const double *ele_dis,unsigned int example_flag,
-						                const unsigned int dis_ex_idx,const Mat3d &H,double *g);
+    //temp
+    double* exampleDis() const{return ex_dis_;}
 private:
     int ModifiedSVD(Mat3d & F, Mat3d & U, Vec3d & Fhat, Mat3d & V) const;    //modified SVD for inversion handling
     // given a vector, find a unit vector that is orthogonal to it
@@ -124,6 +125,8 @@ private:
     //visual mesh for rendering
     SceneObjectDeformable *visual_mesh_ = NULL;
     //simulation data
+    //temp_str
+    double *ex_dis_ = NULL;
     double *displacement_ = NULL;
     double *velocity_ = NULL;
     double *external_force_ = NULL;
@@ -154,10 +157,10 @@ private:
     //eigenfunction data
     double **object_eigenfunctions_ = NULL;
     double *object_eigenvalues_ = NULL;
-    unsigned int object_eigenfunction_num_ = 0;
+    unsigned int interpolate_eigenfunction_num_ = 0;
     double ***example_eigenfunctions_ = NULL;
     double **example_eigenvalues_ = NULL;
-    unsigned int example_eigenfunction_num_ = 0;
+    unsigned int reconstruct_eigenfunction_num_ = 0;
     //shapes in LB shape space
     Vec3d *object_eigencoefs_ = NULL;
     Vec3d **example_eigencoefs_ = NULL;

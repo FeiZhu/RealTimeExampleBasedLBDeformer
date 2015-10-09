@@ -35,10 +35,10 @@ ex
 
 *exampleNum
 2
-*exampleEigunfunctionNum
-2
-*objectEigenfunctionNum
-2
+*interpolateEigenfunctionNum
+9
+*reconstructEigenfunctionNum
+9
 *exampleEigenFunctionFilenameBase
 ex
 *objectEigenFunctionFilename
@@ -84,7 +84,7 @@ bar.lighting
 #*initialVelocityFilename
 
 *addGravity
-true
+false
 
 *gravity
 9.8e-2
@@ -96,7 +96,7 @@ true
 0.01
 
 *exampleStiffnessScale
-0.1
+0.001
 *timestep
 5.0e-3
 

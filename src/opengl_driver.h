@@ -80,8 +80,7 @@ private:
     RealTimeExampleBasedDeformer *simulator_ = NULL;
     bool pause_simulation_ = true;
     int example_num_ = 0;
-    int example_eigenfunction_num_ = 0;
-    int object_eigenfunction_num_ = 0;
+    int interpolate_eigenfunction_num_ = 0;
     int reconstruct_eigenfunction_num_ = 0;
     //int coupled_eigenfunction_num_ = 0;
     char simulation_mesh_file_name_[string_length];
@@ -143,14 +142,9 @@ private:
     SceneObjectDeformable *render_surface_mesh_=NULL;
     SceneObjectDeformable *visual_mesh_=NULL;
     double *u_render_surface_=NULL;
-    //total volume and per-vertex volume
-    //double object_volume_ = 0;
-    //double *object_vertex_volume_ = NULL;
-//    double *example_volume_ = NULL;
-//    double **example_vertex_volume_ = NULL;
-    Vec3d *object_eigencoefs_ = NULL;//the coefficients of the object projected onto the eigenfunctions
-    Vec3d **example_eigencoefs_ = NULL;//the coefficients of the example geometry projected onto the eigenfunctions
-    Vec3d *initial_object_eigencoefs_ = NULL;
+    Vec3d **example_eigencoefs_ = NULL; //the coefficients of the example geometry projected onto the eigenfunctions
+    Vec3d *initial_object_eigencoefs_ = NULL;//the coefficients of the object projected onto all eigenfunctions
+    Vec3d *deformed_object_eigencoefs_ = NULL;//the coefficients of the object projected onto the interpolation eigenfunctions
     Vec3d *target_eigencoefs_ = NULL;
     double *initial_object_configurations_ = NULL;//initial simulation mesh position,size:3n*1
     double *deformed_object_configurations_ = NULL;//deformed simulation mesh position for each step ,size:3n*1
@@ -167,10 +161,10 @@ private:
     SparseMatrix *mass_matrix_= NULL;
     SparseMatrix *laplacian_matrix_ = NULL;
     SparseMatrix *laplacian_damping_matrix_ = NULL;
-    StVKElementABCD *precomputed_integrals_ = NULL,*example_precomputed_integrals_ = NULL;
-    StVKInternalForces *stvk_internal_force_ = NULL,*example_stvk_internal_force_ = NULL;
-    StVKStiffnessMatrix *stvk_stiffness_matrix_ = NULL,*example_stvk_stiffness_matrix_=NULL;
-    CorotationalLinearFEM *corotational_linear_fem_ = NULL,*example_corotational_linear_fem_ = NULL;
+    //StVKElementABCD *precomputed_integrals_ = NULL,*example_precomputed_integrals_ = NULL;
+//    StVKInternalForces *stvk_internal_force_ = NULL,*example_stvk_internal_force_ = NULL;
+//    StVKStiffnessMatrix *stvk_stiffness_matrix_ = NULL,*example_stvk_stiffness_matrix_=NULL;
+//    CorotationalLinearFEM *corotational_linear_fem_ = NULL,*example_corotational_linear_fem_ = NULL;
     IsotropicMaterial *isotropic_material_ = NULL,*example_isotropic_material_ = NULL;
     IsotropicHyperelasticFEM *isotropic_hyperelastic_fem_ = NULL,*example_isotropic_hyperelastic_fem_ = NULL;
     ForceModel *force_model_ = NULL;
@@ -220,12 +214,15 @@ private:
     int alt_pressed_=0;
     int ctrl_pressed_=0;
     int drag_start_x_,drag_start_y_;
+    double render_velocity_scale_ = 1.0;
     //render switches
     unsigned int enable_textures_=0;
     bool render_axis_ = true;
     bool render_vertices_ = false;
     bool render_wireframe_ = true;
     bool render_fixed_vertices_ = true;
+    bool render_velocity_ = false;
+    bool render_dis_ = false;
     bool render_eigenfunction_ = false;
     bool isrender_surface_mesh_ = true;
     bool isrender_volumetric_mesh_ = false;
@@ -247,22 +244,16 @@ private:
         IMPLICITBACKWARDEULER,
         EULER,
         SYMPLECTICEULER,
-        CENTRALDIFFERENCES,
         UNKNOWN
     };
     SolverType solver_type_ = UNKNOWN;
     enum InvertibleMaterialType{
         INV_STVK,
         INV_NEOHOOKEAN,
-        INV_MOONEYRIVLIN,
         INV_NONE
     };
     InvertibleMaterialType invertible_material_type_ = INV_NONE;
     enum DeformableObjectType{
-        STVK,
-        COROTLINFEM,
-        LINFEM,
-        MASSSPRING,
         INVERTIBLEFEM,
         UNSPECIFIED
     };

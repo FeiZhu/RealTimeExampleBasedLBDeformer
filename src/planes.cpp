@@ -148,7 +148,8 @@ void Planes::resolveContact(const ObjMesh *mesh/*,double *forces*/,const double 
 			if((dot(vert_vel,unit_plane_normal)<0)&&(dist_vec<threshold))
 			{
 				//dot(vel,unit_plane_normal)=0;
-				vel_new=vel*unit_plane_normal;
+                for(int i=0;i<3;++i)
+				    vel_new[i]=vel[i]*unit_plane_normal[i];
 				vel_new[3*vert_index+1]=0;
 			}
 			//change x to handle penetrated
