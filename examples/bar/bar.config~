@@ -71,7 +71,7 @@ bar.mass
 *planeNumber
 0
 *planesFilename
-plane.config
+planes.config
 
 *lightingCOnfigFilename
 bar.lighting
@@ -87,7 +87,7 @@ bar.lighting
 false
 
 *gravity
-9.8e-2
+-9.8
 
 *dampingMassCoef
 0.15

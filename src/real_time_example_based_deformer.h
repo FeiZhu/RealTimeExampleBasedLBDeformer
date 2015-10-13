@@ -99,7 +99,7 @@ public:
     void projectOnExampleManifold(Vec3d *object_eigencoefs, Vec3d *target_eigencoefs);
     static void evaluateObjectiveAndGradient1(const real_1d_array &x, double &func, real_1d_array &grad, void *ptr);
     static void evaluateObjectiveAndGradient2(const real_1d_array &x,double &func, real_1d_array &grad, void *ptr);
-    Mat3d computeDeformGradient(const Mat3d &init_matrix,const Mat3d &deformed_matrix/*Vec3d *init_pos,Vec3d *deform_pos*/);
+    Mat3d computeDeformationGradient(const Mat3d &init_matrix,const Mat3d &deformed_matrix/*Vec3d *init_pos,Vec3d *deform_pos*/);
     //compute the deformed energy from source pos to deformed pos
     //we use optimizing cubature method to compute energy on reduced space
     //solving course need the initial displacement matrix Dm, and the deformed displacement matrix Ds
@@ -111,11 +111,13 @@ public:
     void computeForceOnReducedSubSpace(VolumetricMesh *mesh,const double *init_pos,const double *displacement,const unsigned int example_flag,
     	 								const unsigned int dis_ex_idx,double *g);
     //temp
-    double* exampleDis() const{return ex_dis_;}
+    double** exampleDis() const{return ex_dis_;}
+    void testObjectiveGradients();
 private:
     int ModifiedSVD(Mat3d & F, Mat3d & U, Vec3d & Fhat, Mat3d & V) const;    //modified SVD for inversion handling
     // given a vector, find a unit vector that is orthogonal to it
     void FindOrthonormalVector(Vec3d & v, Vec3d & result) const;
+    void generateE() const;
 private:
     static RealTimeExampleBasedDeformer *active_instance_;
     //volumetric meshes
@@ -126,7 +128,7 @@ private:
     SceneObjectDeformable *visual_mesh_ = NULL;
     //simulation data
     //temp_str
-    double *ex_dis_ = NULL;
+    double **ex_dis_ = NULL;
     double *displacement_ = NULL;
     double *velocity_ = NULL;
     double *external_force_ = NULL;

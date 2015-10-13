@@ -119,7 +119,8 @@ void OpenGLDriver::initConfigurations(const std::string &config_file_name)
     //local Example-based
     config_file_.addOptionOptional("objectAffectedVerticesFilename",object_affected_vertices_file_name_,"none");
     config_file_.addOptionOptional("exampleAffectedVerticesFilenameBase",example_affected_vertices_file_name_,"none");
-
+    std::cout<<"eeeeeeeeeeeeeeeeeenable_eigen_weight_control_:"<<enable_eigen_weight_control_<<"-----------------\n";
+    std::cout<<"add_gravity_:"<<add_gravity_<<"-----------------\n";
     //enable eigen weight control
     simulator_->setEnableEigenWeightControl(enable_eigen_weight_control_);
 
@@ -821,7 +822,7 @@ void OpenGLDriver::displayFunction()
                 glDisable(GL_LIGHTING);
                 glColor3f(0.0,0.5,0.0);
                 //active_instance->render_volumetric_mesh_->Render(active_instance->example_mesh_[active_instance->current_example_index_-1]);
-                active_instance->render_volumetric_mesh_->RenderDeformation(active_instance->example_mesh_[active_instance->current_example_index_-1],active_instance->simulator_->exampleDis());
+                active_instance->render_volumetric_mesh_->RenderDeformation(active_instance->example_mesh_[active_instance->current_example_index_-1],active_instance->simulator_->exampleDis()[active_instance->current_example_index_-1]);
                 if(active_instance->render_vertices_)
                 {
                     glDisable(GL_LIGHTING);
@@ -829,15 +830,15 @@ void OpenGLDriver::displayFunction()
                     glPointSize(8.0);
                     //active_instance->render_volumetric_mesh_->RenderVertices(active_instance->example_mesh_[active_instance->current_example_index_-1]);
                     for(int i=0;i<active_instance->example_mesh_[active_instance->current_example_index_-1]->getNumVertices();++i)
-                        active_instance->render_volumetric_mesh_->RenderVertexDeformed(active_instance->example_mesh_[active_instance->current_example_index_-1],i,active_instance->simulator_->exampleDis());
+                        active_instance->render_volumetric_mesh_->RenderVertexDeformed(active_instance->example_mesh_[active_instance->current_example_index_-1],i,active_instance->simulator_->exampleDis()[active_instance->current_example_index_-1]);
                     glEnable(GL_LIGHTING);
                 }
                 if(active_instance->render_wireframe_)
                 {
                     glDisable(GL_LIGHTING);
-                    glColor3f(0.0,0.0,0.0);
+                    glColor3f(0.0,0.0,0.5);
                     //active_instance->render_volumetric_mesh_->RenderWireframe(active_instance->example_mesh_[active_instance->current_example_index_-1]);
-                    active_instance->render_volumetric_mesh_->RenderSolidAndWireframeDeformation(active_instance->example_mesh_[active_instance->current_example_index_-1],active_instance->simulator_->exampleDis());
+                    active_instance->render_volumetric_mesh_->RenderSolidAndWireframeDeformation(active_instance->example_mesh_[active_instance->current_example_index_-1],active_instance->simulator_->exampleDis()[active_instance->current_example_index_-1]);
                     glEnable(GL_LIGHTING);
                 }
                 glDisable(GL_BLEND);
@@ -900,7 +901,6 @@ void OpenGLDriver::displayFunction()
     //render vertex velocity
     if(active_instance->render_velocity_)
     {
-        std::cout<<"aaaaa\n";
         glDisable(GL_LIGHTING);
         for(int i=0;i<active_instance->simulation_vertices_num_;++i)
         {
@@ -924,13 +924,13 @@ void OpenGLDriver::displayFunction()
     if(active_instance->render_dis_)
     {
         glDisable(GL_LIGHTING);
-        for(int i=0;i<active_instance->simulation_vertices_num_;++i)
+        for(int i=0;i<active_instance->example_mesh_[0]->getNumVertices();++i)
         {
             Vec3d vert_pos,vert_new_pos;
             for(int j=0;j<3;++j)
             {
-                vert_pos[j]=(*active_instance->simulation_mesh_->getVertex(i))[j]+active_instance->u_[3*i+j];
-                vert_new_pos[j]=vert_pos[j]+active_instance->vel_initial_[3*i+j];
+                vert_pos[j]=(*active_instance->example_mesh_[0]->getVertex(i))[j];
+                vert_new_pos[j]=vert_pos[j]+active_instance->simulator_->exampleDis()[active_instance->current_example_index_-1][3*i+j]*2.0;
             }
             glColor3f(1.0,0.3,1.0);
             glLineWidth(1.0);
@@ -1057,10 +1057,10 @@ void OpenGLDriver::idleFunction()
             //project into the example manifold and get target configuration
             memcpy(active_instance->target_eigencoefs_,active_instance->deformed_object_eigencoefs_,sizeof(Vec3d)*active_instance->interpolate_eigenfunction_num_);
             active_instance->simulator_->projectOnExampleManifold(active_instance->deformed_object_eigencoefs_,active_instance->target_eigencoefs_);
-
+            //	active_instance->simulator_->testObjectiveGradients();
             //compute the deformation ,from the delta object coefficients and target coefficients
-            //for(int i=0;i<active_instance->interpolate_eigenfunction_num_;++i)
-            //    active_instance->target_eigencoefs_[i]=active_instance->deformed_object_eigencoefs_[i]-active_instance->target_eigencoefs_[i];
+            for(int i=0;i<active_instance->interpolate_eigenfunction_num_;++i)
+               active_instance->target_eigencoefs_[i]=active_instance->deformed_object_eigencoefs_[i]-active_instance->target_eigencoefs_[i];
             //reconstruct vertices position(the last parameter) from target_eigencoefs
 
             active_instance->simulator_->reconstructFromEigenCoefs(active_instance->simulator_->objectEigenFunctions(),active_instance->simulator_->objectEigenValues(),
@@ -1110,7 +1110,7 @@ void OpenGLDriver::idleFunction()
         //apply the penalty collision forces with planes in scene
         if(active_instance->plane_num_>0)
         {
-            active_instance->planes_->resolveContact(active_instance->visual_mesh_->GetMesh(),active_instance->f_col_);
+            active_instance->planes_->resolveContact(active_instance->simulation_mesh_,active_instance->f_col_);
             //active_instance->planes_->resolveContact(resolveContact(const ObjMesh *mesh/*,double *forces*/,const double *vel,double *u_new,double *vel_new))
             std::cout<<"b\n";
             for(int i=0;i<active_instance->simulation_vertices_num_;++i)
