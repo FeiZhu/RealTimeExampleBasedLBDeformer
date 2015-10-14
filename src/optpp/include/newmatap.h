@@ -36,7 +36,7 @@ void UpdateQRZ(Matrix& X, UpperTriangularMatrix& U);
 // Matrix A's first n columns are orthonormal
 // so A.Columns(1,n).t() * A.Columns(1,n) is the identity matrix.
 // Fill out the remaining columns of A to make them orthonormal
-// so A.t() * A is the identity matrix 
+// so A.t() * A is the identity matrix
 void extend_orthonormal(Matrix& A, int n);
 
 
@@ -61,7 +61,7 @@ void RightCircularUpdateCholesky(UpperTriangularMatrix &chol, int k, int l);
 // a LEFT circular shift of the rows and columns from
 // 1,...,k-1,k,k+1,...l,l+1,...,p to
 // 1,...,k-1,k+1,...l,k,l+1,...,p to
-void LeftCircularUpdateCholesky(UpperTriangularMatrix &chol, int k, int l); 
+void LeftCircularUpdateCholesky(UpperTriangularMatrix &chol, int k, int l);
 
 
 void SVD(const Matrix&, DiagonalMatrix&, Matrix&, Matrix&,
@@ -200,8 +200,3 @@ public:
 // body file: newfft.cpp
 // body file: sort.cpp
 // body file: svd.cpp
-
-
-
-
-

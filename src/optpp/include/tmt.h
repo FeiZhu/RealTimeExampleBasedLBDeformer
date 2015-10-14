@@ -34,7 +34,7 @@ public:
 };
 
 // fill a matrix with values from the MultWithCarry random number generator
-void FillWithValues(MultWithCarry& MWC, Matrix& M);   
+void FillWithValues(MultWithCarry& MWC, Matrix& M);
 
 
 void Print(const Matrix& X);
@@ -87,4 +87,3 @@ void trymatm();
 // body file: tmtk.cpp
 // body file: tmtl.cpp
 // body file: tmtm.cpp
-

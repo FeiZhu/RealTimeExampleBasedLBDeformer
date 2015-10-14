@@ -27,8 +27,8 @@
  *************************************************************************/
 
 /*
-  This class is a container for a tetrahedral volumetric 3D mesh. See 
-  also volumetricMesh.h. The tetrahedra can take arbitrary shapes (not 
+  This class is a container for a tetrahedral volumetric 3D mesh. See
+  also volumetricMesh.h. The tetrahedra can take arbitrary shapes (not
   limited to only a few shapes).
 */
 
@@ -42,7 +42,7 @@
 class TetMesh : public VolumetricMesh
 {
 public:
-  // loads the mesh from a file 
+  // loads the mesh from a file
   // ASCII: .veg text input formut, see documentation and the provided examples
   // BINARY: .vegb binary input format
   TetMesh(const char * filename, fileFormatType fileFormat = ASCII, int verbose=1);
@@ -51,7 +51,7 @@ public:
   // if memoryLoad is 0, binaryStream is FILE* (load from a file), otherwise, it is char* (load from a memory buffer)
   TetMesh(void * binaryStream, int memoryLoad = 0);
 
-  // constructs a tet mesh from the given vertices and elements, 
+  // constructs a tet mesh from the given vertices and elements,
   // with a single region and material ("E, nu" material)
   // "vertices" is double-precision array of length 3 x numVertices .
   // "elements" is an integer array of length 4 x numElements
@@ -59,9 +59,9 @@ public:
          int numElements, int * elements,
          double E=1E6, double nu=0.45, double density=1000);
 
-  // constructs a tet mesh from the given vertices and elements, 
+  // constructs a tet mesh from the given vertices and elements,
   // with an arbitrary number of sets, regions and materials
-  // "vertices" is double-precision array of length 3 x numVertices 
+  // "vertices" is double-precision array of length 3 x numVertices
   // "elements" is an integer array of length 4 x numElements
   // "materials", "sets" and "regions" will be copied internally (deep copy), so you
   // can release them after calling this constructor
@@ -73,11 +73,11 @@ public:
 
   // loads a file of a "special" (not .veg) type
   // currently one such special format is supported:
-  // specialFileType=0: 
-  //   the ".ele" and ".node" format, used by TetGen, 
-  //   "filename" is the basename, e.g., passing "mesh" will load the mesh from "mesh.ele" and "mesh.node" 
+  // specialFileType=0:
+  //   the ".ele" and ".node" format, used by TetGen,
+  //   "filename" is the basename, e.g., passing "mesh" will load the mesh from "mesh.ele" and "mesh.node"
   // default material parameters will be used
-  TetMesh(const char * filename, int specialFileType, int verbose); 
+  TetMesh(const char * filename, int specialFileType, int verbose);
 
   // creates a mesh consisting of the specified element subset of the given TetMesh
   TetMesh(const TetMesh & mesh, int numElements, int * elements, std::map<int,int> * vertexMap = NULL);
@@ -89,7 +89,7 @@ public:
   virtual int saveToAscii(const char * filename) const;
   // saves the mesh to binary format
   // returns: 0 = success, non-zero = error
-  // output: if bytesWritten is non-NULL, it will contain the number of bytes written 
+  // output: if bytesWritten is non-NULL, it will contain the number of bytes written
   virtual int saveToBinary(const char * filename, unsigned int * bytesWritten = NULL) const;
   virtual int saveToBinary(FILE * binaryOutputStream, unsigned int * bytesWritten = NULL, bool countBytesOnly = false) const;
 
@@ -129,4 +129,3 @@ protected:
 };
 
 #endif
-

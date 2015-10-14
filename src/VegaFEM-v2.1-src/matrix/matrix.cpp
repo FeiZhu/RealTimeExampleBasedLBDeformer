@@ -38,7 +38,7 @@ Matrix<real>::Matrix(const char * filename)
 }
 
 template<class real>
-Matrix<real>::Matrix(int m_, int n_, const real * data_, 
+Matrix<real>::Matrix(int m_, int n_, const real * data_,
                      bool makeInternalDataCopy, bool freeDataInDestructor_):
   m(m_), n(n_), freeDataInDestructor(freeDataInDestructor_)
 {
@@ -57,7 +57,6 @@ Matrix<real>::Matrix (int m_, int n_, bool freeDataInDestructor_):
 {
   data = (real*) calloc (m * n, sizeof(real));
 }
-
 template<class real>
 Matrix<real>::Matrix (int m_, int n_, real constEntry, bool freeDataInDestructor_):
   m(m_), n(n_), freeDataInDestructor(freeDataInDestructor_)
@@ -118,6 +117,16 @@ Matrix<real>::~Matrix()
 }
 
 template<class real>
+void Matrix<real>::resize(int m_, int n_)
+{
+    m=m_;
+    n=n_;
+    delete[] data;
+    data = (real*) calloc (m_*n_, sizeof(real));
+    printf("Matrix resize: m = %d, n = %d",
+      m, n);
+}
+template<class real>
 const Matrix<real> Matrix<real>::operator+ (const Matrix<real> & mtx2) const
 {
   if ((m != mtx2.Getm()) || (n != mtx2.Getn()))
@@ -156,7 +165,7 @@ const Matrix<real> Matrix<real>::operator* (const Matrix<real> & mtx2) const
   return Matrix<real>(m,mtx2.Getn(),output,false);
 }
 
-// output = trans(this) * mtx2  
+// output = trans(this) * mtx2
 template<class real>
 const Matrix<real> Matrix<real>::MultiplyT(const Matrix & mtx2) const
 {
@@ -179,7 +188,7 @@ Matrix<real> & Matrix<real>::operator= (const Matrix<real> & mtx2)
       m, n, mtx2.Getm(), mtx2.Getn());
     throw 4;
   }
- 
+
   if (this == &mtx2) // self-assignment
     return (*this);
 
@@ -236,7 +245,7 @@ Matrix<real> & Matrix<real>::operator*= (const real alpha)
 {
   int mn = m * n;
   for(int i=0; i<mn; i++)
-    data[i] *= alpha;   
+    data[i] *= alpha;
   return (*this);
 }
 
@@ -271,7 +280,7 @@ void Matrix<real>::Print(int numDigits) const
   if (numDigits < 0)
     strcpy(formatString,"%G ");
   else
-    sprintf(formatString,"%%.%df ", numDigits);    
+    sprintf(formatString,"%%.%df ", numDigits);
 
   for(int i=0; i<m; i++)
   {
@@ -283,12 +292,12 @@ void Matrix<real>::Print(int numDigits) const
 
 template<class real>
 void Matrix<real>::SymmetricEigenDecomposition(Matrix<real> & Q, Matrix<real> & Lambda)
-{    
+{
   if (m != n)
   {
     printf("Matrix size mismatch in Matrix::SymmetricEigenDecomposition . m = %d, n = %d\n", m, n);
     throw 12;
-  }    
+  }
 
   real * QData = (real*) malloc(sizeof(real) * m * m);
   real * LambdaData = (real*) malloc(sizeof(real) * m);
@@ -299,7 +308,7 @@ void Matrix<real>::SymmetricEigenDecomposition(Matrix<real> & Q, Matrix<real> & 
 
 template<class real>
 void Matrix<real>::SVD(Matrix<real> & U, Matrix<real> & Sigma, Matrix<real> & VT)
-{    
+{
   real * UData = (real*) malloc(sizeof(real) * m * MIN(m,n));
   real * SigmaData = (real*) malloc(sizeof(real) * MIN(m,n));
   real * VTData = (real*) malloc(sizeof(real) * MIN(m,n) * n);
@@ -311,17 +320,17 @@ void Matrix<real>::SVD(Matrix<real> & U, Matrix<real> & Sigma, Matrix<real> & VT
 
 template<class real>
 int Matrix<real>::EigenDecomposition(Matrix<real> & EigenVectors, Matrix<real> & LambdaRe, Matrix<real> & LambdaIm)
-{    
+{
   if (m != n)
   {
     printf("Matrix size mismatch in Matrix::EigenDecomposition . m = %d, n = %d\n", m, n);
     throw 13;
-  }    
+  }
 
   real * EigenVectorsData = (real*) malloc(sizeof(real) * m * m);
   real * LambdaReData = (real*) malloc(sizeof(real) * m);
   real * LambdaImData = (real*) malloc(sizeof(real) * m);
-  int code = MatrixEigenDecomposition(m, data, 
+  int code = MatrixEigenDecomposition(m, data,
     EigenVectorsData, LambdaReData, LambdaImData);
 
   EigenVectors = Matrix<real>(m,m,EigenVectorsData,false);
@@ -335,11 +344,11 @@ template<class real>
 int Matrix<real>::LUSolve(const Matrix<real> & x, const Matrix<real> & rhs)
 {
   if ((Getm() != Getn()) || (Getm() != x.Getm()) || (x.Getm() != rhs.Getm()) || (x.Getn() != rhs.Getn()) )
-  {    
+  {
     printf("Matrix size mismatch in Matrix::LUSolve .\n");
     throw 12;
   }
-  
+
   int exitCode = 0;
   try
   {
@@ -421,7 +430,7 @@ void Matrix<real>::RemoveColumns(int columnStart, int columnEnd)
 
   // free the space
   data = (real*) realloc (data, sizeof(real) * m * (n - stride));
- 
+
   n = n - stride;
 }
 
@@ -509,7 +518,7 @@ void Matrix<real>::AppendRowsColumns(const Matrix<real> & bottomLeftBlock, const
   }
 
   AppendColumns(topRightBlock);
- 
+
   Matrix<real> blockMatrix(bottomLeftBlock.Getm(), n);
   real * blockMatrixData = blockMatrix.GetData();
   memcpy(blockMatrixData, bottomLeftBlock.GetData(), sizeof(real) * (bottomLeftBlock.Getm() * bottomLeftBlock.Getn()));
@@ -546,7 +555,7 @@ template int Matrix<float>::LUSolve(const Matrix<float> & x, const Matrix<float>
 #ifdef USE_EXPOKIT
   template void Matrix<float>::MExpv(float t, const Matrix<float> & v, Matrix<float> & w);
 #endif
-template void Matrix<float>::Print(int numDigits) const; 
+template void Matrix<float>::Print(int numDigits) const;
 template int Matrix<float>::Save(const char * filename) const;
 template void Matrix<float>::SetSubmatrix(int I, int J, const Matrix<float> & submatrix);
 template void Matrix<float>::RemoveColumns(int columnStart, int columnEnd);
@@ -594,4 +603,3 @@ template void Matrix<double>::RemoveRowsColumns(int columnStart, int columnEnd);
 template void Matrix<double>::AppendRows(const Matrix<double> & rows);
 template void Matrix<double>::AppendColumns(const Matrix<double> & columns);
 template void Matrix<double>::AppendRowsColumns(const Matrix<double> & bottomLeftBlock, const Matrix<double> & topRightBlock, const Matrix<double> & bottomRightBlock);
-

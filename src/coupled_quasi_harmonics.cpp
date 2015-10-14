@@ -24,16 +24,16 @@ using OPTPP::LineSearch;
 using OPTPP::TrustRegion;
 using OPTPP::TrustPDS;
 using OPTPP::VanShanno;
-
+using NEWMAT::Matrix;
 //implemenation
 int CoupledQuasiHarmonics::static_col=0;
 int CoupledQuasiHarmonics::static_objective_type=0;
 vector<double> CoupledQuasiHarmonics::static_x;
 
-CoupledQuasiHarmonics::CoupledQuasiHarmonics(double **input_base_a, double **input_base_b, 
+CoupledQuasiHarmonics::CoupledQuasiHarmonics(double **input_base_a, double **input_base_b,
                                              double *input_eigenvalue_a, double *input_eigenvalue_b,
                                              int input_row_a, int input_row_b, int input_col,
-                                             double *input_vertex_area_a, double *input_vertex_area_b, 
+                                             double *input_vertex_area_a, double *input_vertex_area_b,
                                              double **input_F, double **input_G, int input_p)
     :base_a(input_base_a),base_b(input_base_b),eigenvalue_a(input_eigenvalue_a),eigenvalue_b(input_eigenvalue_b),
      row_a(input_row_a),row_b(input_row_b),col(input_col),vertex_area_a(input_vertex_area_a),vertex_area_b(input_vertex_area_b),
@@ -161,7 +161,7 @@ int CoupledQuasiHarmonics::getCoupledBases(int new_col, double **new_base_a, dou
 	for(int i=1;i<=c_rhs.size();++i)
 	    c_rhs(i)=0;
 	Constraint eqn=new NonLinearEquation(csp,c_rhs,constraint_num);
-	CompoundConstraint *constraint=new CompoundConstraint(eqn); 
+	CompoundConstraint *constraint=new CompoundConstraint(eqn);
         //define the optimization problem
 	NLF1 nlp(num_unknown,optppObjective,initOptpp,constraint,this);
         //define the solver algorithm
@@ -284,7 +284,7 @@ void CoupledQuasiHarmonics::getInitialGuess(vector<double> &x)
     }
     int bias=col*new_col;//A_AND_B, set elements of B
     if(objective_type==ONLY_A)//ONLY_A, set elements of A
-	bias=0; 
+	bias=0;
     for(int i=0;i<col;++i)
 	for(int j=0;j<new_col;++j)
 	{
@@ -470,7 +470,7 @@ void CoupledQuasiHarmonics::objectiveGrad(int n,const double *x, double *grad)
 		for(int l=0;l<new_col;++l)
 		    grad[j*col+i]+=4*(lambda_a[i]*x[l*col+i]*x[l*col+k]*lambda_a[k]*x[j*col+k]);
 	    if(offterm_type==NOT_ORDERED)//no order version
-	    {	    
+	    {
 		for(int k=0;k<col;++k)
 		    grad[j*col+i]-=4*x[j*col+k]*x[j*col+k]*lambda_a[k]*x[j*col+i]*lambda_a[i];
 	    }
@@ -495,7 +495,7 @@ void CoupledQuasiHarmonics::objectiveGrad(int n,const double *x, double *grad)
 		if(offterm_type==NOT_ORDERED)//no order version
 		{
 		    for(int k=0;k<col;++k)
-			grad[j*col+i+bias]-=4*x[j*col+k+bias]*x[j*col+k+bias]*lambda_b[k]*x[j*col+i+bias]*lambda_b[i];	
+			grad[j*col+i+bias]-=4*x[j*col+k+bias]*x[j*col+k+bias]*lambda_b[k]*x[j*col+i+bias]*lambda_b[i];
 		}
 		else if(offterm_type==ORDERED)//ordered version
 		{
@@ -760,5 +760,5 @@ void optppConstraint(int mode, int n, const ColumnVector &x, ColumnVector &c_x, 
 	c_grad_x=c_grad_x_t.t();
 	result=NLPGradient;
     }
-}  
+}
 //*****************************************************************************************************************

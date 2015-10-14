@@ -11,14 +11,14 @@
 #include "NLF.h"
 using std::vector;
 using NEWMAT::ColumnVector;
-using NEWMAT::Matrix;
+//using NEWMAT::Matrix;
 
 //nlopt stuff
 double nloptObjective(unsigned int n, const double *x, double *grad, void *my_func_data);
 void nloptConstraint(unsigned int m, double *result, unsigned int n, const double *x, double *grad, void *my_func_data);
 //opt++ stuff
 void optppObjective(int mode, int n, const ColumnVector &x, double &f_x, ColumnVector &grad_x, int &result, void *my_func_data);
-void optppConstraint(int mode, int n, const ColumnVector &x, ColumnVector &c_x, Matrix &c_grad_x, int &result);
+void optppConstraint(int mode, int n, const ColumnVector &x, ColumnVector &c_x, NEWMAT::Matrix &c_grad_x, int &result);
 void initOptpp(int n, ColumnVector &x);
 
 class CoupledQuasiHarmonics
@@ -60,7 +60,7 @@ public:
 
     //***********************************************Opt++ stuff********************************************************
     friend void optppObjective(int mode, int n, const ColumnVector &x, double &f_x, ColumnVector &grad_x, int &result, void *my_func_data);
-    friend void optppConstraint(int mode, int n, const ColumnVector &x, ColumnVector &c_x, Matrix &c_grad_x, int &result);
+    friend void optppConstraint(int mode, int n, const ColumnVector &x, ColumnVector &c_x, NEWMAT::Matrix &c_grad_x, int &result);
     friend void initOptpp(int n, ColumnVector &x);
     //******************************************************************************************************************
 
