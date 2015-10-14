@@ -112,7 +112,7 @@ RealTimeExampleBasedDeformer::~RealTimeExampleBasedDeformer()
 	if(planes_==NULL)
 		delete[] planes_;
 	delete[] fixed_vertices_;
-	delete[] reduced_force_;
+	//delete[] reduced_force_;
 }
 
 RealTimeExampleBasedDeformer* RealTimeExampleBasedDeformer::activeInstance()
@@ -1540,8 +1540,7 @@ void RealTimeExampleBasedDeformer::evaluateObjectiveAndGradient2(const real_1d_a
 	//  //	std::cout<<"\n";
 	// }
 
-	for(int j=0;j<3*active_instance->interpolate_eigenfunction_num_;++j)
-		grad[j]=0.0;
+
 	for(int i=0;i<active_instance->example_num_;++i)
 	{
 	//	std::cout<<"example"<<i<<std::endl;
@@ -1556,7 +1555,6 @@ void RealTimeExampleBasedDeformer::evaluateObjectiveAndGradient2(const real_1d_a
 		//	std::cout<<"\n";
 		}
 		double energy=0.0;
-		double *energy_grad=new double[3*active_instance->interpolate_eigenfunction_num_];
 		//convert x to deformed_pos of example[i],reconstruct shape from LB space to Euclidean space
 		//double *deformed_pos=new double[3*active_instance->simulation_mesh_->getNumVertices()];
 		double *displacement=new double[3*active_instance->simulation_mesh_->getNumVertices()];
@@ -1582,18 +1580,23 @@ void RealTimeExampleBasedDeformer::evaluateObjectiveAndGradient2(const real_1d_a
 		// }
 		//getchar();
 
-		// active_instance->computeForceOnReducedSubSpace(active_instance->simulation_mesh_,NULL,displacement,active_instance->object_cubica_ele_num_,
- 	// 			active_instance->object_cubica_elements_,active_instance->object_cubica_weights_,energy,energy_grad);
+		active_instance->computeReducedEnergy(NULL,displacement,energy);
 		func+=target_weights[i]*energy;
+		for(int j=0;j<3*active_instance->interpolate_eigenfunction_num_;++j)
+			grad[j]=0.0;
+		double *reduced_dis=new double[active_instance->interpolate_eigenfunction_num_];
+		memset(reduced_dis,0.0,sizeof(double)*active_instance->interpolate_eigenfunction_num_);
 
-
+		double *energy_grad=new double[3*active_instance->interpolate_eigenfunction_num_];
+		memset(energy_grad,0.0,sizeof(double)*3*active_instance->interpolate_eigenfunction_num_);
+		active_instance->computeReducedInternalForce(reduced_dis,energy_grad);
 		for(int j=0;j<active_instance->interpolate_eigenfunction_num_;++j)
 		{
 			for(int k=0;k<3;++k)
 				grad[3*j+k]+=target_weights[i]*energy_grad[3*j+k];
 		}
 
-
+		delete[] reduced_dis;
 		delete[] displacement;
 		//delete[] deformed_pos;
 		delete[] energy_grad;
@@ -1604,11 +1607,13 @@ void RealTimeExampleBasedDeformer::evaluateObjectiveAndGradient2(const real_1d_a
 }
 void RealTimeExampleBasedDeformer::preComputeForCubicaSimulation()
 {
-	//to do
+	//not done yet
 	//precompute for cubica simulation
 	//generate cubica reduced E and H
-	reduced_force_=new double[interpolate_eigenfunction_num_];
-	memset(reduced_force_,0.0,sizeof(double)*interpolate_eigenfunction_num_);
+	// reduced_force_=new double[interpolate_eigenfunction_num_];
+	// memset(reduced_force_,0.0,sizeof(double)*interpolate_eigenfunction_num_);
+	//flattened reduced deformation gradient:9n*1
+
 	generateE();
 	generateH();
 }
@@ -1835,16 +1840,9 @@ void RealTimeExampleBasedDeformer::generateH()
 		}
 	}
 }
-Matrix RealTimeExampleBasedDeformer::computeDu(const int &ele) const
-{
-	Matrix Du(3,interpolate_eigenfunction_num_);
-
-	return Du;
-}
-void RealTimeExampleBasedDeformer::computeReducedF() const
-{//9n*1 vector
-	double *reduced_F=new double[9*object_cubica_ele_num_];
-	memset(reduced_F,0.0,sizeof(Matrix)*9*object_cubica_ele_num_);
+void RealTimeExampleBasedDeformer::computeReducedF(const double *reduced_dis,double *reduced_F) const
+{//9n*1 vector,F=I+Eq, E:9n*r, q:r*1
+	//memset(reduced_F_,0.0,sizeof(double)*9*object_cubica_ele_num_);
 	for(int cubica_idx=0;cubica_idx<object_cubica_ele_num_;++cubica_idx)
 	{
 		reduced_F[9*cubica_idx] += 1.0;
@@ -1855,16 +1853,14 @@ void RealTimeExampleBasedDeformer::computeReducedF() const
 	for(int cubica_idx=0;cubica_idx<object_cubica_ele_num_;++cubica_idx)
 	{
 		int ele=object_cubica_elements_[cubica_idx];
-		Matrix temp_matrix(9,interpolate_eigenfunction_num_);//9*r
-		//vertexSubBasis(ele,temp_matrix);
+
 		for(int i=0;i<9;++i)
-			for(int j=0;j<12;++j)
-				ele_pFpu(9*cubica_idx+i,j)=temp_matrix(i,j);
+			for(int j=0;j<interpolate_eigenfunction_num_;++j)
+				reduced_F[9*cubica_idx+i,j] += E_(9*cubica_idx+i,j)*reduced_dis[j];
 	}
-//	reduced_F += ele_pFpu*q_;
 }
 Mat3d RealTimeExampleBasedDeformer::firstPiolaKirchhoff(Mat3d &F) const
-{
+{//3*3
 	Mat3d P(0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0);
 	P=mu_*(F-trans(inv(F)))+lamda_*log(det(F))*trans(inv(F));
 	return P;
@@ -1878,38 +1874,15 @@ void RealTimeExampleBasedDeformer::flatten(Mat3d &mat,double *flat_mat) const
 		flat_mat[3*i+2]=mat[i][2];
 	}
 }
-void RealTimeExampleBasedDeformer::reback(double *flat_mat, Matrix &mat)
-{//9x1 vector to matrix(3,3)
-	for(int i=0;i<3;++i)
-	{
-		mat(i,0)=flat_mat[3*i];
-		mat(i,1)=flat_mat[3*i+1];
-		mat(i,2)=flat_mat[3*i+2];
-	}
-}
-void RealTimeExampleBasedDeformer::computeReducedInternalForce()
-{//r*1
-	//to do
-	// memset(reduced_force_)
-	// g_.ReSize(9*object_cubica_ele_num_,1);
-	// for(int cubica_idx=0;cubica_idx<object_cubica_ele_num_;++cubica_idx)
-	// {
-	// 	int ele=object_cubica_elements_[cubica_idx];
-	//
-	// 	Mat3d F;
-	// 	//forceDensity
-	// 	//first PiolaKirchhoff P:
-	// 	Mat3d P=firstPiolaKirchhoff(F);
-	// 	double *flat_P=new double[9];
-	// 	flatten(P,flat_P);//9*1
-	// 	for(int i=0; i<9; ++i)
-	// 		g_(9*cubica_idx+i,1)=flat_P[i];
-	// 	delete[] flat_P;
-	// }
-	// const Matrix temp_matrix=H_.t()*g_;
-	// for(int i=0;i<interpolate_eigenfunction_num_;++i)
-	// 	reduced_force_[i]=temp_matrix(i,1);
-}
+// void RealTimeExampleBasedDeformer::reback(double *flat_mat, Matrix &mat)
+// {//9x1 vector to matrix(3,3)
+// 	for(int i=0;i<3;++i)
+// 	{
+// 		mat(i,0)=flat_mat[3*i];
+// 		mat(i,1)=flat_mat[3*i+1];
+// 		mat(i,2)=flat_mat[3*i+2];
+// 	}
+// }
 Mat3d RealTimeExampleBasedDeformer::computeDeformationGradient(const Mat3d &init_matrix,const Mat3d &deformed_matrix/*Vec3d *init_pos,Vec3d *deform_pos*/)
 {
 	// Mat3d F=deformed_matrix*inv(init_matrix);
@@ -1933,13 +1906,43 @@ Mat3d RealTimeExampleBasedDeformer::computeDeformationGradient(const Mat3d &init
     result = U*Fhat_mat*trans(V);
     return result;
 }
+
+void RealTimeExampleBasedDeformer::computeReducedInternalForce(const double *reduced_dis,double *force)
+{//r*1
+	memset(force,0.0,sizeof(double)*interpolate_eigenfunction_num_);
+	//memset(reduced_dis,0.0,sizeof(double)*interpolate_eigenfunction_num_);
+	Matrix g(9*object_cubica_ele_num_,1);//9n*1
+	double *reduced_F=new double[9*object_cubica_ele_num_];
+	memset(reduced_F,0.0,sizeof(Matrix)*9*object_cubica_ele_num_);
+	computeReducedF(reduced_dis,reduced_F);//generate: reduced_F
+	for(int cubica_idx=0;cubica_idx<object_cubica_ele_num_;++cubica_idx)
+	{
+		int ele=object_cubica_elements_[cubica_idx];
+		//computation of F not done yet
+		Mat3d F;
+		for(int i=0;i<3;++i)
+			for(int j=0;j<3;++j)
+				F[i][j]=reduced_F[9*cubica_idx+3*i+j];
+		//forceDensity is the flatten P(P is the first PiolaKirchhoff)
+		Mat3d P=firstPiolaKirchhoff(F);
+		double *flat_P=new double[9];
+		flatten(P,flat_P);//9*1
+
+		for(int i=0; i<9; ++i)
+			g(9*cubica_idx+i,1)=flat_P[i];
+		delete[] flat_P;
+	}
+	const Matrix temp_matrix=H_.t()*g;//H_:9n*r,g:9n*1->get temp_matrix:r*1
+	for(int i=0;i<interpolate_eigenfunction_num_;++i)
+		force[i]=temp_matrix(i,1);
+	delete[] reduced_F;
+}
 //compute for E(deformed,source)
 //1: mesh is the source mesh, first get the mesh material of source
 //2: souce pos could be Null, then get the source pos from the given mesh
 //3: get the cubica_elements from source mesh
 //4: get the vertices position (deformed pos and source pos) for the corresponding elements
-void RealTimeExampleBasedDeformer::computeReducedEnergyAndGradient(VolumetricMesh *mesh,const double *init_pos,const double *displacement, const unsigned int cubica_num,
-									const unsigned int *cubica_elements, double *cubica_weights,double &energy,double *grad)
+void RealTimeExampleBasedDeformer::computeReducedEnergy(const double *init_pos,const double *displacement,double &energy)
 {
 	//std::cout<<"computeReducedEnergyAndGradient---start:\n";
 	// for(int i=0;i<3*mesh->getNumVertices();++i)
@@ -1947,9 +1950,7 @@ void RealTimeExampleBasedDeformer::computeReducedEnergyAndGradient(VolumetricMes
 	// std::cout<<std::endl;
 	//clear grad vector
 	energy=0.0;
-	for(int i=0;i<3*interpolate_eigenfunction_num_;++i)
-		grad[i]=0.0;
-	TetMesh *tet_mesh=dynamic_cast<TetMesh*>(mesh);
+	TetMesh *tet_mesh=dynamic_cast<TetMesh*>(simulation_mesh_);
 	//used for the method1:compute g on full space and redesign a 3n*1 vector
 	//the four vertices contains displacement, the other points displacement is zero
 //	double *new_dis=new double[3*mesh->getNumVertices()];
@@ -1961,9 +1962,9 @@ void RealTimeExampleBasedDeformer::computeReducedEnergyAndGradient(VolumetricMes
 	// 	total_weight+=cubica_weights[cubica_idx];
 	// std::cout<<"total_weight:"<<total_weight<<std::endl;
 	//generate new dis and energy value
-	for(int cubica_idx=0;cubica_idx<cubica_num;++cubica_idx)
+	for(int cubica_idx=0;cubica_idx<object_cubica_ele_num_;++cubica_idx)
 	{
-		int ele=cubica_elements[cubica_idx];
+		int ele=object_cubica_elements_[cubica_idx];
 		//std::cout<<"eleeeeeeeeeeeeeeeeeeee:"<<ele<<"\n";
 		// double ele_volume=tet_mesh->getTetVolume(tet_mesh->getVertex(ele,0),tet_mesh->getVertex(ele,1),
 		// 						tet_mesh->getVertex(ele,2),tet_mesh->getVertex(ele,3));
@@ -1974,12 +1975,12 @@ void RealTimeExampleBasedDeformer::computeReducedEnergyAndGradient(VolumetricMes
 		Vec3d *vert_pos=new Vec3d[4];
 		for(int j=0;j<4;++j)
 		{
-			global_idx[j]=mesh->getVertexIndex(ele,j);
-			vert_pos[j]=*mesh->getVertex(global_idx[j]);
+			global_idx[j]=simulation_mesh_->getVertexIndex(ele,j);
+			vert_pos[j]=*simulation_mesh_->getVertex(global_idx[j]);
 		}
 		Vec3d *init_ele_dis=new Vec3d[4];
 		Vec3d *deformed_ele_dis=new Vec3d[4];
-		for(int j=0;j<mesh->getNumElementVertices();++j)
+		for(int j=0;j<4;++j)
 		{
 			for(int k=0;k<3;++k)
 			{
@@ -2035,7 +2036,7 @@ void RealTimeExampleBasedDeformer::computeReducedEnergyAndGradient(VolumetricMes
 	//	std::cout<<"ele_energy:"<<element_energy<<std::endl;
 	//	std::cout<<"cubica_weights:"<<cubica_weights[cubica_idx]<<std::endl;
 
-		energy += cubica_weights[cubica_idx]*element_energy;
+		energy += object_cubica_weights_[cubica_idx]*element_energy;
 
 
 		delete[] global_idx;
@@ -2047,164 +2048,162 @@ void RealTimeExampleBasedDeformer::computeReducedEnergyAndGradient(VolumetricMes
 		//compute energy gradient
 		//get reduced displacement
 		//q_=tetSubBasis(ele)*displacement
-		computeForceOnReducedSubSpace(mesh,init_pos,displacement,g);
-		for(int ele=0;ele<mesh->getNumElements();++ele)
-		 {
-			for(int eigen_idx=0;eigen_idx<interpolate_eigenfunction_num_;++eigen_idx)
-			{
-				// grad[3*eigen_idx]+=cubica_weights[cubica_idx]*g[3*eigen_idx];
-				// grad[3*eigen_idx+1]+=cubica_weights[cubica_idx]*g[3*eigen_idx+1];
-				// grad[3*eigen_idx+2]+=cubica_weights[cubica_idx]*g[3*eigen_idx+2];
-				grad[3*eigen_idx]=g[3*eigen_idx];
-				grad[3*eigen_idx+1]=g[3*eigen_idx+1];
-				grad[3*eigen_idx+2]=g[3*eigen_idx+2];
-			}
-		}
+		// computeForceOnReducedSubSpace(mesh,init_pos,displacement,g);
+		// for(int ele=0;ele<mesh->getNumElements();++ele)
+		//  {
+		// 	for(int eigen_idx=0;eigen_idx<interpolate_eigenfunction_num_;++eigen_idx)
+		// 	{
+		// 		// grad[3*eigen_idx]+=cubica_weights[cubica_idx]*g[3*eigen_idx];
+		// 		// grad[3*eigen_idx+1]+=cubica_weights[cubica_idx]*g[3*eigen_idx+1];
+		// 		// grad[3*eigen_idx+2]+=cubica_weights[cubica_idx]*g[3*eigen_idx+2];
+		// 		grad[3*eigen_idx]=g[3*eigen_idx];
+		// 		grad[3*eigen_idx+1]=g[3*eigen_idx+1];
+		// 		grad[3*eigen_idx+2]=g[3*eigen_idx+2];
+		// 	}
+		// }
 	//}
 		std::cout<<"energy:"<<energy<<"c\n";
-	//delete[] new_dis;
-	delete[] g;
 }
-void RealTimeExampleBasedDeformer::computeForceOnReducedSubSpace(VolumetricMesh *mesh,const double *init_pos,const double *displacement,double *g)
-{
-//	std::cout<<"computeForceOnReducedSubSpace:\n";
-	//clear g
-	for(int i=0;i<3*interpolate_eigenfunction_num_;++i)
-		g[i]=0.0;
-	TetMesh *tet_mesh=dynamic_cast<TetMesh*>(mesh);
-	double *forces=new double[3*mesh->getNumVertices()];
-	for(int i=0;i<3*mesh->getNumVertices();++i)
-		forces[i]=0.0;
-	for(int ele=0;ele<mesh->getNumElements();++ele)
-	{
-		int *global_idx=new int[mesh->getNumElementVertices()];
-		Vec3d *vert_pos=new Vec3d[mesh->getNumElementVertices()];
-		double ele_volume=tet_mesh->getTetVolume(tet_mesh->getVertex(ele,0),tet_mesh->getVertex(ele,1),
-								tet_mesh->getVertex(ele,2),tet_mesh->getVertex(ele,3));
-		for(int i=0;i<mesh->getNumElementVertices();++i)
-		{
-			global_idx[i]=mesh->getVertexIndex(ele,i);
-			vert_pos[i]=*mesh->getVertex(global_idx[i]);
-		}
-		Vec3d *init_ele_dis=new Vec3d[mesh->getNumElementVertices()];
-		Vec3d *deformed_ele_dis=new Vec3d[mesh->getNumElementVertices()];
-		//get deformed_ele_displacement vector to compute for F
-		Mat3d temp_init_matrix(0.0)	;
-		//compute init displacement matrix Dm, if input parameter init_pos is not null, the init_pos is used for the current configuration
-		if(init_pos==NULL)
-		{
-			temp_init_matrix=object_init_element_dis_matrix_[ele];
-			for(int i=0;i<mesh->getNumElementVertices();++i)
-			{
-				for(int j=0;j<3;++j)
-					deformed_ele_dis[i][j]=vert_pos[i][j]+displacement[3*global_idx[i]+j];
-			}
-		}
-		else
-		{
-			for(int i=0;i<3;++i)
-			{
-				temp_init_matrix[i][0]=init_pos[3*global_idx[0]+i]-init_pos[3*global_idx[3]+i];
-				temp_init_matrix[i][1]=init_pos[3*global_idx[1]+i]-init_pos[3*global_idx[3]+i];
-				temp_init_matrix[i][2]=init_pos[3*global_idx[2]+i]-init_pos[3*global_idx[3]+i];
-			}
-			for(int i=0;i<mesh->getNumElementVertices();++i)
-			{
-				for(int j=0;j<3;++j)
-					deformed_ele_dis[i][j]=init_pos[3*global_idx[i]+j]+displacement[3*global_idx[i]+j];
-			}
-		}
-		Vec3d *vec=new Vec3d[3];
-		//compute deformed_displacement_matrix Ds
-		for(int i=0;i<3;++i)
-		{
-			vec[i][0]=deformed_ele_dis[0][i]-deformed_ele_dis[3][i];
-			vec[i][1]=deformed_ele_dis[1][i]-deformed_ele_dis[3][i];
-			vec[i][2]=deformed_ele_dis[2][i]-deformed_ele_dis[3][i];
-		}
-		Mat3d deformed_ele_dis_matrix(vec[0],vec[1],vec[2]);
-		Mat3d F=computeDeformationGradient(temp_init_matrix,deformed_ele_dis_matrix);
-		if(ele==24320)
-		{
-	//		std::cout<<"object_init_element_dis_matrix_[ele]:"<<object_init_element_dis_matrix_[ele]<<"\n";
-		// 	// std::cout<<"init_pos:\n";
-		// 	// for(int i=0;i<mesh->getNumElementVertices();++i)
-		// 	// {
-		// 	// 	for(int j=0;j<3;++j)
-		// 	// 	{
-		// 	// 		std::cout<<init_pos[3*global_idx[i]+j]<<",";
-		// 	// 	}
-		// 	//
-		// 	// }
-		//
-		// 		std::cout<<"displacement:\n";
-		// 	for(int i=0;i<mesh->getNumElementVertices();++i)
-		// 	{
-		// 		for(int j=0;j<3;++j)
-		// 		{
-		// 			std::cout<<displacement[3*global_idx[i]+j]<<",";
-		// 		}
-		// 		//std::cout<<displacement[3*global_idx[i]+j+1]<<"extra,\n";
-		// 	}
-		//
-		// 	std::cout<<"reduced-F:"<<det(F)<<"\n";
-		// 	std::cout<<"temp_init_matrix:"<<temp_init_matrix<<"\n";
-		// 	std::cout<<"deformed_ele_dis_matrix:"<<deformed_ele_dis_matrix<<"\n";
-		}
-
-		double lnJ=log(det(F));
-		Mat3d P=mu_*(F-trans(inv(F)))+lamda_*lnJ*trans(inv(F));
-		Mat3d H=ele_volume*P*inv(trans(temp_init_matrix));
-		for(int i=0;i<mesh->getNumElementVertices();++i)
-		 {
-			for(int j=0;j<3;++j)
-			{
-				if(i==3)
-					forces[3*global_idx[i]+j]+=(-1.0)*(H[j][0]+H[j][1]+H[j][2]);
-				else
-					forces[3*global_idx[i]+j]+=H[j][i];
-			}
-		}
-		delete[] vec;
-		delete[] deformed_ele_dis;
-		delete[] global_idx;
-		delete[] vert_pos;
-	}
-	// std::cout<<"compute g:\n";
-	// for(int i=0;i<mesh->getNumVertices();++i)
-	// 	if((fabs(forces[3*i])>1.0e-7)||(fabs(forces[3*i+1])>1.0e-7)||(fabs(forces[3*i+2])>1.0e-7))
-	// 		std::cout<<i<<":"<<forces[3*i]<<",\n";
-	//getchar();
-	//project on reduced subspace
-	for(int eigen_idx=0;eigen_idx<interpolate_eigenfunction_num_;++eigen_idx)
-		for(int vert_idx=0;vert_idx<mesh->getNumVertices();++vert_idx)
-		{
-			g[3*eigen_idx]+=forces[3*vert_idx]*object_eigenfunctions_[eigen_idx][vert_idx];
-			g[3*eigen_idx+1]+=forces[3*vert_idx+1]*object_eigenfunctions_[eigen_idx][vert_idx];
-			g[3*eigen_idx+2]+=forces[3*vert_idx+2]*object_eigenfunctions_[eigen_idx][vert_idx];
-			// if((vert_idx==1066)/*||(vert_idx==857)||(vert_idx==1073)||(vert_idx==1527)*/)
-			// {
-			// 	std::cout<<"idx:"<<vert_idx<<"...\n";
-			// 	std::cout<<"fx:"<<eigen_idx<<":"<<forces[3*vert_idx]<<","<<g[3*eigen_idx]<<"...\n";
-			// 	std::cout<<"fy:"<<eigen_idx<<":"<<forces[3*vert_idx+1]<<","<<g[3*eigen_idx+1]<<"...\n";
-			// 	std::cout<<"fz:"<<eigen_idx<<":"<<forces[3*vert_idx+2]<<","<<g[3*eigen_idx+2]<<"...\n";
-			//
-			// // 	std::cout<<"g:"<<g[3*eigen_idx+1]<<"...\n";
-			// // 	std::cout<<"g:"<<g[3*eigen_idx+2]<<"...\n";
-			// }
-		}
-		// if((vert_idx==1066)&&(vert_idx==857)&&(vert_idx==1073)&&(vert_idx==1527))
-		// {
-		// 	std::cout<<forces[3]
-		// }
-		// std::cout<<"1066"<<forces[3*1066]<<","<<forces[3*1066+1]<<","<<forces[3*1066+2]<<"\n";
-		// std::cout<<"857"<<forces[3*857]<<","<<forces[3*857+1]<<","<<forces[3*857+2]<<"\n";
-
-
-	//  for(int i=0;i<21;++i)
-	//  	std::cout<<g[i]<<",";
-	delete[] forces;
-}
+// void RealTimeExampleBasedDeformer::computeForceOnReducedSubSpace(VolumetricMesh *mesh,const double *init_pos,const double *displacement,double *g)
+// {
+// //	std::cout<<"computeForceOnReducedSubSpace:\n";
+// 	//clear g
+// 	for(int i=0;i<3*interpolate_eigenfunction_num_;++i)
+// 		g[i]=0.0;
+// 	TetMesh *tet_mesh=dynamic_cast<TetMesh*>(mesh);
+// 	double *forces=new double[3*mesh->getNumVertices()];
+// 	for(int i=0;i<3*mesh->getNumVertices();++i)
+// 		forces[i]=0.0;
+// 	for(int ele=0;ele<mesh->getNumElements();++ele)
+// 	{
+// 		int *global_idx=new int[mesh->getNumElementVertices()];
+// 		Vec3d *vert_pos=new Vec3d[mesh->getNumElementVertices()];
+// 		double ele_volume=tet_mesh->getTetVolume(tet_mesh->getVertex(ele,0),tet_mesh->getVertex(ele,1),
+// 								tet_mesh->getVertex(ele,2),tet_mesh->getVertex(ele,3));
+// 		for(int i=0;i<mesh->getNumElementVertices();++i)
+// 		{
+// 			global_idx[i]=mesh->getVertexIndex(ele,i);
+// 			vert_pos[i]=*mesh->getVertex(global_idx[i]);
+// 		}
+// 		Vec3d *init_ele_dis=new Vec3d[mesh->getNumElementVertices()];
+// 		Vec3d *deformed_ele_dis=new Vec3d[mesh->getNumElementVertices()];
+// 		//get deformed_ele_displacement vector to compute for F
+// 		Mat3d temp_init_matrix(0.0)	;
+// 		//compute init displacement matrix Dm, if input parameter init_pos is not null, the init_pos is used for the current configuration
+// 		if(init_pos==NULL)
+// 		{
+// 			temp_init_matrix=object_init_element_dis_matrix_[ele];
+// 			for(int i=0;i<mesh->getNumElementVertices();++i)
+// 			{
+// 				for(int j=0;j<3;++j)
+// 					deformed_ele_dis[i][j]=vert_pos[i][j]+displacement[3*global_idx[i]+j];
+// 			}
+// 		}
+// 		else
+// 		{
+// 			for(int i=0;i<3;++i)
+// 			{
+// 				temp_init_matrix[i][0]=init_pos[3*global_idx[0]+i]-init_pos[3*global_idx[3]+i];
+// 				temp_init_matrix[i][1]=init_pos[3*global_idx[1]+i]-init_pos[3*global_idx[3]+i];
+// 				temp_init_matrix[i][2]=init_pos[3*global_idx[2]+i]-init_pos[3*global_idx[3]+i];
+// 			}
+// 			for(int i=0;i<mesh->getNumElementVertices();++i)
+// 			{
+// 				for(int j=0;j<3;++j)
+// 					deformed_ele_dis[i][j]=init_pos[3*global_idx[i]+j]+displacement[3*global_idx[i]+j];
+// 			}
+// 		}
+// 		Vec3d *vec=new Vec3d[3];
+// 		//compute deformed_displacement_matrix Ds
+// 		for(int i=0;i<3;++i)
+// 		{
+// 			vec[i][0]=deformed_ele_dis[0][i]-deformed_ele_dis[3][i];
+// 			vec[i][1]=deformed_ele_dis[1][i]-deformed_ele_dis[3][i];
+// 			vec[i][2]=deformed_ele_dis[2][i]-deformed_ele_dis[3][i];
+// 		}
+// 		Mat3d deformed_ele_dis_matrix(vec[0],vec[1],vec[2]);
+// 		Mat3d F=computeDeformationGradient(temp_init_matrix,deformed_ele_dis_matrix);
+// 		if(ele==24320)
+// 		{
+// 	//		std::cout<<"object_init_element_dis_matrix_[ele]:"<<object_init_element_dis_matrix_[ele]<<"\n";
+// 		// 	// std::cout<<"init_pos:\n";
+// 		// 	// for(int i=0;i<mesh->getNumElementVertices();++i)
+// 		// 	// {
+// 		// 	// 	for(int j=0;j<3;++j)
+// 		// 	// 	{
+// 		// 	// 		std::cout<<init_pos[3*global_idx[i]+j]<<",";
+// 		// 	// 	}
+// 		// 	//
+// 		// 	// }
+// 		//
+// 		// 		std::cout<<"displacement:\n";
+// 		// 	for(int i=0;i<mesh->getNumElementVertices();++i)
+// 		// 	{
+// 		// 		for(int j=0;j<3;++j)
+// 		// 		{
+// 		// 			std::cout<<displacement[3*global_idx[i]+j]<<",";
+// 		// 		}
+// 		// 		//std::cout<<displacement[3*global_idx[i]+j+1]<<"extra,\n";
+// 		// 	}
+// 		//
+// 		// 	std::cout<<"reduced-F:"<<det(F)<<"\n";
+// 		// 	std::cout<<"temp_init_matrix:"<<temp_init_matrix<<"\n";
+// 		// 	std::cout<<"deformed_ele_dis_matrix:"<<deformed_ele_dis_matrix<<"\n";
+// 		}
+//
+// 		double lnJ=log(det(F));
+// 		Mat3d P=mu_*(F-trans(inv(F)))+lamda_*lnJ*trans(inv(F));
+// 		Mat3d H=ele_volume*P*inv(trans(temp_init_matrix));
+// 		for(int i=0;i<mesh->getNumElementVertices();++i)
+// 		 {
+// 			for(int j=0;j<3;++j)
+// 			{
+// 				if(i==3)
+// 					forces[3*global_idx[i]+j]+=(-1.0)*(H[j][0]+H[j][1]+H[j][2]);
+// 				else
+// 					forces[3*global_idx[i]+j]+=H[j][i];
+// 			}
+// 		}
+// 		delete[] vec;
+// 		delete[] deformed_ele_dis;
+// 		delete[] global_idx;
+// 		delete[] vert_pos;
+// 	}
+// 	// std::cout<<"compute g:\n";
+// 	// for(int i=0;i<mesh->getNumVertices();++i)
+// 	// 	if((fabs(forces[3*i])>1.0e-7)||(fabs(forces[3*i+1])>1.0e-7)||(fabs(forces[3*i+2])>1.0e-7))
+// 	// 		std::cout<<i<<":"<<forces[3*i]<<",\n";
+// 	//getchar();
+// 	//project on reduced subspace
+// 	for(int eigen_idx=0;eigen_idx<interpolate_eigenfunction_num_;++eigen_idx)
+// 		for(int vert_idx=0;vert_idx<mesh->getNumVertices();++vert_idx)
+// 		{
+// 			g[3*eigen_idx]+=forces[3*vert_idx]*object_eigenfunctions_[eigen_idx][vert_idx];
+// 			g[3*eigen_idx+1]+=forces[3*vert_idx+1]*object_eigenfunctions_[eigen_idx][vert_idx];
+// 			g[3*eigen_idx+2]+=forces[3*vert_idx+2]*object_eigenfunctions_[eigen_idx][vert_idx];
+// 			// if((vert_idx==1066)/*||(vert_idx==857)||(vert_idx==1073)||(vert_idx==1527)*/)
+// 			// {
+// 			// 	std::cout<<"idx:"<<vert_idx<<"...\n";
+// 			// 	std::cout<<"fx:"<<eigen_idx<<":"<<forces[3*vert_idx]<<","<<g[3*eigen_idx]<<"...\n";
+// 			// 	std::cout<<"fy:"<<eigen_idx<<":"<<forces[3*vert_idx+1]<<","<<g[3*eigen_idx+1]<<"...\n";
+// 			// 	std::cout<<"fz:"<<eigen_idx<<":"<<forces[3*vert_idx+2]<<","<<g[3*eigen_idx+2]<<"...\n";
+// 			//
+// 			// // 	std::cout<<"g:"<<g[3*eigen_idx+1]<<"...\n";
+// 			// // 	std::cout<<"g:"<<g[3*eigen_idx+2]<<"...\n";
+// 			// }
+// 		}
+// 		// if((vert_idx==1066)&&(vert_idx==857)&&(vert_idx==1073)&&(vert_idx==1527))
+// 		// {
+// 		// 	std::cout<<forces[3]
+// 		// }
+// 		// std::cout<<"1066"<<forces[3*1066]<<","<<forces[3*1066+1]<<","<<forces[3*1066+2]<<"\n";
+// 		// std::cout<<"857"<<forces[3*857]<<","<<forces[3*857+1]<<","<<forces[3*857+2]<<"\n";
+//
+//
+// 	//  for(int i=0;i<21;++i)
+// 	//  	std::cout<<g[i]<<",";
+// 	delete[] forces;
+// }
 
 int RealTimeExampleBasedDeformer::ModifiedSVD(Mat3d & F, Mat3d & U, Vec3d & Fhat, Mat3d & V) const
 {
@@ -2408,210 +2407,4 @@ void RealTimeExampleBasedDeformer::FindOrthonormalVector(Vec3d & v, Vec3d & resu
     result = norm(cross(v, axis));
 }
 
-void RealTimeExampleBasedDeformer::computeFullEnergyAndGradient(VolumetricMesh *mesh,const double *init_pos,const double *displacement, const unsigned int cubica_num,
-									const unsigned int *cubica_elements, double *cubica_weights,double &energy,double *grad)
-{
-	//std::cout<<"computeReducedEnergyAndGradient---start:\n";
-	//clear grad vector
-	energy=0.0;
-	for(int i=0;i<3*interpolate_eigenfunction_num_;++i)
-		grad[i]=0.0;
-	//material setting, we use homogeneous materials,get the first element material
-	VolumetricMesh::Material * material = mesh->getElementMaterial(0);
-	VolumetricMesh::ENuMaterial * eNuMaterial = downcastENuMaterial(material);
-	if (eNuMaterial == NULL)
-	{
-		std::cout<<"Error: mesh does not consist of E, nu materials.\n";
-		exit(0);
-	}
-	double lambda = eNuMaterial->getLambda();
-	double mu = eNuMaterial->getMu();
-	TetMesh *tet_mesh=dynamic_cast<TetMesh*>(mesh);
-
-	//used for the method1:compute g on full space and redesign a 3n*1 vector
-	//the four vertices contains displacement, the other points displacement is zero
-//	double *new_dis=new double[3*mesh->getNumVertices()];
-	double *g=new double[3*interpolate_eigenfunction_num_];
-	for(int i=0;i<3*interpolate_eigenfunction_num_;++i)
-		g[i]=0.0;
-	//generate new dis and energy value
-	//for(int cubica_idx=0;cubica_idx<cubica_num;++cubica_idx)
-	for(int ele=0;ele<mesh->getNumElements();++ele)
-	{
-		double ele_volume=tet_mesh->getTetVolume(tet_mesh->getVertex(ele,0),tet_mesh->getVertex(ele,1),
-								tet_mesh->getVertex(ele,2),tet_mesh->getVertex(ele,3));
-		//get global_idx and vert_pos for each cubica element
-		int *global_idx=new int[mesh->getNumElementVertices()];
-		Vec3d *vert_pos=new Vec3d[mesh->getNumElementVertices()];
-		for(int j=0;j<mesh->getNumElementVertices();++j)
-		{
-			global_idx[j]=mesh->getVertexIndex(ele,j);
-			vert_pos[j]=*mesh->getVertex(global_idx[j]);
-		}
-		Vec3d *init_ele_dis=new Vec3d[mesh->getNumElementVertices()];
-		Vec3d *deformed_ele_dis=new Vec3d[mesh->getNumElementVertices()];
-		for(int j=0;j<mesh->getNumElementVertices();++j)
-		{
-			for(int k=0;k<3;++k)
-			{
-				if(init_pos==NULL)
-					init_ele_dis[j][k]=vert_pos[j][k];
-				else
-					init_ele_dis[j][k]=init_pos[3*global_idx[j]+k];
-				deformed_ele_dis[j][k]=init_ele_dis[j][k]+displacement[3*global_idx[j]+k];
-			}
-		}
-		//get init matrix for one ele
-		Mat3d temp_init_matrix(0.0);
-		//compute init displacement matrix Dm, if input parameter init_pos is not null, the init_pos is used for the current configuration
-		if(init_pos==NULL)
-		{
-			//if(example_flag==0)
-				temp_init_matrix=object_init_element_dis_matrix_[ele];
-			// else
-			// 	temp_init_matrix=example_init_element_dis_matrix_[dis_ex_idx][ele];
-		}
-		else
-		{
-			for(int i=0;i<3;++i)
-			{
-				temp_init_matrix[i][0]=init_ele_dis[0][i]-init_ele_dis[3][i];
-				temp_init_matrix[i][1]=init_ele_dis[1][i]-init_ele_dis[3][i];
-				temp_init_matrix[i][2]=init_ele_dis[2][i]-init_ele_dis[3][i];
-			}
-		}
-		//compute deformed_displacement_matrix
-		Vec3d *vec=new Vec3d[3];
-		for(int i=0;i<3;++i)
-		{
-			vec[i][0]=deformed_ele_dis[0][i]-deformed_ele_dis[3][i];
-			vec[i][1]=deformed_ele_dis[1][i]-deformed_ele_dis[3][i];
-			vec[i][2]=deformed_ele_dis[2][i]-deformed_ele_dis[3][i];
-		}
-		Mat3d deformed_ele_dis_matrix(vec[0],vec[1],vec[2]);
-		//compute energy
-		Mat3d F=computeDeformationGradient(temp_init_matrix,deformed_ele_dis_matrix);
-		Mat3d temp=trans(F)*F;
-		double trace_c=temp[0][0]+temp[1][1]+temp[2][2];
-		double lnJ=log(det(F));
-		double element_energy=0.5*mu*(trace_c-3)-mu*lnJ+0.5*lambda*lnJ*lnJ;
-		energy +=element_energy;
-
-		delete[] global_idx;
-		delete[] vert_pos;
-		delete[] init_ele_dis;
-		delete[] deformed_ele_dis;
-		delete[] vec;
-	}
-		//compute energy gradient
-		computeForceOnFullSpace(mesh,init_pos,displacement,g);
-		for(int ele=0;ele<mesh->getNumElements();++ele)
-		 {
-			for(int eigen_idx=0;eigen_idx<interpolate_eigenfunction_num_;++eigen_idx)
-			{
-				grad[3*eigen_idx]=g[3*eigen_idx];
-				grad[3*eigen_idx+1]=g[3*eigen_idx+1];
-				grad[3*eigen_idx+2]=g[3*eigen_idx+2];
-			}
-		}
-	//}
-		std::cout<<"energy:"<<energy<<"c\n";
-	delete[] g;
-}
-void RealTimeExampleBasedDeformer::computeForceOnFullSpace(VolumetricMesh *mesh,const double *init_pos,const double *displacement,double *g)
-{
-//	std::cout<<"computeForceOnReducedSubSpace:\n";
-	//clear g
-	for(int i=0;i<3*interpolate_eigenfunction_num_;++i)
-		g[i]=0.0;
-	VolumetricMesh::Material * material = mesh->getElementMaterial(0);
-	VolumetricMesh::ENuMaterial * eNuMaterial = downcastENuMaterial(material);
-	if (eNuMaterial == NULL)
-	{
-		std::cout<<"Error: mesh does not consist of E, nu materials.\n";
-		exit(0);
-	}
-	double lambda = eNuMaterial->getLambda();
-	double mu = eNuMaterial->getMu();
-	TetMesh *tet_mesh=dynamic_cast<TetMesh*>(mesh);
-	double *forces=new double[3*mesh->getNumVertices()];
-	for(int i=0;i<3*mesh->getNumVertices();++i)
-		forces[i]=0.0;
-	for(int ele=0;ele<mesh->getNumElements();++ele)
-	{
-		int *global_idx=new int[mesh->getNumElementVertices()];
-		Vec3d *vert_pos=new Vec3d[mesh->getNumElementVertices()];
-		double ele_volume=tet_mesh->getTetVolume(tet_mesh->getVertex(ele,0),tet_mesh->getVertex(ele,1),
-								tet_mesh->getVertex(ele,2),tet_mesh->getVertex(ele,3));
-		for(int i=0;i<mesh->getNumElementVertices();++i)
-		{
-			global_idx[i]=mesh->getVertexIndex(ele,i);
-			vert_pos[i]=*mesh->getVertex(global_idx[i]);
-		}
-		Vec3d *init_ele_dis=new Vec3d[mesh->getNumElementVertices()];
-		Vec3d *deformed_ele_dis=new Vec3d[mesh->getNumElementVertices()];
-		//get deformed_ele_displacement vector to compute for F
-		Mat3d temp_init_matrix(0.0)	;
-		//compute init displacement matrix Dm, if input parameter init_pos is not null, the init_pos is used for the current configuration
-		if(init_pos==NULL)
-		{
-			temp_init_matrix=object_init_element_dis_matrix_[ele];
-			for(int i=0;i<mesh->getNumElementVertices();++i)
-			{
-				for(int j=0;j<3;++j)
-					deformed_ele_dis[i][j]=vert_pos[i][j]+displacement[3*global_idx[i]+j];
-			}
-		}
-		else
-		{
-			for(int i=0;i<3;++i)
-			{
-				temp_init_matrix[i][0]=init_pos[3*global_idx[0]+i]-init_pos[3*global_idx[3]+i];
-				temp_init_matrix[i][1]=init_pos[3*global_idx[1]+i]-init_pos[3*global_idx[3]+i];
-				temp_init_matrix[i][2]=init_pos[3*global_idx[2]+i]-init_pos[3*global_idx[3]+i];
-			}
-			for(int i=0;i<mesh->getNumElementVertices();++i)
-			{
-				for(int j=0;j<3;++j)
-					deformed_ele_dis[i][j]=init_pos[3*global_idx[i]+j]+displacement[3*global_idx[i]+j];
-			}
-		}
-		Vec3d *vec=new Vec3d[3];
-		//compute deformed_displacement_matrix Ds
-		for(int i=0;i<3;++i)
-		{
-			vec[i][0]=deformed_ele_dis[0][i]-deformed_ele_dis[3][i];
-			vec[i][1]=deformed_ele_dis[1][i]-deformed_ele_dis[3][i];
-			vec[i][2]=deformed_ele_dis[2][i]-deformed_ele_dis[3][i];
-		}
-		Mat3d deformed_ele_dis_matrix(vec[0],vec[1],vec[2]);
-		Mat3d F=computeDeformationGradient(temp_init_matrix,deformed_ele_dis_matrix);
-		double lnJ=log(det(F));
-		Mat3d P=mu*(F-trans(inv(F)))+lambda*lnJ*trans(inv(F));
-		Mat3d H=ele_volume*P*inv(trans(temp_init_matrix));
-		for(int i=0;i<mesh->getNumElementVertices();++i)
-		 {
-			for(int j=0;j<3;++j)
-			{
-				if(i==3)
-					forces[3*global_idx[i]+j]+=(-1.0)*(H[j][0]+H[j][1]+H[j][2]);
-				else
-					forces[3*global_idx[i]+j]+=H[j][i];
-			}
-		}
-		delete[] vec;
-		delete[] deformed_ele_dis;
-		delete[] global_idx;
-		delete[] vert_pos;
-	}
-	//project on reduced subspace
-	for(int eigen_idx=0;eigen_idx<interpolate_eigenfunction_num_;++eigen_idx)
-		for(int vert_idx=0;vert_idx<mesh->getNumVertices();++vert_idx)
-		{
-			g[3*eigen_idx]+=forces[3*vert_idx]*object_eigenfunctions_[eigen_idx][vert_idx];
-			g[3*eigen_idx+1]+=forces[3*vert_idx+1]*object_eigenfunctions_[eigen_idx][vert_idx];
-			g[3*eigen_idx+2]+=forces[3*vert_idx+2]*object_eigenfunctions_[eigen_idx][vert_idx];
-		}
-	delete[] forces;
-}
 }  //namespace RTLB

@@ -108,32 +108,28 @@ public:
     //solving course need the initial displacement matrix Dm, and the deformed displacement matrix Ds
     // to consider solving time we compute the object and examples initial displacement Dm when we load volumetric meshes
     //the last two parameters is to identify the energy we solved is for example mesh deformation or object deformation
-    void computeReducedEnergyAndGradient(VolumetricMesh *mesh,const double *init_pos,const double *displacement, const unsigned int cubica_num,
-    									const unsigned int *cubica_elements, double *cubica_weights,double &energy,double *grad);
-    void computeForceOnReducedSubSpace(VolumetricMesh *mesh,const double *init_pos,const double *displacement,double *g);
-    void computeFullEnergyAndGradient(VolumetricMesh *mesh,const double *init_pos,const double *displacement, const unsigned int cubica_num,
-    									const unsigned int *cubica_elements, double *cubica_weights,double &energy,double *grad);
-    void computeForceOnFullSpace(VolumetricMesh *mesh,const double *init_pos,const double *displacement,double *g);
+    void computeReducedEnergy(const double *init_pos,const double *displacement,double &energy);
+    void computeReducedInternalForce(const double *reduced_dis,double *force);
+
      //temp
     double** exampleDis() const{return ex_dis_;}
     void testObjectiveGradients();
 private:
-    int ModifiedSVD(Mat3d & F, Mat3d & U, Vec3d & Fhat, Mat3d & V) const;    //modified SVD for inversion handling
-    // given a vector, find a unit vector that is orthogonal to it
-    void FindOrthonormalVector(Vec3d & v, Vec3d & result) const;
     void preComputeForCubicaSimulation();
     Matrix vertexSubBasis(const int &vert_idx) const;//3*r
     Matrix tetSubBasis(const int &ele) const;//12*r
     Matrix computeDu(const int &ele) const;
     Matrix computeDmInv(const int &ele) const;
     void generateE();
-    void computeReducedF() const;
-    void generateH();
     void computepFpu(const int &ele,Matrix &PFPu) const;
-    void computeReducedInternalForce();
+    void generateH();
+    void computeReducedF(const double *reduced_dis,double *reduced_F) const;
     Mat3d firstPiolaKirchhoff(Mat3d &F) const;
     void flatten(Mat3d &mat,double *flat_mat) const;
-    void reback(double *flat_mat, Matrix &mat);
+    //void reback(double *flat_mat, Matrix &mat);
+    int ModifiedSVD(Mat3d & F, Mat3d & U, Vec3d & Fhat, Mat3d & V) const;    //modified SVD for inversion handling
+    // given a vector, find a unit vector that is orthogonal to it
+    void FindOrthonormalVector(Vec3d & v, Vec3d & result) const;
 private:
     static RealTimeExampleBasedDeformer *active_instance_;
     //volumetric meshes
@@ -200,9 +196,8 @@ private:
     //used for reduced cubica element Computation
     Matrix E_;
     Matrix H_;
-    Matrix g_;
-    std::vector<double> q_;
-    double *reduced_force_=NULL;
+    //double *reduced_force_=NULL;
+    //double *reduced_F_=NULL;
     //material
     double mu_=0.0;
     double lamda_=0.0;

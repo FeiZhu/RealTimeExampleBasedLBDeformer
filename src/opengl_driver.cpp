@@ -1781,8 +1781,8 @@ void OpenGLDriver::testG() const
     double *g=new double[21];
     double energy=0.0;
     std::cout<<"2\n";
-    simulator_->computeReducedEnergyAndGradient(simulation_mesh_,NULL,displacement,simulator_->objectCubicaEleNum(),
-    				simulator_->objectCubicaElements(),simulator_->objectCubicaWeights(),energy,g);
+    // simulator_->computeReducedInternalForce(simulation_mesh_,NULL,displacement,simulator_->objectCubicaEleNum(),
+    // 				simulator_->objectCubicaElements(),simulator_->objectCubicaWeights(),energy,g);
     std::cout<<"energy:"<<energy<<"\n";
     std::cout<<"g:\n";
     for(unsigned int i=0;i<21;++i)
