@@ -26,18 +26,26 @@ OpenGLDriver* OpenGLDriver::active_instance_ = NULL;
 
 OpenGLDriver::OpenGLDriver(const std::string &config_file_name)
 {
+std::cout<<"asssss";
     if(active_instance_)
         delete active_instance_;
     active_instance_ = this;
+    std::cout<<"a";
     //TO DO: init everything and enter mainloop
     simulator_=new RTLB::RealTimeExampleBasedDeformer();
-
+    std::cout<<"a";
     initConfigurations(config_file_name);
+    std::cout<<"b";
     initGLUT();
+    std::cout<<"c";
     initGLUI();
+    std::cout<<"d";
     initGraphics();
+    std::cout<<"e";
     initSimulation();
+    std::cout<<"f";
     glutMainLoop();
+    std::cout<<"g";
 }
 
 OpenGLDriver::~OpenGLDriver()
@@ -651,12 +659,12 @@ void OpenGLDriver::initSimulation()
             exit(0);
         }
         loadObjectCubicaData(0);
-        if(strcmp(example_cubica_file_name_prefix_,"none")==0)
-        {
-            std::cout<<"Error: example cubica file unloaded.\n";
-            exit(0);
-        }
-        loadExampleCubicaData(0);
+        // if(strcmp(example_cubica_file_name_prefix_,"none")==0)
+        // {
+        //     std::cout<<"Error: example cubica file unloaded.\n";
+        //     exit(0);
+        // }
+        // loadExampleCubicaData(0);
     }
     std::cout<<"init Simulation finish.\n";
 }
@@ -821,24 +829,24 @@ void OpenGLDriver::displayFunction()
             {
                 glDisable(GL_LIGHTING);
                 glColor3f(0.0,0.5,0.0);
-                //active_instance->render_volumetric_mesh_->Render(active_instance->example_mesh_[active_instance->current_example_index_-1]);
-                active_instance->render_volumetric_mesh_->RenderDeformation(active_instance->example_mesh_[active_instance->current_example_index_-1],active_instance->simulator_->exampleDis()[active_instance->current_example_index_-1]);
+                active_instance->render_volumetric_mesh_->Render(active_instance->example_mesh_[active_instance->current_example_index_-1]);
+                //active_instance->render_volumetric_mesh_->RenderDeformation(active_instance->example_mesh_[active_instance->current_example_index_-1],active_instance->simulator_->exampleDis()[active_instance->current_example_index_-1]);
                 if(active_instance->render_vertices_)
                 {
                     glDisable(GL_LIGHTING);
                     glColor3f(0.5,0.0,0.0);
                     glPointSize(8.0);
-                    //active_instance->render_volumetric_mesh_->RenderVertices(active_instance->example_mesh_[active_instance->current_example_index_-1]);
-                    for(int i=0;i<active_instance->example_mesh_[active_instance->current_example_index_-1]->getNumVertices();++i)
-                        active_instance->render_volumetric_mesh_->RenderVertexDeformed(active_instance->example_mesh_[active_instance->current_example_index_-1],i,active_instance->simulator_->exampleDis()[active_instance->current_example_index_-1]);
+                    active_instance->render_volumetric_mesh_->RenderVertices(active_instance->example_mesh_[active_instance->current_example_index_-1]);
+                    // for(int i=0;i<active_instance->example_mesh_[active_instance->current_example_index_-1]->getNumVertices();++i)
+                    //     active_instance->render_volumetric_mesh_->RenderVertexDeformed(active_instance->example_mesh_[active_instance->current_example_index_-1],i,active_instance->simulator_->exampleDis()[active_instance->current_example_index_-1]);
                     glEnable(GL_LIGHTING);
                 }
                 if(active_instance->render_wireframe_)
                 {
                     glDisable(GL_LIGHTING);
                     glColor3f(0.0,0.0,0.5);
-                    //active_instance->render_volumetric_mesh_->RenderWireframe(active_instance->example_mesh_[active_instance->current_example_index_-1]);
-                    active_instance->render_volumetric_mesh_->RenderSolidAndWireframeDeformation(active_instance->example_mesh_[active_instance->current_example_index_-1],active_instance->simulator_->exampleDis()[active_instance->current_example_index_-1]);
+                    active_instance->render_volumetric_mesh_->RenderWireframe(active_instance->example_mesh_[active_instance->current_example_index_-1]);
+                    //active_instance->render_volumetric_mesh_->RenderSolidAndWireframeDeformation(active_instance->example_mesh_[active_instance->current_example_index_-1],active_instance->simulator_->exampleDis()[active_instance->current_example_index_-1]);
                     glEnable(GL_LIGHTING);
                 }
                 glDisable(GL_BLEND);
@@ -921,26 +929,26 @@ void OpenGLDriver::displayFunction()
     }
 
     //render vertex displacement
-    if(active_instance->render_dis_)
-    {
-        glDisable(GL_LIGHTING);
-        for(int i=0;i<active_instance->example_mesh_[0]->getNumVertices();++i)
-        {
-            Vec3d vert_pos,vert_new_pos;
-            for(int j=0;j<3;++j)
-            {
-                vert_pos[j]=(*active_instance->example_mesh_[0]->getVertex(i))[j];
-                vert_new_pos[j]=vert_pos[j]+active_instance->simulator_->exampleDis()[active_instance->current_example_index_-1][3*i+j]*2.0;
-            }
-            glColor3f(1.0,0.3,1.0);
-            glLineWidth(1.0);
-            glBegin(GL_LINES);
-            glVertex3f(vert_pos[0],vert_pos[1],vert_pos[2]);
-            glVertex3f(vert_new_pos[0],vert_new_pos[1],vert_new_pos[2]);
-            glEnd();
-        }
-        glEnable(GL_LIGHTING);
-    }
+    // if(active_instance->render_dis_)
+    // {
+    //     glDisable(GL_LIGHTING);
+    //     for(int i=0;i<active_instance->example_mesh_[0]->getNumVertices();++i)
+    //     {
+    //         Vec3d vert_pos,vert_new_pos;
+    //         for(int j=0;j<3;++j)
+    //         {
+    //             vert_pos[j]=(*active_instance->example_mesh_[0]->getVertex(i))[j];
+    //             vert_new_pos[j]=vert_pos[j]+active_instance->simulator_->exampleDis()[active_instance->current_example_index_-1][3*i+j]*2.0;
+    //         }
+    //         glColor3f(1.0,0.3,1.0);
+    //         glLineWidth(1.0);
+    //         glBegin(GL_LINES);
+    //         glVertex3f(vert_pos[0],vert_pos[1],vert_pos[2]);
+    //         glVertex3f(vert_new_pos[0],vert_new_pos[1],vert_new_pos[2]);
+    //         glEnd();
+    //     }
+    //     glEnable(GL_LIGHTING);
+    // }
     //render example guided surface deformation---to do
     glutSwapBuffers();
 }
@@ -1135,11 +1143,11 @@ void OpenGLDriver::idleFunction()
     //active_instance->integrator_base_->SetState(active_instance->u_,active_instance->vel_initial_);
 //    active_instance->render_surface_mesh_->SetVertexDeformations(active_instance->u_);//set the displacement of volumetric Surface
     //interpolate deformations from volumetric mesh to object surface mesh, update its configuration
-    VolumetricMesh::interpolate(active_instance->u_,active_instance->u_render_surface_,active_instance->visual_mesh_->Getn(),
-                                active_instance->object_interpolation_element_vertices_num_,active_instance->object_interpolation_vertices_,
-                                active_instance->object_interpolation_weights_);
-    if(active_instance->render_mesh_type_==VISUAL_MESH)
-        active_instance->render_surface_mesh_->SetVertexDeformations(active_instance->u_render_surface_);
+    // VolumetricMesh::interpolate(active_instance->u_,active_instance->u_render_surface_,active_instance->visual_mesh_->Getn(),
+    //                             active_instance->object_interpolation_element_vertices_num_,active_instance->object_interpolation_vertices_,
+    //                             active_instance->object_interpolation_weights_);
+    // if(active_instance->render_mesh_type_==VISUAL_MESH)
+    //     active_instance->render_surface_mesh_->SetVertexDeformations(active_instance->u_render_surface_);
     //save object surface mesh to files--not done yet
 
     glutPostRedisplay();
@@ -1204,9 +1212,9 @@ void OpenGLDriver::keyboardFunction(unsigned char key, int x, int y)
     case 'd':
         active_instance->render_velocity_scale_ *= 0.5;
         break;
-    case 'u':
-        active_instance->render_dis_ = !(active_instance->render_dis_);
-        break;
+    // case 'u':
+    //     active_instance->render_dis_ = !(active_instance->render_dis_);
+    //     break;
     case 'e': //render eigenfunctions
         active_instance->render_eigenfunction_ = !(active_instance->render_eigenfunction_);
         std::string static_text_content("Rendering eigenfunctions enabled: ");
@@ -1545,17 +1553,17 @@ void OpenGLDriver::loadObjectCubicaData(int code)
     }
 }
 
-void OpenGLDriver::loadExampleCubicaData(int code)
-{
-    OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
-    assert(active_instance);
-    if(!active_instance->simulator_->loadExampleCubicaData(active_instance->example_cubica_file_name_prefix_))
-    {
-        std::cout<<"Error: load example data failed.\n";
-        return;
-    }
-
-}
+// void OpenGLDriver::loadExampleCubicaData(int code)
+// {
+//     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
+//     assert(active_instance);
+//     if(!active_instance->simulator_->loadExampleCubicaData(active_instance->example_cubica_file_name_prefix_))
+//     {
+//         std::cout<<"Error: load example data failed.\n";
+//         return;
+//     }
+//
+// }
 void OpenGLDriver::loadCorrespondenceData(int code)
 {
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();

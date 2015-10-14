@@ -117,16 +117,6 @@ Matrix<real>::~Matrix()
 }
 
 template<class real>
-void Matrix<real>::resize(int m_, int n_)
-{
-    m=m_;
-    n=n_;
-    delete[] data;
-    data = (real*) calloc (m_*n_, sizeof(real));
-    printf("Matrix resize: m = %d, n = %d",
-      m, n);
-}
-template<class real>
 const Matrix<real> Matrix<real>::operator+ (const Matrix<real> & mtx2) const
 {
   if ((m != mtx2.Getm()) || (n != mtx2.Getn()))

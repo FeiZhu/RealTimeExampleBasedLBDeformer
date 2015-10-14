@@ -4,12 +4,14 @@
  * @author: Fei Zhu,Mirror
  *
  */
+
 #include <unistd.h>
 #include <string>
 #include "opengl_driver.h"
 
 int main(int argc,char *argv[])
 {
+   std::cout<<"aaaaaaaaaaaaaaa\n";
     int args_num=3;
     if(argc<args_num)
     {

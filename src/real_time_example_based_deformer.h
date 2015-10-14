@@ -47,7 +47,7 @@ public:
     bool loadPlanesInScene(const std::string &file_name, unsigned int plane_num);
     bool loadFixedVertices(const std::string &file_name);
     bool loadObjectCubicaData(const std::string &file_name);//tetID : 0-indexed
-    bool loadExampleCubicaData(const std::string &file_name_prefix);
+    //bool loadExampleCubicaData(const std::string &file_name_prefix);
     bool saveSimulationMesh(const std::string &file_name) const;
     bool saveExamples(const std::string &file_name_prefix) const;
     bool saveVisualMesh(const std::string &file_name) const;
@@ -83,9 +83,9 @@ public:
     unsigned int objectCubicaEleNum() const{return object_cubica_ele_num_;}
     unsigned int* objectCubicaElements() const{return object_cubica_elements_;}
     double* objectCubicaWeights() const{return object_cubica_weights_;}
-    unsigned int* exampleCubicaEleNum() const{return example_cubica_ele_num_;}
-    unsigned int** exampleCubicaElements() const{return example_cubica_elements_;}
-    double** exampleCubicaWeights() const{return example_cubica_weights_;}
+    // unsigned int* exampleCubicaEleNum() const{return example_cubica_ele_num_;}
+    // unsigned int** exampleCubicaElements() const{return example_cubica_elements_;}
+    // double** exampleCubicaWeights() const{return example_cubica_weights_;}
     void setEnableEigenWeightControl(bool enable_value){enable_eigen_weight_control_=enable_value;}
 
     //registration of eigenfunctions
@@ -108,11 +108,11 @@ public:
     //solving course need the initial displacement matrix Dm, and the deformed displacement matrix Ds
     // to consider solving time we compute the object and examples initial displacement Dm when we load volumetric meshes
     //the last two parameters is to identify the energy we solved is for example mesh deformation or object deformation
-    void computeReducedEnergy(const double *init_pos,const double *displacement,double &energy);
-    void computeReducedInternalForce(const double *reduced_dis,double *force);
+    void computeReducedEnergy(const Vec3d *reduced_dis,double &energy);
+    void computeReducedInternalForce(const Vec3d *reduced_dis,double *force);
 
      //temp
-    double** exampleDis() const{return ex_dis_;}
+    //double** exampleDis() const{return ex_dis_;}
     void testObjectiveGradients();
 private:
     void preComputeForCubicaSimulation();
@@ -123,10 +123,10 @@ private:
     void generateE();
     void computepFpu(const int &ele,Matrix &PFPu) const;
     void generateH();
-    void computeReducedF(const double *reduced_dis,double *reduced_F) const;
+    void computeReducedF(const Vec3d *reduced_dis,double *reduced_F) const;
     Mat3d firstPiolaKirchhoff(Mat3d &F) const;
     void flatten(Mat3d &mat,double *flat_mat) const;
-    //void reback(double *flat_mat, Matrix &mat);
+    void reback(const double *flat_mat, Mat3d &mat);
     int ModifiedSVD(Mat3d & F, Mat3d & U, Vec3d & Fhat, Mat3d & V) const;    //modified SVD for inversion handling
     // given a vector, find a unit vector that is orthogonal to it
     void FindOrthonormalVector(Vec3d & v, Vec3d & result) const;
@@ -165,9 +165,9 @@ private:
     unsigned int object_cubica_ele_num_ = 0;
     unsigned int *object_cubica_elements_ = NULL;
     double *object_cubica_weights_ = NULL;
-    unsigned int *example_cubica_ele_num_ = NULL;
-    unsigned int **example_cubica_elements_ = NULL;
-    double **example_cubica_weights_ = NULL;
+    // unsigned int *example_cubica_ele_num_ = NULL;
+    // unsigned int **example_cubica_elements_ = NULL;
+    // double **example_cubica_weights_ = NULL;
     //eigenfunction data
     double **object_eigenfunctions_ = NULL;
     double *object_eigenvalues_ = NULL;
@@ -194,8 +194,8 @@ private:
     unsigned int plane_num_ = 0;
     bool isload_object_cubica_=true;
     //used for reduced cubica element Computation
-    Matrix E_;
-    Matrix H_;
+    // Matrix E_;
+    // Matrix H_;
     //double *reduced_force_=NULL;
     //double *reduced_F_=NULL;
     //material

@@ -88,7 +88,6 @@ public:
   inline int Getm() const { return m; }
   inline int Getn() const { return n; }
   inline real * GetData() const { return data; }
-  void resize(int m_, int n_);
   const Matrix operator+ (const Matrix & mtx2) const;
   const Matrix operator- (const Matrix & mtx2) const;
   const Matrix operator* (const Matrix & mtx2) const;
