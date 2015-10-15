@@ -15,6 +15,7 @@
 #include "NLF.h"
 //#include "matrix.h"
 using alglib::real_1d_array;
+//the NEWMAT::Matrix index from 1
 using NEWMAT::Matrix;
 
 class Vec3d;
@@ -44,7 +45,7 @@ public:
     bool loadReducedBasis(const std::string &file_name);//.basis
     bool loadObjectEigenfunctions(const std::string &file_name);//.eigen
     bool loadExampleEigenFunctions(const std::string &file_name_prefix);//.eigen
-    bool loadPlanesInScene(const std::string &file_name, unsigned int plane_num);
+    //bool loadPlanesInScene(const std::string &file_name, unsigned int plane_num);
     bool loadFixedVertices(const std::string &file_name);
     bool loadObjectCubicaData(const std::string &file_name);//tetID : 0-indexed
     //bool loadExampleCubicaData(const std::string &file_name_prefix);
@@ -121,7 +122,7 @@ private:
     Matrix computeDu(const int &ele) const;
     Matrix computeDmInv(const int &ele) const;
     void generateE();
-    void computepFpu(const int &ele,Matrix &PFPu) const;
+    void computepFpu(const int &ele,NEWMAT::Matrix &PFPu) const;
     void generateH();
     void computeReducedF(const Vec3d *reduced_dis,double *reduced_F) const;
     Mat3d firstPiolaKirchhoff(Mat3d &F) const;
@@ -192,10 +193,10 @@ private:
     //planes in scene, for contact
     Planes *planes_ = NULL;
     unsigned int plane_num_ = 0;
-    bool isload_object_cubica_=true;
+    bool isPreComputeReducedData_=true;
     //used for reduced cubica element Computation
-    // Matrix E_;
-    // Matrix H_;
+    Matrix E_;
+    Matrix H_;
     //double *reduced_force_=NULL;
     //double *reduced_F_=NULL;
     //material

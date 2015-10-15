@@ -26,26 +26,19 @@ OpenGLDriver* OpenGLDriver::active_instance_ = NULL;
 
 OpenGLDriver::OpenGLDriver(const std::string &config_file_name)
 {
-std::cout<<"asssss";
+    std::cout<<"asssss";
     if(active_instance_)
         delete active_instance_;
-    active_instance_ = this;
+     active_instance_ = this;
     std::cout<<"a";
     //TO DO: init everything and enter mainloop
     simulator_=new RTLB::RealTimeExampleBasedDeformer();
-    std::cout<<"a";
     initConfigurations(config_file_name);
-    std::cout<<"b";
     initGLUT();
-    std::cout<<"c";
     initGLUI();
-    std::cout<<"d";
     initGraphics();
-    std::cout<<"e";
     initSimulation();
-    std::cout<<"f";
     glutMainLoop();
-    std::cout<<"g";
 }
 
 OpenGLDriver::~OpenGLDriver()
@@ -55,7 +48,7 @@ OpenGLDriver::~OpenGLDriver()
 
 void OpenGLDriver::initConfigurations(const std::string &config_file_name)
 {
-    //OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
+    OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     std::cout<<"Parsing configuration file "<<config_file_name<<std::endl;
     config_file_.addOptionOptional("windowWidth",&window_width_,window_width_);
     config_file_.addOptionOptional("windowHeight",&window_height_,window_height_);
@@ -343,6 +336,7 @@ void OpenGLDriver::initSimulation()
             exit(1);
         }
         simulation_vertices_num_=simulation_mesh_->getNumVertices();
+        std::cout<<"vvvvvvvvvvvert_num:"<<simulation_vertices_num_<<std::endl;
         mesh_graph_=GenerateMeshGraph::Generate(simulation_mesh_);
         initial_object_configurations_ = new double[3*simulation_vertices_num_];
         deformed_object_configurations_ = new double[3*simulation_vertices_num_];
@@ -363,6 +357,7 @@ void OpenGLDriver::initSimulation()
             exit(1);
         }
         std::cout<<"Loading the mass matrix from file "<<mass_matrix_file_name_<<".\n";
+        std::cout<<"sssssssssssssssssss"<<std::endl;
         //get the mass matrix
         SparseMatrixOutline *mass_matrix_outline;
         try
@@ -383,6 +378,8 @@ void OpenGLDriver::initSimulation()
         std::cout<<"Error: unsupported material type.\n";
         exit(1);
     }
+
+    std::cout<<"bbbbbb\n";
     int scale_rows=1;
     mesh_graph_->GetLaplacian(&laplacian_matrix_,scale_rows);
     mesh_graph_->GetLaplacian(&laplacian_damping_matrix_,scale_rows);
@@ -412,8 +409,6 @@ void OpenGLDriver::initSimulation()
     vel_=new double[3*simulation_vertices_num_];
     f_ext_=new double[3*simulation_vertices_num_];
     f_col_=new double[3*simulation_vertices_num_];
-
-
 
     //load interpolation structure for object
     if(strcmp(object_interpolation_file_name_,"none")==0)
@@ -619,8 +614,8 @@ void OpenGLDriver::initSimulation()
     {
         simulator_->setExampleNum(example_num_);
         example_mesh_=new VolumetricMesh *[example_num_];
-    	//example_volume_=new double[example_num_];
-    //	example_vertex_volume_=new double *[example_num_];
+    	// example_volume_=new double[example_num_];
+    	// example_vertex_volume_=new double *[example_num_];
         if(simulator_->loadExamples(example_file_name_prefix_,example_num_))
         {
             for(unsigned int i=0;i<example_num_;++i)
@@ -671,7 +666,7 @@ void OpenGLDriver::initSimulation()
 
 void OpenGLDriver::initCamera()
 {
-    std::cout<<"initCamera function:\n";
+    // std::cout<<"initCamera function:\n";
     double MY_PI = 3.141592653589793238462643;
     double up_dir[3] = {0,1,0};
     znear_ = camera_radius_*0.01;
@@ -1036,26 +1031,15 @@ void OpenGLDriver::idleFunction()
             active_instance->simulator_->projectOnEigenFunctions(active_instance->simulation_mesh_,active_instance->u_,active_instance->simulator_->objectVertexVolume(),
                                                 active_instance->simulator_->objectEigenFunctions(),active_instance->simulator_->objectEigenValues(),
                                                 active_instance->interpolate_eigenfunction_num_,active_instance->deformed_object_eigencoefs_);
-            //std::cout<<"object eigencoefs:\n";
-            // for(int i=0;i<active_instance->interpolate_eigenfunction_num_;++i)
-            //     std::cout<<active_instance->deformed_object_eigencoefs_[i]<<",";
+            std::cout<<"object eigencoefs:\n";
+            for(int i=0;i<active_instance->interpolate_eigenfunction_num_;++i)
+                std::cout<<active_instance->deformed_object_eigencoefs_[i]<<",";
             //handle the case if the examples are not the same shape (only similar) with the object
             //note: the first example is the rest pose of the shape used as example
-            // for(int i=0;i<active_instance->reconstruct_eigenfunction_num_;++i)
-            //     std::cout<<"a:"<<active_instance->initial_object_eigencoefs_[i]<<"\n";
-            // for(int i=0;i<active_instance->example_num_;++i)
-            // {
-            //     std::cout<<i<<":\n";
-            //     for(int j=0;j<active_instance->interpolate_eigenfunction_num_;++j)
-            //         std::cout<<active_instance->example_eigencoefs_[i][j]<<"\n";
-            // }
             for(int i=0;i<active_instance->interpolate_eigenfunction_num_;++i)
             {
                 active_instance->deformed_object_eigencoefs_[i]=active_instance->deformed_object_eigencoefs_[i]-active_instance->initial_object_eigencoefs_[i]
                                                         +active_instance->example_eigencoefs_[0][i];
-                // std::cout<<"object:"<<active_instance->object_eigencoefs_[i]<<"\n";
-                // std::cout<<"init_obj:"<<active_instance->initial_object_eigencoefs_[i]<<"\n";
-                // std::cout<<"example0:"<<active_instance->example_eigencoefs_[0][i]<<"\n";
             }
         // for(int i=0;i<active_instance->interpolate_eigenfunction_num_;++i)
         //     std::cout<<"c:"<<active_instance->deformed_object_eigencoefs_[i]<<"\n";
@@ -1150,12 +1134,12 @@ void OpenGLDriver::idleFunction()
     //     active_instance->render_surface_mesh_->SetVertexDeformations(active_instance->u_render_surface_);
     //save object surface mesh to files--not done yet
 
-    glutPostRedisplay();
+   glutPostRedisplay();
 }
 
 void OpenGLDriver::reshapeFunction(int width, int height)
 {
-    std::cout<<"reshapeFunction:\n";
+    // std::cout<<"reshapeFunction:\n";
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
     glViewport(0,0,width,height);
@@ -1170,7 +1154,7 @@ void OpenGLDriver::reshapeFunction(int width, int height)
 
 void OpenGLDriver::keyboardFunction(unsigned char key, int x, int y)
 {
-    std::cout<<"keyboardFunction:\n";
+    // std::cout<<"keyboardFunction:\n";
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
     switch(key)
@@ -1242,7 +1226,7 @@ void OpenGLDriver::keyboardFunction(unsigned char key, int x, int y)
 
 void OpenGLDriver::specialFunction(int key, int x, int y)
 {
-    std::cout<<"specialFunction:\n";
+    // std::cout<<"specialFunction:\n";
     switch (key)
     {
     case GLUT_KEY_LEFT:
@@ -1295,7 +1279,7 @@ void OpenGLDriver::motionFunction(int x, int y)
 
 void OpenGLDriver::mouseFunction(int button, int state, int x, int y)
 {
-    std::cout<<"mouseFunction:\n";
+    // std::cout<<"mouseFunction:\n";
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
     switch (button)
@@ -1379,7 +1363,7 @@ void OpenGLDriver::addGravitySwitch(bool add_gravity)
 }
 void OpenGLDriver::updateRenderMesh(int code)
 {
-    std::cout<<"updateRenderMesh function:\n";
+    // std::cout<<"updateRenderMesh function:\n";
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
     if(active_instance->render_mesh_type_==VISUAL_MESH)
@@ -1415,7 +1399,7 @@ void OpenGLDriver::updateRenderMesh(int code)
 }
 void OpenGLDriver::updateCurrentExample(int code)
 {
-    std::cout<<"updateCurrentExample function:\n";
+    // std::cout<<"updateCurrentExample function:\n";
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
     active_instance->current_example_mesh_=active_instance->example_mesh_[active_instance->current_example_index_-1];
@@ -1429,7 +1413,7 @@ void OpenGLDriver::changeCurrentEigenIndex(int code)
 }
 void OpenGLDriver::changeSimulationMode(int code)
 {
-    std::cout<<"changeSimulationMode function:\n";
+    // std::cout<<"changeSimulationMode function:\n";
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
     if(!(active_instance->isload_object_eigen_&&active_instance->isload_example_eigen_))
@@ -1449,7 +1433,7 @@ void OpenGLDriver::changeSimulationMode(int code)
 
 void OpenGLDriver::loadObjectEigenfunctions(int code)
 {
-    std::cout<<"loadObjectEigenfunctions:\n";
+    // std::cout<<"loadObjectEigenfunctions:\n";
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
     if(!active_instance->simulator_->loadObjectEigenfunctions(active_instance->object_eigen_file_name_))
@@ -1521,25 +1505,25 @@ void OpenGLDriver::loadExampleEigenfunctions(int code)
 void OpenGLDriver::saveExampleEigenfunctions(int code)
 {
     //TO DO
-    OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
-    assert(active_instance);
-    if(!active_instance->simulator_->saveExampleEigenfunctions(active_instance->output_eigen_file_name_prefix_));
-    {
-        std::cout<<"Error: failed to save example eigenfunctions.\n";
-        return;
-    }
+    // OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
+    // assert(active_instance);
+    // if(!active_instance->simulator_->saveExampleEigenfunctions(active_instance->output_eigen_file_name_prefix_));
+    // {
+    //     std::cout<<"Error: failed to save example eigenfunctions.\n";
+    //     return;
+    // }
 
 }
 
 void OpenGLDriver::loadReducedBasis(int code)
 {
-    OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
-    assert(active_instance);
-    if(!active_instance->simulator_->loadReducedBasis(active_instance->reduced_basis_file_name_))
-    {
-        std::cout<<"Error: load reduced basis failed.\n";
-        return;
-    }
+    // OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
+    // assert(active_instance);
+    // if(!active_instance->simulator_->loadReducedBasis(active_instance->reduced_basis_file_name_))
+    // {
+    //     std::cout<<"Error: load reduced basis failed.\n";
+    //     return;
+    // }
 }
 
 void OpenGLDriver::loadObjectCubicaData(int code)

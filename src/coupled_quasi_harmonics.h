@@ -11,7 +11,7 @@
 #include "NLF.h"
 using std::vector;
 using NEWMAT::ColumnVector;
-using NEWMAT::Matrix;
+//using NEWMAT::Matrix;
 
 //nlopt stuff
 double nloptObjective(unsigned int n, const double *x, double *grad, void *my_func_data);

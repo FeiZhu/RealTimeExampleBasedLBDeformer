@@ -11,7 +11,7 @@
 
 int main(int argc,char *argv[])
 {
-   std::cout<<"aaaaaaaaaaaaaaa\n";
+   //std::cout<<"aaaaaaaaaaaaaaa\n";
     int args_num=3;
     if(argc<args_num)
     {
@@ -38,8 +38,9 @@ int main(int argc,char *argv[])
     std::cout<<"Starting application.\n";
 
     std::string config_file_name=std::string(config_file_name_c);
+    //std::string config_file_name=std::string("examples/bar/bar.config");
     std::cout<<"Loading scene configuration from "<<config_file_name.c_str()<<".\n";
     RTLB::OpenGLDriver driver(config_file_name);
-    std::cout<<"c";
+    //std::cout<<"c";
     return 0;
 }

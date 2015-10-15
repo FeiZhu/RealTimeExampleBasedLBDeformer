@@ -10,7 +10,6 @@
 
 #include <string>
 #include <cfloat>
-#include "configFile.h"
 #include "planes.h"
 #include "VegaHeaders.h"
 

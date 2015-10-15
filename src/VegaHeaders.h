@@ -1,4 +1,6 @@
 //headers from VegaFEM
+
+#include "configFile.h"
 #include "lighting.h"
 #include "camera.h"
 #include "sceneObjectDeformable.h"
