@@ -110,24 +110,27 @@ public:
     // to consider solving time we compute the object and examples initial displacement Dm when we load volumetric meshes
     //the last two parameters is to identify the energy we solved is for example mesh deformation or object deformation
     void computeReducedEnergy(const Vec3d *reduced_dis,double &energy);
-    void computeReducedInternalForce(const Vec3d *reduced_dis,double *force);
+    void computeReducedInternalForce(const Vec3d *reduced_dis,double *forces);
 
      //temp
     //double** exampleDis() const{return ex_dis_;}
     void testObjectiveGradients();
+    void test();
 private:
-    void preComputeForCubicaSimulation();
+    void preComputeForReducedSimulation();
     Matrix vertexSubBasis(const int &vert_idx) const;//3*r
     Matrix tetSubBasis(const int &ele) const;//12*r
-    Matrix computeDu(const int &ele) const;
-    Matrix computeDmInv(const int &ele) const;
-    void generateE();
-    void computepFpu(const int &ele,NEWMAT::Matrix &PFPu) const;
-    void generateH();
-    void computeReducedF(const Vec3d *reduced_dis,double *reduced_F) const;
+    Mat3d computeDs(const double *reduced_dis) const;
+    Mat3d computeDmInv(const int &ele) const;
+    //Matrix computeDu(const int &ele) const;
+//    void generateE();
+//    void computepFpu(const int &ele,NEWMAT::Matrix &PFPu) const;
+//    void generateH();
+    void computeF(const Vec3d *reduced_dis) const;
+//    void computeReducedF(const Vec3d *reduced_dis,double *reduced_F) const;
     Mat3d firstPiolaKirchhoff(Mat3d &F) const;
-    void flatten(Mat3d &mat,double *flat_mat) const;
-    void reback(const double *flat_mat, Mat3d &mat);
+//    void flatten(Mat3d &mat,double *flat_mat) const;
+//    void reback(const double *flat_mat, Mat3d &mat);
     int ModifiedSVD(Mat3d & F, Mat3d & U, Vec3d & Fhat, Mat3d & V) const;    //modified SVD for inversion handling
     // given a vector, find a unit vector that is orthogonal to it
     void FindOrthonormalVector(Vec3d & v, Vec3d & result) const;
@@ -195,8 +198,12 @@ private:
     unsigned int plane_num_ = 0;
     bool isPreComputeReducedData_=true;
     //used for reduced cubica element Computation
-    Matrix E_;
-    Matrix H_;
+//    int reduced_dim_;
+    // Matrix E_;
+    // Matrix H_;
+    Vec3d *q_;
+    Mat3d *F_;
+    double **restpos_;//compute rest position for cubica elements
     //double *reduced_force_=NULL;
     //double *reduced_F_=NULL;
     //material
