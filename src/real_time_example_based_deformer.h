@@ -45,7 +45,7 @@ public:
     bool loadReducedBasis(const std::string &file_name);//.basis
     bool loadObjectEigenfunctions(const std::string &file_name);//.eigen
     bool loadExampleEigenFunctions(const std::string &file_name_prefix);//.eigen
-    //bool loadPlanesInScene(const std::string &file_name, unsigned int plane_num);
+    bool loadPlanesInScene(const std::string &file_name, unsigned int plane_num);
     bool loadFixedVertices(const std::string &file_name);
     bool loadObjectCubicaData(const std::string &file_name);//tetID : 0-indexed
     //bool loadExampleCubicaData(const std::string &file_name_prefix);
@@ -112,28 +112,21 @@ public:
     void computeReducedEnergy(const Vec3d *reduced_dis,double &energy);
     void computeReducedInternalForce(const Vec3d *reduced_dis,double *forces);
 
-     //temp
-    //double** exampleDis() const{return ex_dis_;}
     void testObjectiveGradients();
-    void test();
 private:
     void preComputeForReducedSimulation();
     Matrix vertexSubBasis(const int &vert_idx) const;//3*r
     Matrix tetSubBasis(const int &ele) const;//12*r
     Mat3d computeDs(const double *reduced_dis) const;
     Mat3d computeDmInv(const int &ele) const;
-    //Matrix computeDu(const int &ele) const;
-//    void generateE();
-//    void computepFpu(const int &ele,NEWMAT::Matrix &PFPu) const;
-//    void generateH();
     void computeF(const Vec3d *reduced_dis) const;
-//    void computeReducedF(const Vec3d *reduced_dis,double *reduced_F) const;
     Mat3d firstPiolaKirchhoff(Mat3d &F) const;
-//    void flatten(Mat3d &mat,double *flat_mat) const;
-//    void reback(const double *flat_mat, Mat3d &mat);
     int ModifiedSVD(Mat3d & F, Mat3d & U, Vec3d & Fhat, Mat3d & V) const;    //modified SVD for inversion handling
     // given a vector, find a unit vector that is orthogonal to it
     void FindOrthonormalVector(Vec3d & v, Vec3d & result) const;
+    void projectOnSubBasis(VolumetricMesh *mesh,
+                           double **eigenfunctions, unsigned int eigenfunction_num,
+                           Vec3d *eigencoefs);
 private:
     static RealTimeExampleBasedDeformer *active_instance_;
     //volumetric meshes
@@ -143,7 +136,6 @@ private:
     //visual mesh for rendering
     SceneObjectDeformable *visual_mesh_ = NULL;
     //simulation data
-    //temp_str
     double **ex_dis_ = NULL;
     double *displacement_ = NULL;
     double *velocity_ = NULL;
@@ -163,15 +155,13 @@ private:
     //reduced simulation data
     unsigned int reduced_basis_num_ = 0;
     double **reduced_basis_ = NULL;
+    double *reduced_basis_values_ = NULL;
     double *reduced_displacement_ = NULL;
     double *reduced_velocity_ = NULL;
     //cubica data
     unsigned int object_cubica_ele_num_ = 0;
     unsigned int *object_cubica_elements_ = NULL;
     double *object_cubica_weights_ = NULL;
-    // unsigned int *example_cubica_ele_num_ = NULL;
-    // unsigned int **example_cubica_elements_ = NULL;
-    // double **example_cubica_weights_ = NULL;
     //eigenfunction data
     double **object_eigenfunctions_ = NULL;
     double *object_eigenvalues_ = NULL;
@@ -198,14 +188,9 @@ private:
     unsigned int plane_num_ = 0;
     bool isPreComputeReducedData_=true;
     //used for reduced cubica element Computation
-//    int reduced_dim_;
-    // Matrix E_;
-    // Matrix H_;
     Vec3d *q_;
     Mat3d *F_;
     double **restpos_;//compute rest position for cubica elements
-    //double *reduced_force_=NULL;
-    //double *reduced_F_=NULL;
     //material
     double mu_=0.0;
     double lamda_=0.0;

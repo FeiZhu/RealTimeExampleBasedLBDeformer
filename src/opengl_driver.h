@@ -33,7 +33,6 @@ class OpenGLDriver
 public:
     explicit OpenGLDriver(const std::string &config_file_name);
     ~OpenGLDriver();
-
 private:
     static OpenGLDriver* activeInstance();
     //init functions
@@ -68,6 +67,8 @@ private:
     static void loadCorrespondenceData(int code);
     static void registerEigenfunctions(int code);
     static void resetDeformation(int code);
+
+    static void saveTetMesh(int code);
     //misc
     void drawAxis(double axis_length) const;
     void drawIndexColorTable() const;
@@ -231,6 +232,7 @@ private:
     bool isload_cubica_ = false;
     bool isload_example_cubica_ = false;
     bool enable_example_simulation_ = false;
+    bool save_tet_mesh_ = false;
     char solver_method_[string_length];
     enum RenderMeshType{
         VISUAL_MESH = 0,
