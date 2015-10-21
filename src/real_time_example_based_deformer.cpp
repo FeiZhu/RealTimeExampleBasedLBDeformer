@@ -1402,16 +1402,16 @@ void RealTimeExampleBasedDeformer::preComputeForReducedSimulation()
 	F_ = new Mat3d[object_cubica_ele_num_];
 }
 //compute basis matrix Du
-Matrix RealTimeExampleBasedDeformer::vertexSubBasis(const int &vert_idx) const
+Matrix<double> RealTimeExampleBasedDeformer::vertexSubBasis(const int &vert_idx) const
 {//vertex_subBasis is 1*m
-	Matrix vertex_subBasis(1,interpolate_eigenfunction_num_);
+	Matrix<double> vertex_subBasis(1,(int)interpolate_eigenfunction_num_);
 	for(int i=0;i<interpolate_eigenfunction_num_;++i)
-		vertex_subBasis(1,i+1)=object_eigenfunctions_[i][vert_idx];
+		vertex_subBasis(0,i)=object_eigenfunctions_[i][vert_idx];
 	return vertex_subBasis;
 }
-Matrix RealTimeExampleBasedDeformer::tetSubBasis(const int &ele) const
+Matrix<double> RealTimeExampleBasedDeformer::tetSubBasis(const int &ele) const
 {//tet_subBasis is 12*m
-	Matrix tet_subBasis(12,interpolate_eigenfunction_num_);
+	Matrix<double> tet_subBasis(12,(int)interpolate_eigenfunction_num_,true);
 	int *global_idx=new int[4];
 	for(int i=0;i<4;++i)
 		global_idx[i]=simulation_mesh_->getVertexIndex(ele,i);
@@ -1419,9 +1419,9 @@ Matrix RealTimeExampleBasedDeformer::tetSubBasis(const int &ele) const
 	{
 		for(int i=0;i<interpolate_eigenfunction_num_;++i)
 		{
-			tet_subBasis(3*j+1,i+1)=object_eigenfunctions_[i][global_idx[j]];
-			tet_subBasis(3*j+2,i+1)=object_eigenfunctions_[i][global_idx[j]];
-			tet_subBasis(3*j+3,i+1)=object_eigenfunctions_[i][global_idx[j]];
+			tet_subBasis(3*j,i)=object_eigenfunctions_[i][global_idx[j]];
+			tet_subBasis(3*j+1,i)=object_eigenfunctions_[i][global_idx[j]];
+			tet_subBasis(3*j+2,i)=object_eigenfunctions_[i][global_idx[j]];
 		}
 	}
 	delete[] global_idx;
@@ -1461,15 +1461,16 @@ Mat3d RealTimeExampleBasedDeformer::computeDmInv(const int &ele) const
 }
 void RealTimeExampleBasedDeformer::computeF(const Vec3d *reduced_dis) const
 {//for all cubica elements
-	Matrix reduced_dis_matrix(interpolate_eigenfunction_num_,3);//rx3
+	Matrix<double> reduced_dis_matrix((int)interpolate_eigenfunction_num_,3);//rx3
 	for(int i=0;i<interpolate_eigenfunction_num_;++i)
 	{
-		reduced_dis_matrix(i+1,1)=reduced_dis[i][0];
-		reduced_dis_matrix(i+1,2)=reduced_dis[i][1];
-		reduced_dis_matrix(i+1,3)=reduced_dis[i][2];
+		reduced_dis_matrix(i,0)=reduced_dis[i][0];
+		reduced_dis_matrix(i,1)=reduced_dis[i][1];
+		reduced_dis_matrix(i,2)=reduced_dis[i][2];
 	}
 	for(int cubica_idx=0;cubica_idx<object_cubica_ele_num_;++cubica_idx)
 	{
+		std::cout<<cubica_idx<<"\n";
 		int ele=object_cubica_elements_[cubica_idx];
 		//compute displacement x=X+Uq
 		double *deformed=new double[12];
@@ -1477,13 +1478,12 @@ void RealTimeExampleBasedDeformer::computeF(const Vec3d *reduced_dis) const
 		for(int j=0;j<4;++j)
 		{
 			int vertID=simulation_mesh_->getVertexIndex(ele,j);
-			Matrix subU=vertexSubBasis(vertID);//1xr
-			Matrix temp=subU*reduced_dis_matrix;//1xr,rx3->1x3
-			deformed[3*j]=restpos_[cubica_idx][3*j]+temp(1,1);
-			deformed[3*j+1]=restpos_[cubica_idx][3*j+1]+temp(1,2);
-			deformed[3*j+2]=restpos_[cubica_idx][3*j+2]+temp(1,3);
+			Matrix<double> subU=vertexSubBasis(vertID);//1xr
+			Matrix<double> temp=subU*reduced_dis_matrix;//1xr,rx3->1x3
+			deformed[3*j]=restpos_[cubica_idx][3*j]+temp(0,0);
+			deformed[3*j+1]=restpos_[cubica_idx][3*j+1]+temp(0,1);
+			deformed[3*j+2]=restpos_[cubica_idx][3*j+2]+temp(0,2);
 		}
-
 		Mat3d Ds=computeDs(deformed);
 		F_[cubica_idx]=Ds*computeDmInv(ele);//F for each ele
 
@@ -1520,18 +1520,18 @@ void RealTimeExampleBasedDeformer::computeReducedInternalForce(const Vec3d *redu
 		Mat3d temp=P*trans(computeDmInv(ele));
 		//compute P*trans(DmInv) for all vertices of each element
 		//temp_matrix is 3x4, each column represents a vertex, each row denotes a direction
-		Matrix temp_matrix(3,4);
-		for(int i=1;i<=3;++i)
+		Matrix<double> temp_matrix(3,4);
+		for(int i=0;i<3;++i)
 		{
-			for(int j=1;j<=4;++j)
+			for(int j=0;j<4;++j)
 			{
-				if(j==4)
-					temp_matrix(i,j)=(-1.0)*(temp[i-1][0]+temp[i-1][1]+temp[i-1][2]);
+				if(j==3)
+					temp_matrix(i,j)=(-1.0)*(temp[i][0]+temp[i][1]+temp[i][2]);
 				else
-					temp_matrix(i,j)=temp[i-1][j-1];
+					temp_matrix(i,j)=temp[i][j];
 			}
 		}
-		Matrix subU=tetSubBasis(ele);//4xr
+		Matrix<double> subU=tetSubBasis(ele);//4xr
 		double *g=new double[3*interpolate_eigenfunction_num_];//3rx1
 		memset(g,0.0,sizeof(double)*3*interpolate_eigenfunction_num_);
 		//for eache ele:g:nxr; g_3i=-sum(U_vert x^i*(P*Dm^-T)_vertex x^k),k=x,y,z direction
@@ -1539,9 +1539,9 @@ void RealTimeExampleBasedDeformer::computeReducedInternalForce(const Vec3d *redu
 		{
 			for(int j=0;j<4;++j)
 			{
-				g[3*i]+=subU(3*j+1,i+1)*temp_matrix(1,j+1);
-				g[3*i+1]+=subU(3*j+2,i+1)*temp_matrix(2,j+1);
-				g[3*i+2]+=subU(3*j+3,i+1)*temp_matrix(3,j+1);
+				g[3*i]+=subU(3*j,i)*temp_matrix(0,j);
+				g[3*i+1]+=subU(3*j+1,i)*temp_matrix(1,j);
+				g[3*i+2]+=subU(3*j+2,i)*temp_matrix(2,j);
 			}
 		}
 		for(int i=0;i<3*interpolate_eigenfunction_num_;++i)
@@ -1768,8 +1768,6 @@ void RealTimeExampleBasedDeformer::FindOrthonormalVector(Vec3d & v, Vec3d & resu
 }
 Mat3d RealTimeExampleBasedDeformer::computeDeformationGradient(const Mat3d &init_matrix,const Mat3d &deformed_matrix/*Vec3d *init_pos,Vec3d *deform_pos*/)
 {
-	// Mat3d F=deformed_matrix*inv(init_matrix);
-    // return F;
 	Mat3d result(1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0);
 	result=deformed_matrix*inv(init_matrix);
 

@@ -72,7 +72,6 @@ private:
     //misc
     void drawAxis(double axis_length) const;
     void drawIndexColorTable() const;
-    void testG() const;
 private:
     static const unsigned int string_length=1024;
     static OpenGLDriver *active_instance_;
@@ -120,7 +119,7 @@ private:
     float damping_stiffness_coef_=0.0;
     float damping_laplacian_coef_=0.0;
     double epsilon_=1.0e-12;//numerical accuracy in this file
-    double integrator_epsilon_=1.0e-6;//numerical accuracy used in integrator
+    double integrator_epsilon_=1.0E-6;//numerical accuracy used in integrator
     double deformable_object_compliance_=1.0;
     double example_stiffness_scale_=1.0;//the stiffness used to compute example force is scaled
     int max_iterations_=1;
@@ -170,6 +169,7 @@ private:
     ForceModel *force_model_ = NULL;
     IntegratorBase *integrator_base_ = NULL;
     IntegratorBaseSparse *integrator_base_sparse_ = NULL;
+    IntegratorBaseDense *integrator_base_dense_ = NULL;
 
     int pulled_vertex_=-1; //the index of vertex pulled by user
     double *u_=NULL;
@@ -245,6 +245,10 @@ private:
         IMPLICITBACKWARDEULER,
         EULER,
         SYMPLECTICEULER,
+        CENTRALDIFFERENCES,
+        REDUCEDCENTRALDIFFERENCES,
+        REDUCEDIMPLICITNEWMARK,
+        REDUCEDIMPLICITBACKWARDEULER,
         UNKNOWN
     };
     SolverType solver_type_ = UNKNOWN;
@@ -271,6 +275,10 @@ private:
     unsigned int current_render_eigen_idx_=0;
     unsigned int save_eigenfunction_num_ = 0;
     ConfigFile config_file_;
+    //reuced simulation
+    ReducedForceModel *reduced_force_model_;
+    int reduced_num_ = 0;
+    double *reduced_mass_matrix_;
 };
 
 }  //namespace RTLB

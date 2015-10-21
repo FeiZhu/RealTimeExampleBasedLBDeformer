@@ -12,11 +12,11 @@
 #include <string>
 #include "optimization.h"
 #include "mat3d.h"
-#include "NLF.h"
-//#include "matrix.h"
+//#include "NLF.h"
+#include "matrix.h"
 using alglib::real_1d_array;
-//the NEWMAT::Matrix index from 1
-using NEWMAT::Matrix;
+//the NEWMAT::Matrix<double> index from 1
+//using NEWMAT::Matrix<double>;
 
 class Vec3d;
 class VolumetricMesh;
@@ -115,8 +115,8 @@ public:
     void testObjectiveGradients();
 private:
     void preComputeForReducedSimulation();
-    Matrix vertexSubBasis(const int &vert_idx) const;//3*r
-    Matrix tetSubBasis(const int &ele) const;//12*r
+    Matrix<double> vertexSubBasis(const int &vert_idx) const;//3*r
+    Matrix<double> tetSubBasis(const int &ele) const;//12*r
     Mat3d computeDs(const double *reduced_dis) const;
     Mat3d computeDmInv(const int &ele) const;
     void computeF(const Vec3d *reduced_dis) const;

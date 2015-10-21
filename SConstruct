@@ -44,6 +44,7 @@ alglib_include_path = src_dir+'alglib/'
 
 #MKL LIBRARY
 mkl_include_path = '/opt/intel/composer_xe_2015.3.187/mkl/include/'
+ICCLIB = '/opt/intel/composer_xe_2015.3.187/compiler/lib/intel64/'
 mkl_library_path = '/opt/intel/mkl/lib/intel64/'
 
 #PATHS MADE PLATFORM SPECIFIC
@@ -66,6 +67,8 @@ else:
     vega_library_path=vega_library_path+'X64/'
     nlopt_library_path=nlopt_library_path+'X64/'
     optpp_library_path=optpp_library_path+'X64/'
+	
+
 
 #exampleBasedDeformableSimulator
 source_filename=Glob(src_dir+'*.cpp',True,False,True)
@@ -76,10 +79,10 @@ target_filename='RealTimeExampleBasedLBDeformer'+build_type
 #LIB FILES
 lib_files=[]
 #VegaFEM LIBS
-vega_libs = 'sceneObjectReduced sceneObject reducedElasticForceModel elasticForceModel reducedForceModel forceModel loadList \
-	     integratorSparse sparseSolver integrator \
+vega_libs = 'sceneObjectReduced sceneObject reducedElasticForceModel elasticForceModel forceModel loadList \
+	     integratorSparse sparseSolver integratorDense integrator \
 	     insertRows lighting performanceCounter configFile renderVolumetricMesh volumetricMesh openGLHelper getopts camera graph \
-	     isotropicHyperelasticFEM reducedStvk stvk corotationalLinearFEM polarDecomposition massSpringSystem objMesh \
+	     isotropicHyperelasticFEM reducedForceModel reducedStvk stvk corotationalLinearFEM polarDecomposition massSpringSystem objMesh \
 	      sparseMatrix modalMatrix matrix matrixIO  minivector glslPhong imageIO \
              objMesh'
 lib_files.append(Split(vega_libs))
@@ -94,20 +97,23 @@ else:
     lib_files.append('glui64')
 lib_files.append('glut')
 lib_files.append('GLU')
-lib_files.append('GL')
+lib_files.append('GL') 
 #MKL
+mkl_libs = ' mkl_intel_lp64 mkl_intel_thread mkl_lapack95_lp64 mkl_core iomp5 -lpthread'
 if os_name=='Linux':
-   lib_files.append('mkl_core')
+   lib_files.append(Split(mkl_libs))
 
 #COMPILER OPTIONS
 CC='g++'
 CXX='g++'
 tools=['gcc', 'g++', 'gnulink']
+
 CPPPATH=[gl_include_path,vega_include_path,alglib_include_path,nlopt_include_path,optpp_include_path]
 LIBPATH=[gl_library_path,vega_library_path,nlopt_library_path,optpp_library_path]
 if os_name=='Linux':
    CPPPATH.append(mkl_include_path)
    LIBPATH.append(mkl_library_path)
+   LIBPATH.append(ICCLIB)
 RPATH=[gl_library_path]
 LIBS=lib_files
 ENV={'PATH':os.environ['PATH']}

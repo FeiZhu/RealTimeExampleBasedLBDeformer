@@ -5,10 +5,12 @@
  *
  */
 #include <iostream>
+#include <sstream>
+#include <fstream>
+#include <iomanip>
 #include <cassert>
 #include <cstdlib>
 #include <cstdio>
-#include <sstream>
 #include <set>
 #include "GL/freeglut.h"
 #include "GL/glui.h"
@@ -121,8 +123,6 @@ void OpenGLDriver::initConfigurations(const std::string &config_file_name)
     //local Example-based
     config_file_.addOptionOptional("objectAffectedVerticesFilename",object_affected_vertices_file_name_,"none");
     config_file_.addOptionOptional("exampleAffectedVerticesFilenameBase",example_affected_vertices_file_name_,"none");
-    std::cout<<"eeeeeeeeeeeeeeeeeenable_eigen_weight_control_:"<<enable_eigen_weight_control_<<"-----------------\n";
-    std::cout<<"add_gravity_:"<<add_gravity_<<"-----------------\n";
     //enable eigen weight control
     simulator_->setEnableEigenWeightControl(enable_eigen_weight_control_);
 
@@ -143,6 +143,14 @@ void OpenGLDriver::initConfigurations(const std::string &config_file_name)
         solver_type_=EULER;
     if(strcmp(solver_method_,"sympleticEuler")==0)
         solver_type_=SYMPLECTICEULER;
+    if(strcmp(solver_method_,"centralDifferences")==0)
+        solver_type_=CENTRALDIFFERENCES;
+    if(strcmp(solver_method_,"reducedCentralDifferences")==0)
+        solver_type_=REDUCEDCENTRALDIFFERENCES;
+    if(strcmp(solver_method_,"reducedImplicitNewmark")==0)
+        solver_type_=REDUCEDIMPLICITNEWMARK;
+    if(strcmp(solver_method_,"reducedImplicitBackwardEuler")==0)
+        solver_type_=REDUCEDIMPLICITBACKWARDEULER;
     if(solver_type_==UNKNOWN)
     {
         std::cout<<"Error:unknown implicit solver specified."<<std::endl;
@@ -338,7 +346,6 @@ void OpenGLDriver::initSimulation()
             exit(1);
         }
         simulation_vertices_num_=simulation_mesh_->getNumVertices();
-        std::cout<<"vvvvvvvvvvvert_num:"<<simulation_vertices_num_<<std::endl;
         mesh_graph_=GenerateMeshGraph::Generate(simulation_mesh_);
         initial_object_configurations_ = new double[3*simulation_vertices_num_];
         deformed_object_configurations_ = new double[3*simulation_vertices_num_];
@@ -359,7 +366,6 @@ void OpenGLDriver::initSimulation()
             exit(1);
         }
         std::cout<<"Loading the mass matrix from file "<<mass_matrix_file_name_<<".\n";
-        std::cout<<"sssssssssssssssssss"<<std::endl;
         //get the mass matrix
         SparseMatrixOutline *mass_matrix_outline;
         try
@@ -381,7 +387,6 @@ void OpenGLDriver::initSimulation()
         exit(1);
     }
 
-    std::cout<<"bbbbbb\n";
     int scale_rows=1;
     mesh_graph_->GetLaplacian(&laplacian_matrix_,scale_rows);
     mesh_graph_->GetLaplacian(&laplacian_damping_matrix_,scale_rows);
@@ -554,24 +559,42 @@ void OpenGLDriver::initSimulation()
                                                         damping_mass_coef_,damping_stiffness_coef_,max_iterations_,
                                                         integrator_epsilon_,solver_threads_num_);
     }
-    // else if(solver_type_==EULER)
-    // {
-    //     int symplectic=0;
-    //     integrator_base_sparse_=new EulerSparse(3*simulation_vertices_num_,time_step_,mass_matrix_,force_model_,symplectic,
-    //                                             fixed_dofs_num_,fixed_dofs_,damping_mass_coef_);
-    // }
-    // else if(solver_type_==SYMPLECTICEULER)
-    // {
-    //     int symplectic=1;
-    //     integrator_base_sparse_=new EulerSparse(3*simulation_vertices_num_,time_step_,mass_matrix_,force_model_,symplectic,
-    //                                             fixed_dofs_num_,fixed_dofs_,damping_mass_coef_);
-    // }
-    // else if(solver_type_==CENTRALDIFFERENCES)
-    // {
-    //     integrator_base_sparse_=new CentralDifferencesSparse(3*simulation_vertices_num_,time_step_,mass_matrix_,force_model_,
-    //                                                         fixed_dofs_num_,fixed_dofs_,damping_mass_coef_,damping_stiffness_coef_,
-    //                                                         central_difference_tangential_damping_update_mode_,solver_threads_num_);
-    // }
+    else if(solver_type_==EULER)
+    {
+        int symplectic=0;
+        integrator_base_sparse_=new EulerSparse(3*simulation_vertices_num_,time_step_,mass_matrix_,force_model_,symplectic,
+                                                fixed_dofs_num_,fixed_dofs_,damping_mass_coef_);
+    }
+    else if(solver_type_==SYMPLECTICEULER)
+    {
+        int symplectic=1;
+        integrator_base_sparse_=new EulerSparse(3*simulation_vertices_num_,time_step_,mass_matrix_,force_model_,symplectic,
+                                                fixed_dofs_num_,fixed_dofs_,damping_mass_coef_);
+    }
+    else if(solver_type_==CENTRALDIFFERENCES)
+    {
+        integrator_base_sparse_=new CentralDifferencesSparse(3*simulation_vertices_num_,time_step_,mass_matrix_,force_model_,
+                                                            fixed_dofs_num_,fixed_dofs_,damping_mass_coef_,damping_stiffness_coef_,
+                                                            central_difference_tangential_damping_update_mode_,solver_threads_num_);
+    }
+    else if(solver_type_==REDUCEDCENTRALDIFFERENCES)
+    {
+        int symplectic=0;
+        integrator_base_dense_ = new CentralDifferencesDense(reduced_num_,time_step_,reduced_mass_matrix_,reduced_force_model_,damping_mass_coef_,
+                                                            damping_stiffness_coef_,central_difference_tangential_damping_update_mode_);
+    }
+    else if(solver_type_==REDUCEDIMPLICITNEWMARK)
+    {
+        integrator_base_dense_ = new ImplicitNewmarkDense(reduced_num_,time_step_,reduced_mass_matrix_,reduced_force_model_,
+                                                        ImplicitNewmarkDense::positiveDefiniteMatrixSolver,damping_mass_coef_,damping_stiffness_coef_,
+                                                        max_iterations_,integrator_epsilon_,newmark_beta_,newmark_gamma_);
+    }
+    else if(solver_type_==REDUCEDIMPLICITBACKWARDEULER)
+    {
+        integrator_base_dense_ = new ImplicitBackwardEulerDense(reduced_num_,time_step_,reduced_mass_matrix_,reduced_force_model_,
+                                                                ImplicitBackwardEulerDense::positiveDefiniteMatrixSolver,damping_mass_coef_,
+                                                                damping_stiffness_coef_,max_iterations_,integrator_epsilon_);
+    }
     else
     {
     }
@@ -1176,7 +1199,6 @@ void OpenGLDriver::idleFunction()
 
 void OpenGLDriver::reshapeFunction(int width, int height)
 {
-    // std::cout<<"reshapeFunction:\n";
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
     glViewport(0,0,width,height);
@@ -1191,7 +1213,6 @@ void OpenGLDriver::reshapeFunction(int width, int height)
 
 void OpenGLDriver::keyboardFunction(unsigned char key, int x, int y)
 {
-    // std::cout<<"keyboardFunction:\n";
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
     switch(key)
@@ -1266,7 +1287,6 @@ void OpenGLDriver::keyboardFunction(unsigned char key, int x, int y)
 
 void OpenGLDriver::specialFunction(int key, int x, int y)
 {
-    // std::cout<<"specialFunction:\n";
     switch (key)
     {
     case GLUT_KEY_LEFT:
@@ -1294,7 +1314,6 @@ void OpenGLDriver::specialFunction(int key, int x, int y)
 
 void OpenGLDriver::motionFunction(int x, int y)
 {
-    //std::cout<<"motionFunction:\n";
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
     int mouse_delta_x = x - active_instance->mouse_pos_[0];
@@ -1319,7 +1338,6 @@ void OpenGLDriver::motionFunction(int x, int y)
 
 void OpenGLDriver::mouseFunction(int button, int state, int x, int y)
 {
-    // std::cout<<"mouseFunction:\n";
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
     switch (button)
@@ -1331,7 +1349,6 @@ void OpenGLDriver::mouseFunction(int button, int state, int x, int y)
             active_instance->ctrl_pressed_=(glutGetModifiers()==GLUT_ACTIVE_CTRL);
             if(active_instance->left_button_down_&&(!active_instance->shift_pressed_)&&(!active_instance->ctrl_pressed_)) //used for pulled vertex, apply force
             {
-                std::cout<<"ok-1\n";
                 //apply force to vertex
                 GLdouble model[16];
                 glGetDoublev(GL_MODELVIEW_MATRIX,model);
@@ -1347,8 +1364,6 @@ void OpenGLDriver::mouseFunction(int button, int state, int x, int y)
                 glReadPixels(win_x,win_y,1,1,GL_STENCIL_INDEX,GL_UNSIGNED_BYTE,&stencil_value);
                 GLdouble world_x,world_y,world_z;
                 gluUnProject(win_x,win_y,z_value,model,proj,view,&world_x,&world_y,&world_z);
-                std::cout<<stencil_value<<"...\n";
-
                 if(stencil_value==1)
                 {
                     active_instance->drag_start_x_=x;
@@ -1356,16 +1371,8 @@ void OpenGLDriver::mouseFunction(int button, int state, int x, int y)
                     Vec3d pos(world_x,world_y,world_z);
                     //the pulled vertex is on the exterior surface of the volumetric mesh
                     //virtual int GetClosestVertex(Vec3d & queryPos, double * distance=NULL, double * auxVertexBuffer=NULL);
-                    std::cout<<"pos:"<<pos[0]<<","<<pos[1]<<","<<pos[2]<<"\n";
-                    // unsigned int ele=active_instance->simulation_mesh_->getContainingElement(pos);
-                    // std::cout<<"ele:"<<ele<<"\n";
-                    // for(int i=0;i<active_instance->simulation_mesh_->getNumElementVertices();++i)
-                    // {
-                    //     active_instance->pulled_vertex_=active_instance->simulation_mesh_->getVertexIndex(ele,i);
-                    //     std::cout<<i<<":"<<active_instance->pulled_vertex_<<",";
-                    // }
+
                     active_instance->pulled_vertex_=active_instance->simulation_mesh_->getClosestVertex(pos);
-                    //active_instance->pulled_vertex_=active_instance->visual_mesh_->GetClosestVertex(pos);
                     std::cout<<"Clicked on vertex "<<active_instance->pulled_vertex_<<" (0-indexed)\n";
                 }
                 else
@@ -1439,7 +1446,6 @@ void OpenGLDriver::updateRenderMesh(int code)
 }
 void OpenGLDriver::updateCurrentExample(int code)
 {
-    // std::cout<<"updateCurrentExample function:\n";
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
     active_instance->current_example_mesh_=active_instance->example_mesh_[active_instance->current_example_index_-1];
@@ -1453,7 +1459,6 @@ void OpenGLDriver::changeCurrentEigenIndex(int code)
 }
 void OpenGLDriver::changeSimulationMode(int code)
 {
-    // std::cout<<"changeSimulationMode function:\n";
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
     if(!(active_instance->isload_object_eigen_&&active_instance->isload_example_eigen_))
@@ -1473,7 +1478,6 @@ void OpenGLDriver::changeSimulationMode(int code)
 
 void OpenGLDriver::loadObjectEigenfunctions(int code)
 {
-    // std::cout<<"loadObjectEigenfunctions:\n";
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
     if(!active_instance->simulator_->loadObjectEigenfunctions(active_instance->object_eigen_file_name_))
@@ -1491,17 +1495,9 @@ void OpenGLDriver::loadObjectEigenfunctions(int code)
     for(int i=0;i<active_instance->reconstruct_eigenfunction_num_;++i)
         for(int j=0;j<3;++j)
             active_instance->initial_object_eigencoefs_[i][j]=active_instance->simulator_->objectEigencoefs()[i][j];
-        //std::cout<<"init:"<<active_instance->simulator_->objectEigencoefs()[i]<<"\n";
-    //memcpy(active_instance->initial_object_eigencoefs_,active_instance->simulator_->objectEigencoefs(),sizeof(Vec3d*)*active_instance->reconstruct_eigenfunction_num_);
-    // for(int i=0;i<active_instance->reconstruct_eigenfunction_num_;++i)
-    //     std::cout<<"init:"<<active_instance->initial_object_eigencoefs_[i]<<"\n";
     for(int i=0;i<active_instance->interpolate_eigenfunction_num_;++i)
         for(int j=0;j<3;++j)
             active_instance->deformed_object_eigencoefs_[i][j]=active_instance->initial_object_eigencoefs_[i][j];
-
-
-
-    //active_instance->object_elastic_subspace_force_ = new double[3*active_instance->interpolate_eigenfunction_num_];
     active_instance->example_guided_subspace_force_ = new double[3*active_instance->interpolate_eigenfunction_num_];
 }
 
@@ -1526,19 +1522,16 @@ void OpenGLDriver::loadExampleEigenfunctions(int code)
         return;
     }
     //get example eigencoefs
-    std::cout<<"~~~~~~~~~~~~\n";
      for(int i=0;i<active_instance->example_num_;++i)
          for(int j=0;j<active_instance->interpolate_eigenfunction_num_;++j)
          {
             active_instance->example_eigencoefs_[i][j]=active_instance->simulator_->exampleEigencoefs()[i][j];
-            std::cout<<"...."<<active_instance->example_eigencoefs_[i][j]<<",\n";
          }
 
     active_instance->glui_current_example_eigenfunctions_loaded_->set_name("Eigenfunctions for current example loaded:Yes");
     if(active_instance->render_mesh_type_==EXAMPLE_MESH)
         active_instance->render_eigen_index_spinner_->set_int_limits(1,active_instance->interpolate_eigenfunction_num_,GLUI_LIMIT_CLAMP);
     active_instance->isload_example_eigen_=true;
-
     std::cout<<"Load example eigenfunctions succeed!\n";
 }
 
@@ -1576,18 +1569,6 @@ void OpenGLDriver::loadObjectCubicaData(int code)
         return;
     }
 }
-
-// void OpenGLDriver::loadExampleCubicaData(int code)
-// {
-//     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
-//     assert(active_instance);
-//     if(!active_instance->simulator_->loadExampleCubicaData(active_instance->example_cubica_file_name_prefix_))
-//     {
-//         std::cout<<"Error: load example data failed.\n";
-//         return;
-//     }
-//
-// }
 void OpenGLDriver::loadCorrespondenceData(int code)
 {
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
@@ -1767,59 +1748,6 @@ void OpenGLDriver::drawIndexColorTable() const
     }
     glDrawPixels(20, 128, GL_RGB, GL_FLOAT, refband);
     glPopMatrix();
-}
-void OpenGLDriver::testG() const
-{
-    if(!(isload_object_eigen_&&isload_example_eigen_))
-        std::cout<<"Error:eigen function unloaded.\n";
-
-    std::cout<<"test begins:\n";
-    //test computeForceOnReducedSubSpace
-    double *displacement=new double[3*simulation_vertices_num_];
-    srand((unsigned)time(0));
-    int lowest=1,highest=10;
-    int range=(highest-lowest)+1;
-    for(int i=0;i<simulation_vertices_num_;++i)
-    {
-    //    displacement[i]=(lowest+rand()%range)/10.0;
-    //    displacement[i]=0.0;
-        if(i<1000)
-            {
-                //displacement[3*i]=-0.1;
-                displacement[3*i+1]=-0.5;
-                //displacement[3*i+2]=-0.7;
-            }
-        // else if((i<1068)&&(i>1000))
-        // {
-        //     displacement[3*i]=-0.3;
-        //     displacement[3*i+1]=0.2;
-        //     displacement[3*i+2]=-0.4;
-        // }
-        // else if((i<1800)&&(i>1068))
-        // {
-        //     displacement[3*i+2]=0.5;
-        //     displacement[3*i]=-0.1;
-        //     displacement[3*i+1]=0.6;
-        // }
-
-        else
-        {
-            //displacement[3*i]=0.5;
-        //    displacement[3*i+1]=0.1;
-        //    displacement[3*i+2]=0.3;
-        }
-    }
-    std::cout<<"1\n";
-    double *g=new double[21];
-    double energy=0.0;
-    std::cout<<"2\n";
-    // simulator_->computeReducedInternalForce(simulation_mesh_,NULL,displacement,simulator_->objectCubicaEleNum(),
-    // 				simulator_->objectCubicaElements(),simulator_->objectCubicaWeights(),energy,g);
-    std::cout<<"energy:"<<energy<<"\n";
-    std::cout<<"g:\n";
-    for(unsigned int i=0;i<21;++i)
-        std::cout<<g[i]<<",";
-    getchar();
 }
 
 }  //namespace RTLB
