@@ -255,6 +255,8 @@ private:
     enum InvertibleMaterialType{
         INV_STVK,
         INV_NEOHOOKEAN,
+        REDUCED_STVK,
+        REDUCED_INV_NEOHOOKEAN,
         INV_NONE
     };
     InvertibleMaterialType invertible_material_type_ = INV_NONE;
@@ -278,7 +280,12 @@ private:
     //reuced simulation
     ReducedForceModel *reduced_force_model_;
     int reduced_num_ = 0;
-    double *reduced_mass_matrix_;
+    double *reduced_mass_matrix_ = NULL;
+    double *reduced_stiffness_matrix_ = NULL;
+    double *reduced_f_ext_ = NULL;
+    Vec3d *vec_q_ = NULL;
+    double *q_ = NULL;
+    bool reduced_simulation_ = false;
 };
 
 }  //namespace RTLB

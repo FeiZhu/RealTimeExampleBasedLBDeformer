@@ -1,9 +1,9 @@
 *solver
-implicitBackwardEuler
+#implicitBackwardEuler
 #implicitNewmark
 #Euler
 #centralDifferences
-#reducedCentralDifferences
+reducedCentralDifferences
 #reducedImplicitNewmark
 #reducedImplicitBackwardEuler
 
@@ -59,8 +59,9 @@ new-armadillo.eigen
 true
 *objectCubicaFilename
 armadillo.cubature
-*exampleCubicaFilenameBase
-ex
+
+*reducedBasisFilename
+armadillo.basis
 
 *massMatrixFilename
 armadillo.mass

@@ -45,6 +45,7 @@
 #include "renderVolumetricMesh.h"
 #include "volumetricMesh.h"
 #include "reducedForceModel.h"
+#include "reducedLinearForceModel.h"
 #include "centralDifferencesDense.h"
 #include "implicitNewmarkDense.h"
 #include "implicitBackwardEulerDense.h"

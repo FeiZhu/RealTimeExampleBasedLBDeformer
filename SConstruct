@@ -44,8 +44,8 @@ alglib_include_path = src_dir+'alglib/'
 
 #MKL LIBRARY
 mkl_include_path = '/opt/intel/composer_xe_2015.3.187/mkl/include/'
-ICCLIB = '/opt/intel/composer_xe_2015.3.187/compiler/lib/intel64/'
 mkl_library_path = '/opt/intel/mkl/lib/intel64/'
+ICCLIB = '/opt/intel/composer_xe_2015.3.187/compiler/lib/intel64/'
 
 #PATHS MADE PLATFORM SPECIFIC
 if os_name=='Linux':
@@ -99,8 +99,8 @@ lib_files.append('glut')
 lib_files.append('GLU')
 lib_files.append('GL') 
 #MKL
-mkl_libs = ' mkl_intel_lp64 mkl_intel_thread mkl_lapack95_lp64 mkl_core iomp5 -lpthread'
 if os_name=='Linux':
+   mkl_libs = ' mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 pthread'
    lib_files.append(Split(mkl_libs))
 
 #COMPILER OPTIONS

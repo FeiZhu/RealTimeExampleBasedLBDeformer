@@ -90,14 +90,6 @@ RealTimeExampleBasedDeformer::~RealTimeExampleBasedDeformer()
 	//delete cubica data
 	delete[] object_cubica_weights_;
 	delete[] object_cubica_elements_;
-	// for(unsigned int i=0;i<example_num_;++i)
-	// {
-	// 	delete[] example_cubica_weights_[i];
-	// 	delete[] example_cubica_elements_[i];
-	// }
-	// delete[] example_cubica_elements_[example_num_];
-	// delete[] example_cubica_weights_;
-	// delete[] example_cubica_elements_;
 	//delete registration information
 	for(unsigned int i=0;i<corresponding_function_num_;++i)
 		if(object_corresponding_functions_[i])
@@ -127,12 +119,14 @@ RealTimeExampleBasedDeformer* RealTimeExampleBasedDeformer::activeInstance()
 }
 void RealTimeExampleBasedDeformer::setupSimulation()
 {
-    //TO DO
+    //TO DO--init simulation
+
 }
 
 void RealTimeExampleBasedDeformer::advanceStep()
 {
-    //TO DO
+    //TO DO--idle function
+
 }
 //
 bool RealTimeExampleBasedDeformer::loadSimulationMesh(const std::string &file_name)
@@ -221,6 +215,7 @@ bool RealTimeExampleBasedDeformer::loadVisualMesh(const std::string &file_name)
 //basis are 3*vertex_num*basis_num
 bool RealTimeExampleBasedDeformer::loadReducedBasis(const std::string &file_name)
 {
+	std::cout<<"file_name:"<<file_name<<"\n";
 	if(simulation_mesh_==NULL)
 	{
 		std::cout<<"The simulation tet mesh is null.\n";
@@ -265,13 +260,14 @@ bool RealTimeExampleBasedDeformer::loadReducedBasis(const std::string &file_name
 	reduced_row_num=atoi(temp_str.c_str());
 	std::getline(input_file,temp_str);
 	reduced_col_num=atoi(temp_str.c_str());
+	std::cout<<reduced_row_num<<","<<reduced_col_num<<"\n";
 	reduced_basis_num_=reduced_col_num;
 	reduced_basis_=new double *[reduced_col_num];
-	if(reduced_row_num!=simulation_mesh_->getNumVertices()*3)
-	{
-		std::cout<<"The input reduced basis is not correct!\n";
-		return false;
-	}
+	// if(reduced_row_num!=simulation_mesh_->getNumVertices()*3)
+	// {
+	// 	std::cout<<"The input reduced basis is not correct!\n";
+	// 	return false;
+	// }
 	for(unsigned int i=0;i<reduced_col_num;++i)
 	{
 		reduced_basis_[i]=new double[reduced_row_num];
@@ -295,6 +291,7 @@ bool RealTimeExampleBasedDeformer::loadReducedBasis(const std::string &file_name
 			break;
 	}
 	input_file.close();
+	std::cout<<reduced_basis_[reduced_col_num-1][reduced_row_num-1];
     return true;
 }
 //format:.eigencoef
@@ -398,12 +395,7 @@ bool RealTimeExampleBasedDeformer::loadObjectEigenfunctions(const std::string &f
 							reconstruct_eigenfunction_num_,object_eigencoefs_);
 
 	delete[] dis;
-	isPreComputeReducedData_=true;
-	if(isPreComputeReducedData_)
-	{
-		preComputeForReducedSimulation();
-		isPreComputeReducedData_=false;
-	}
+	std::cout<<"~~~~~~~~~~~~~~~~~~~";
     return true;
 }
 
@@ -621,6 +613,12 @@ bool RealTimeExampleBasedDeformer::loadObjectCubicaData(const std::string &file_
 	}
 	std::cout<<"Load object cubica data succeed.\n";
 
+	isPreComputeReducedData_=true;
+	if(isPreComputeReducedData_)
+	{
+		preComputeForReducedSimulation();
+		isPreComputeReducedData_=false;
+	}
 	return true;
 }
 bool RealTimeExampleBasedDeformer::saveSimulationMesh(const std::string &file_name) const
@@ -1309,42 +1307,148 @@ void RealTimeExampleBasedDeformer::testObjectiveGradients()
 	// projectOnSubBasis(examples_[0],reduced_basis_,reduced_basis_num_,example_eigencoefs_[0]);
 	// projectOnSubBasis(examples_[1],reduced_basis_,reduced_basis_num_,example_eigencoefs_[1]);
 	// interpolate_eigenfunction_num_=4;
-	real_1d_array x;
+
+	//test energy and energy gradient-internal force
+	// real_1d_array x;
+	// int num=3*interpolate_eigenfunction_num_;
+	// double *temp_buffer=new double[num];
+	// srand((unsigned)time(0));
+	// int lowest=1,highest=10;
+	// int range=(highest-lowest)+1;
+	// //randomly generate initial x in range[0.1,1]
+	// for(int i=0;i<num;++i)
+	// 	temp_buffer[i]=(lowest+rand()%range)/10.0;
+	// // for(int i=0;i<interpolate_eigenfunction_num_;++i)
+	// // 	for(int j=0;j<3;++j)
+	// // 		temp_buffer[3*i+j]=object_eigencoefs_[i][j];
+	// x.setcontent(num,temp_buffer);
+	// double f_min,f_plus,f;
+	// real_1d_array temp_grad,grad;
+	// temp_grad.setcontent(num,temp_buffer);
+	// grad.setcontent(num,temp_buffer);
+	// double target_weights[2]={0.5,0.5};
+	// evaluateObjectiveAndGradient2(x,f,grad,(void*)target_weights);
+	// for(int i=0;i<num;++i)
+	// {
+	// 	temp_buffer[i]=(lowest+rand()%range)/1.0e7;
+	// 	x[i]+=temp_buffer[i];
+	// }
+	// evaluateObjectiveAndGradient2(x,f_plus,temp_grad,(void*)target_weights);
+	// for(int i=0;i<num;++i)
+	// {
+	// 	x[i]-=2*temp_buffer[i];
+	// }
+	// evaluateObjectiveAndGradient2(x,f_min,temp_grad,(void*)target_weights);
+	// double f_grad_times_dx=0.0;
+	// for(int i=0;i<num;++i)
+	// 	f_grad_times_dx+=grad[i]*2*temp_buffer[i];
+	// std::cout<<"Objective, df, analytic: "<<setprecision(15)<<f_grad_times_dx<<", numerial: "<<setprecision(15)<<f_plus-f_min;
+	// std::cout<<", rel_error= "<<(f_plus-f_min-f_grad_times_dx)/(fabs(f_grad_times_dx)>1e-20?fabs(f_grad_times_dx):1e-20)<<"\n";
+	// delete[] temp_buffer;
+
+
+	//test internal force and force gradient--stiffness matrix
 	int num=3*interpolate_eigenfunction_num_;
-	double *temp_buffer=new double[num];
+	Vec3d *q=new Vec3d[interpolate_eigenfunction_num_];
+	double *x=new double[num];
+	double *dx=new double[num];
+	double *f=new double[num];
+	double *f_plus=new double[num];
+	double *f_min=new double[num];
+	Matrix<double> K((int)interpolate_eigenfunction_num_,(int)interpolate_eigenfunction_num_);
+	double *dK=new double[num];
 	srand((unsigned)time(0));
-	int lowest=1,highest=10;
-	int range=(highest-lowest)+1;
-	//randomly generate initial x in range[0.1,1]
+	//randomly generate displacement in range [0.1,1]
 	for(int i=0;i<num;++i)
-		temp_buffer[i]=(lowest+rand()%range)/10.0;
+	{
+		x[i]=(1+rand()%10)/10.0;
+	}
+	for(int j=0;j<interpolate_eigenfunction_num_;++j)
+	{
+		for(int k=0;k<3;++k)
+		{
+			q[j][k]=x[3*j+k];
+		}
+	}
+	//computeF(q);
+	computeReducedInternalForce(q,f);
+	computeReducedStiffnessMatrix(q,K);
+	//perturb a little bit
+	for(int i=0;i<num;++i)
+	{
+		dx[i]=(1+rand()%10)/1.0e7;
+		x[i]+=dx[i];
+	}
+	for(int j=0;j<interpolate_eigenfunction_num_;++j)
+	{
+		for(int k=0;k<3;++k)
+		{
+			q[j][k]=x[3*j+k];
+		}
+	}
+	//computeF(q);
+	computeReducedInternalForce(q,f_plus);
+	for(int i=0;i<num;++i)
+	{
+		dx[i]*=2.0;
+		x[i]-=dx[i];
+	}
+	for(int j=0;j<interpolate_eigenfunction_num_;++j)
+	{
+		for(int k=0;k<3;++k)
+		{
+			q[j][k]=x[3*j+k];
+		}
+	}
+	//computeF(q);
+	computeReducedInternalForce(q,f_min);
+	//computeF(q);
+	Matrix<double> dis_matrix((int)interpolate_eigenfunction_num_,3);
+	for(int i=0;i<interpolate_eigenfunction_num_;++i)
+		for(int j=0;j<3;++j)
+			dis_matrix(i,j)=dx[3*i+j];
+	Matrix<double> temp_matrix=K*dis_matrix;
+	// for(int i=0;i<interpolate_eigenfunction_num_;++i)
+	// 	for(int j=0;j<interpolate_eigenfunction_num_;++j)
+	// 		std::cout<<K(i,j)<<",";
+	// 		std::cout<<"\n";
 	// for(int i=0;i<interpolate_eigenfunction_num_;++i)
 	// 	for(int j=0;j<3;++j)
-	// 		temp_buffer[3*i+j]=object_eigencoefs_[i][j];
-	x.setcontent(num,temp_buffer);
-	double f_min,f_plus,f;
-	real_1d_array temp_grad,grad;
-	temp_grad.setcontent(num,temp_buffer);
-	grad.setcontent(num,temp_buffer);
-	double target_weights[2]={0.5,0.5};
-	evaluateObjectiveAndGradient2(x,f,grad,(void*)target_weights);
-	for(int i=0;i<num;++i)
+	// 		std::cout<<dis_matrix(i,j)<<",";
+	// 		std::cout<<"\n";
+	// for(int i=0;i<interpolate_eigenfunction_num_;++i)
+	// 	for(int j=0;j<3;++j)
+	// 		std::cout<<temp_matrix(i,j)<<",";
+	// 		std::cout<<"\n";
+	for(int i=0;i<interpolate_eigenfunction_num_;++i)
 	{
-		temp_buffer[i]=(lowest+rand()%range)/1.0e7;
-		x[i]+=temp_buffer[i];
+		for(int j=0;j<3;++j)
+			dK[3*i+j]=temp_matrix(i,j);
 	}
-	evaluateObjectiveAndGradient2(x,f_plus,temp_grad,(void*)target_weights);
-	for(int i=0;i<num;++i)
+	double max_rel_error=1000;
+	double df,dk;
+	for(int i=0;i<3*interpolate_eigenfunction_num_;++i)
 	{
-		x[i]-=2*temp_buffer[i];
+		double rel_error = fabs((f_plus[i]-f_min[i]-dK[i])/dK[i]);
+		std::cout<<"f_plus:"<<f_plus[i]<<"f_min:"<<f_min[i]<<"dk:"<<dK[i]<<"\n";
+		if(rel_error < max_rel_error)
+		{
+			df=f_plus[i]-f_min[i];
+			std::cout<<df<<"---";
+			dk = dK[i];
+			max_rel_error = rel_error;
+		}
 	}
-	evaluateObjectiveAndGradient2(x,f_min,temp_grad,(void*)target_weights);
-	double f_grad_times_dx=0.0;
-	for(int i=0;i<num;++i)
-		f_grad_times_dx+=grad[i]*2*temp_buffer[i];
-	std::cout<<"Objective, df, analytic: "<<setprecision(15)<<f_grad_times_dx<<", numerial: "<<setprecision(15)<<f_plus-f_min;
-	std::cout<<", rel_error= "<<(f_plus-f_min-f_grad_times_dx)/(fabs(f_grad_times_dx)>1e-20?fabs(f_grad_times_dx):1e-20)<<"\n";
-	delete[] temp_buffer;
+	std::cout<<"Max relative error:\n";
+	std::cout<<"df: "<<setprecision(15)<<df<<"\n";
+	std::cout<<"k*dk: "<<setprecision(15)<<dk<<"\n";
+	std::cout<<"rel error: "<<max_rel_error<<"\n";
+	delete[] x;
+	delete[] dx;
+	delete[] f;
+	delete[] f_plus;
+	delete[] f_min;
+	delete[] dK;
 }
 //step2, minimization of wieghted deformation energy to the examples
 void RealTimeExampleBasedDeformer::evaluateObjectiveAndGradient2(const real_1d_array &x,double &func, real_1d_array &grad, void *ptr)
@@ -1470,7 +1574,7 @@ void RealTimeExampleBasedDeformer::computeF(const Vec3d *reduced_dis) const
 	}
 	for(int cubica_idx=0;cubica_idx<object_cubica_ele_num_;++cubica_idx)
 	{
-		std::cout<<cubica_idx<<"\n";
+		//std::cout<<cubica_idx<<"\n";
 		int ele=object_cubica_elements_[cubica_idx];
 		//compute displacement x=X+Uq
 		double *deformed=new double[12];
@@ -1505,15 +1609,94 @@ void RealTimeExampleBasedDeformer::computeF(const Vec3d *reduced_dis) const
 		delete[] deformed;
 	}
 }
+Mat3d RealTimeExampleBasedDeformer::computeF_gradient(const int &ele,const int &vert_idx,const int &vert_idx_dim) const
+{
+	//vert_idx denotes the j-th vertex, vert_idx_dim is the k-th coordinate of the j-th vertex
+	//we get the result as dF_i/dx_j^k, which is the derivative force of vertex i to the vertex j on the coordinate k
+	//identity vector definition
+	if((vert_idx>4)||(vert_idx_dim>3))
+	{
+		std::cout<<"the vert_idx or the vert_idx_dim is out of range, they should be smaller than 3";
+	}
+	Mat3d result_matrix(0.0);
+	vector<Vec3d> e_vector;
+	e_vector.resize(3,Vec3d(0.0,0.0,0.0));
+	e_vector[0][0]=1.0;
+	e_vector[1][1]=1.0;
+	e_vector[2][2]=1.0;
+	Mat3d e_matrix(0.0);
+	//for the j=1,2,3 we have dF/dx_j^k=e_k*e_j^T*Dm^-1
+	for(unsigned int row_idx=0;row_idx<3;++row_idx)
+	{
+		for(unsigned int col_idx=0;col_idx<3;++col_idx)
+		{
+			e_matrix[row_idx][col_idx]=e_vector[vert_idx_dim][row_idx]*e_vector[vert_idx][col_idx];
+		}
+	}
+	//compute dF/dx_4
+	if(vert_idx==3)
+	{
+		Mat3d vert_cord_matrix(0.0);
+		if(vert_idx_dim==0)
+		{
+			vert_cord_matrix[0][0]=vert_cord_matrix[0][1]=vert_cord_matrix[0][2]=-1.0;
+		}
+		else if(vert_idx_dim==1)
+		{
+			vert_cord_matrix[1][0]=vert_cord_matrix[1][1]=vert_cord_matrix[1][2]=-1.0;
+		}
+		else if(vert_idx_dim==2)
+		{
+			vert_cord_matrix[2][0]=vert_cord_matrix[2][1]=vert_cord_matrix[2][2]=-1.0;
+		}
+		else
+		{
+		}
+		result_matrix=vert_cord_matrix*computeDmInv(ele);
+	}
+	else
+	{
+		//compute dF/dx_j^k,j=1,2,3;k=1,2,3
+		result_matrix=e_matrix*computeDmInv(ele);
+	}
+	return result_matrix;
+}
+
 Mat3d RealTimeExampleBasedDeformer::firstPiolaKirchhoff(Mat3d &F) const
 {//3*3
 	Mat3d P(0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0);
 	P=mu_*(F-trans(inv(F)))+lamda_*log(det(F))*trans(inv(F));
 	return P;
 }
-void RealTimeExampleBasedDeformer::computeReducedInternalForce(const Vec3d *reduced_dis,double *forces)
-{//r*1
+Mat3d RealTimeExampleBasedDeformer::computeP_gradient(const int &ele,const Mat3d F,const int &vert_idx,
+														const int &vert_idx_dim) const
+{
+	Mat3d pFpx=computeF_gradient(ele,vert_idx,vert_idx_dim);
+	Mat3d temp=inv(F)*pFpx;
+	double trace=temp[0][0]+temp[1][1]+temp[2][2];
+	Mat3d pPpx=mu_*pFpx+(mu_-lamda_*log(det(F)))*trans(inv(F))*pFpx*trans(inv(F))+lamda_*trace*trans(inv(F));
+	return pPpx;
+}
+void RealTimeExampleBasedDeformer::computeReducedEnergy(const Vec3d *reduced_dis,double &energy) const
+{
+	energy=0.0;
+//	computeF(reduced_dis);//compute F for all cubica elements
 	for(int cubica_idx=0;cubica_idx<object_cubica_ele_num_;++cubica_idx)
+	{
+		int ele=object_cubica_elements_[cubica_idx];
+		Mat3d temp=trans(F_[cubica_idx])*F_[cubica_idx];
+		double trace_c=temp[0][0]+temp[1][1]+temp[2][2];
+		double lnJ=log(det(F_[cubica_idx]));
+		double element_energy=0.5*mu_*(trace_c-3)-mu_*lnJ+0.5*lamda_*lnJ*lnJ;
+		energy += object_cubica_weights_[cubica_idx]*element_energy;
+	}
+
+}
+void RealTimeExampleBasedDeformer::computeReducedInternalForce(const Vec3d *reduced_dis,double *forces) const
+{//r*1
+	memset(forces,0.0,sizeof(double)*3*interpolate_eigenfunction_num_);
+	computeF(reduced_dis);//compute F for all cubica elements
+	for(int cubica_idx=0;cubica_idx<1/*object_cubica_ele_num_*/;++cubica_idx)
 	{
 		int ele=object_cubica_elements_[cubica_idx];
 		Mat3d P=firstPiolaKirchhoff(F_[cubica_idx]);
@@ -1545,26 +1728,86 @@ void RealTimeExampleBasedDeformer::computeReducedInternalForce(const Vec3d *redu
 			}
 		}
 		for(int i=0;i<3*interpolate_eigenfunction_num_;++i)
-			forces[i] += object_cubica_weights_[cubica_idx]*g[i];
+			//forces[i] += object_cubica_weights_[cubica_idx]*g[i];
+			forces[i] =g[i];
 		delete[] g;
 	}
 }
-void RealTimeExampleBasedDeformer::computeReducedEnergy(const Vec3d *reduced_dis,double &energy)
+void RealTimeExampleBasedDeformer::computeReducedStiffnessMatrix(const Vec3d *reduced_dis,Matrix<double> &reduced_K) const
 {
-	energy=0.0;
-//	computeF(reduced_dis);//compute F for all cubica elements
-	for(int cubica_idx=0;cubica_idx<object_cubica_ele_num_;++cubica_idx)
+	//memset(reduced_K,0.0,sizeof(double)*3*interpolate_eigenfunction_num_);
+	computeF(reduced_dis);//compute F for all cubica elements
+	//Matrix<double> dis_matrix((int)interpolate_eigenfunction_num_,3);
+	// for(int i=0;i<interpolate_eigenfunction_num_;++i)
+	// 	for(int j=0;j<3;++j)
+	// 		dis_matrix(i,j)=reduced_dis[i][j];
+	for(int cubica_idx=0;cubica_idx<1/*object_cubica_ele_num_*/;++cubica_idx)
 	{
 		int ele=object_cubica_elements_[cubica_idx];
-		Mat3d temp=trans(F_[cubica_idx])*F_[cubica_idx];
-		double trace_c=temp[0][0]+temp[1][1]+temp[2][2];
-		double lnJ=log(det(F_[cubica_idx]));
-		double element_energy=0.5*mu_*(trace_c-3)-mu_*lnJ+0.5*lamda_*lnJ*lnJ;
-		energy += object_cubica_weights_[cubica_idx]*element_energy;
+		Matrix<double> subU=tetSubBasis(ele);//12*r
+		Matrix<double> K(12,12);
+		Mat3d F=F_[cubica_idx];
+		Mat3d DmInv=computeDmInv(ele);
+		for(int i=0;i<4;++i)
+		{
+			vector<Mat3d> H_derivative(3);//computes dH/dx_j^0,dH/dx_j^1,dH/dx_j^2
+			H_derivative.clear();
+			for(int j=0;j<3;++j)
+			{
+				Mat3d pPpx=computeP_gradient(ele,F,i,j);
+				H_derivative[j]=(-1.0)*pPpx*DmInv;
+			}
+			Matrix<double> f_derivative(3,3);//computes df0/dx_j,df1/dx_j,df2/dx_j,df3/dx_j
+			// f_derivative.clear();
+			// f_cerivative.set(0.0);
+			// for(int row=0;row<3;++row)
+			// {
+			// 	for(int col=0;col<3;++col)
+			// 	{
+			// 		f_derivative[0](row,col)=H[col][row][0];
+			// 		f_derivative[1](row,col)=H[col][row][1];
+			// 		f_derivative[2](row,col)=H[col][row][2];
+			// 	}
+			// }
+			// f_derivative[3]=(-1.0)*(f_derivative[0]+f_derivative[1]+f_derivative[2]);
+				// Matrix<double> subMatrix(3,4);
+				// for(int m=0;m<3;++m)
+				// {
+				// 	for(int n=0;n<4;++n)
+				// 	{
+				// 		if(n==3)
+				// 			subMatrix(m,n)=(-1.0)*(temp[m][0]+temp[m][1]+temp[m][2]);
+				// 		else
+				// 			subMatrix(m,n)=temp[m][n];
+				// 	}
+				// }
+			for(int j=0;j<4;++j)
+			{
+				for(int row=0;row<3;++row)
+				{
+					for(int col=0;col<3;++col)
+					{
+						if(j==3)
+							f_derivative(row,col)=(-1.0)*(H_derivative[0][row][col]+H_derivative[1][row][col]+H_derivative[2][row][col]);
+						else
+							f_derivative(row,col)=H_derivative[col][row][j];
+					}
+				}
+				K.SetSubmatrix(3*i,3*j,f_derivative);
+			}
+		}
+		reduced_K=/*object_cubica_weights_[cubica_idx]**/Transpose(subU)*K*subU;
+		for(int i=0;i<interpolate_eigenfunction_num_;++i)
+			for(int j=0;j<interpolate_eigenfunction_num_;++j)
+				std::cout<<reduced_K(i,j)<<"..";
+		//Matrix<double> ele_K=Transpose(subU)*K*subU*dis_matrix;
+		// for(int i=0;i<interpolate_eigenfunction_num_;++i)
+		// {
+		// 	for(int j=0;j<3;++j)
+		// 		reduced_K[3*i+j]+=object_cubica_weights_[cubica_idx]*ele_K(i,j);
+		// }
 	}
-
 }
-
 int RealTimeExampleBasedDeformer::ModifiedSVD(Mat3d & F, Mat3d & U, Vec3d & Fhat, Mat3d & V) const
 {
     // The code handles the following necessary special situations (see the code below) :

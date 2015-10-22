@@ -54,4 +54,3 @@ void ReducedStVKForceModel::GetTangentStiffnessMatrix(double * q, double * tange
 {
   stVKStiffnessMatrix->Evaluate(q,tangentStiffnessMatrix);
 }
-

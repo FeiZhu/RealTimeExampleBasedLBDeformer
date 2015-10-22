@@ -63,8 +63,7 @@ public:
     double timeStep() const {return time_step_;}
     void setTimeStep(double dt){time_step_ = dt;}
     unsigned int reducedBasisNum() const{return reduced_basis_num_;}
-    //unsigned int objectEigenfunctionNum() const{return reconstruct_eigenfunction_num_;}
-    //unsigned int exampleEigenfunctionNum() const{return reconstruct_eigenfunction_num_;}
+    double** reducedBasis() const{return reduced_basis_;}
     void setInterpolateEigenfunctionNum(int num) {interpolate_eigenfunction_num_=num;}
     unsigned int correspondingFunctionNum() const{return corresponding_function_num_;}
     const Planes* planesInScnene() const {return planes_;}
@@ -84,9 +83,6 @@ public:
     unsigned int objectCubicaEleNum() const{return object_cubica_ele_num_;}
     unsigned int* objectCubicaElements() const{return object_cubica_elements_;}
     double* objectCubicaWeights() const{return object_cubica_weights_;}
-    // unsigned int* exampleCubicaEleNum() const{return example_cubica_ele_num_;}
-    // unsigned int** exampleCubicaElements() const{return example_cubica_elements_;}
-    // double** exampleCubicaWeights() const{return example_cubica_weights_;}
     void setEnableEigenWeightControl(bool enable_value){enable_eigen_weight_control_=enable_value;}
 
     //registration of eigenfunctions
@@ -109,9 +105,9 @@ public:
     //solving course need the initial displacement matrix Dm, and the deformed displacement matrix Ds
     // to consider solving time we compute the object and examples initial displacement Dm when we load volumetric meshes
     //the last two parameters is to identify the energy we solved is for example mesh deformation or object deformation
-    void computeReducedEnergy(const Vec3d *reduced_dis,double &energy);
-    void computeReducedInternalForce(const Vec3d *reduced_dis,double *forces);
-
+    void computeReducedEnergy(const Vec3d *reduced_dis,double &energy) const;
+    void computeReducedInternalForce(const Vec3d *reduced_dis,double *forces) const;
+    void computeReducedStiffnessMatrix(const Vec3d *reduced_dis,Matrix<double> &reduced_K) const;
     void testObjectiveGradients();
 private:
     void preComputeForReducedSimulation();
@@ -121,6 +117,9 @@ private:
     Mat3d computeDmInv(const int &ele) const;
     void computeF(const Vec3d *reduced_dis) const;
     Mat3d firstPiolaKirchhoff(Mat3d &F) const;
+    Mat3d computeF_gradient(const int &ele,const int &vert_idx,const int &vert_idx_dim) const;
+    Mat3d computeP_gradient(const int &ele,const Mat3d F,const int &vert_idx,const int &vert_idx_dim) const;
+
     int ModifiedSVD(Mat3d & F, Mat3d & U, Vec3d & Fhat, Mat3d & V) const;    //modified SVD for inversion handling
     // given a vector, find a unit vector that is orthogonal to it
     void FindOrthonormalVector(Vec3d & v, Vec3d & result) const;
