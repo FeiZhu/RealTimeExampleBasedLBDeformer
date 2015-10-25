@@ -1,9 +1,9 @@
 *solver
 #implicitBackwardEuler
 #implicitNewmark
-#Euler
+Euler
 #centralDifferences
-reducedCentralDifferences
+#reducedCentralDifferences
 #reducedImplicitNewmark
 #reducedImplicitBackwardEuler
 
@@ -18,15 +18,16 @@ InvertibleFEM
 0.6
 
 *invertibleMaterial
-neoHookean
+#neoHookean
 #StVK
-
+reducedNeoHookean
 *simulationMeshFilename
 armadillo.veg
 
 *objectRenderSurfaceMeshFilename
 armadillo.obj
-
+*objectVolumetricSurfaceMeshFilename
+armadillo_volumetric_surfacemesh.obj
 *objectInterpolationFilename
 armadillo.interp
 

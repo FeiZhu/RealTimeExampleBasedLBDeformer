@@ -49,3 +49,5 @@
 #include "centralDifferencesDense.h"
 #include "implicitNewmarkDense.h"
 #include "implicitBackwardEulerDense.h"
+#include "modalMatrix.h"
+#include "sceneObjectReducedCPU.h"

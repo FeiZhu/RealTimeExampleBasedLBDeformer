@@ -63,7 +63,7 @@ public:
     double timeStep() const {return time_step_;}
     void setTimeStep(double dt){time_step_ = dt;}
     unsigned int reducedBasisNum() const{return reduced_basis_num_;}
-    double** reducedBasis() const{return reduced_basis_;}
+    double** reducedBasis(){return reduced_basis_;}
     void setInterpolateEigenfunctionNum(int num) {interpolate_eigenfunction_num_=num;}
     unsigned int correspondingFunctionNum() const{return corresponding_function_num_;}
     const Planes* planesInScnene() const {return planes_;}
@@ -118,7 +118,7 @@ private:
     void computeF(const Vec3d *reduced_dis) const;
     Mat3d firstPiolaKirchhoff(Mat3d &F) const;
     Mat3d computeF_gradient(const int &ele,const int &vert_idx,const int &vert_idx_dim) const;
-    Mat3d computeP_gradient(const int &ele,const Mat3d F,const int &vert_idx,const int &vert_idx_dim) const;
+    Mat3d computeP_gradient(const int &ele,const Mat3d &F,const int &vert_idx,const int &vert_idx_dim) const;
 
     int ModifiedSVD(Mat3d & F, Mat3d & U, Vec3d & Fhat, Mat3d & V) const;    //modified SVD for inversion handling
     // given a vector, find a unit vector that is orthogonal to it
@@ -186,13 +186,19 @@ private:
     Planes *planes_ = NULL;
     unsigned int plane_num_ = 0;
     bool isPreComputeReducedData_=true;
+    bool isload_cubica_ = false;
+    bool isload_reduced_basis_ = false;
     //used for reduced cubica element Computation
+    int r_;
+    Matrix<double> *eigen_U_;
+    Matrix<double> *reduced_U_;
     Vec3d *q_;
     Mat3d *F_;
     double **restpos_;//compute rest position for cubica elements
     //material
     double mu_=0.0;
     double lamda_=0.0;
+
 };
 
 } //namespace RTLB

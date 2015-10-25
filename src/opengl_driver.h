@@ -12,6 +12,7 @@
 #include <cfloat>
 #include "planes.h"
 #include "VegaHeaders.h"
+#include "reducedNeoHookeanForceModel.h"
 
 class GLUI;
 class GLUI_StaticText;
@@ -23,6 +24,8 @@ class SceneObjectDeformable;
 class ConfigFile;
 class planes;
 class Graph;
+class ReducedNeoHookeanForceModel;
+class ModalMatrix;
 
 namespace RTLB{
 
@@ -56,6 +59,7 @@ private:
     static void updateCurrentExample(int code);
     static void changeCurrentEigenIndex(int code);
     static void changeSimulationMode(int code);
+    static void enableReducedSimulation(int code);
     static void loadObjectEigenfunctions(int code);
     static void saveObjectEigenfunctions(int code);
     static void loadExampleEigenfunctions(int code);
@@ -85,6 +89,7 @@ private:
     char simulation_mesh_file_name_[string_length];
     char example_file_name_prefix_[string_length];
     char visual_mesh_file_name_[string_length];
+    char volumetric_surface_mesh_file_name_[string_length];
     char reduced_basis_file_name_[string_length];
     char object_eigen_file_name_[string_length];
     char example_eigen_file_name_prefix_[string_length];
@@ -265,6 +270,11 @@ private:
         UNSPECIFIED
     };
     DeformableObjectType deformable_object_type_ = UNSPECIFIED;
+    enum SimulationMode{
+        FULLSPACE,
+        REDUCEDSPACE
+    };
+    SimulationMode simulation_mode_ = FULLSPACE;
     //glui controls
     GLUI *glui_ = NULL;
     GLUI_StaticText *glui_object_surface_eigenfunctions_loaded_;
@@ -273,19 +283,25 @@ private:
     GLUI_StaticText *glui_rendering_eigenfunctions_enabled_;
     GLUI_Spinner *render_eigen_index_spinner_;
     GLUI_Button *change_simulation_mode_button_;
+    GLUI_Button *reduced_simulation_button_;
     unsigned int current_example_index_ = 0;
     unsigned int current_render_eigen_idx_=0;
     unsigned int save_eigenfunction_num_ = 0;
     ConfigFile config_file_;
     //reuced simulation
+    bool enable_reduced_simulation_ = false;
+    SceneObjectReducedCPU *render_reduced_surface_mesh_;
     ReducedForceModel *reduced_force_model_;
-    int reduced_num_ = 0;
+    int r_ = 0;
     double *reduced_mass_matrix_ = NULL;
     double *reduced_stiffness_matrix_ = NULL;
     double *reduced_f_ext_ = NULL;
     Vec3d *vec_q_ = NULL;
     double *q_ = NULL;
     bool reduced_simulation_ = false;
+    ModalMatrix *modal_matrix_ = NULL;
+    double *fq_ = NULL;
+    double *fqBase_ = NULL;
 };
 
 }  //namespace RTLB
