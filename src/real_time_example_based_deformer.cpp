@@ -1351,7 +1351,7 @@ void RealTimeExampleBasedDeformer::testObjectiveGradients()
 	//test internal force and force gradient--stiffness matrix
 	int num=3*interpolate_eigenfunction_num_;
 	Vec3d *q=new Vec3d[interpolate_eigenfunction_num_];
-	double *x=new double[num];
+	//double *x=new double[num];
 	double *dx=new double[num];
 	double *f=new double[num];
 	double *f_plus=new double[num];
@@ -1360,12 +1360,12 @@ void RealTimeExampleBasedDeformer::testObjectiveGradients()
 	double *dK=new double[num];
 	srand((unsigned)time(0));
 	//randomly generate displacement in range [0.1,1]
-	//double x[24]={0.3,0.1,0.4,0.3,0.8,1,0.5,1,0.7,0.2,0.2,0.3,0.2,0.4,0.6,0.2,0.7,0.3,0.8,0.6,1,1,0.3,0.5};
-	for(int i=0;i<num;++i)
-	{
-		x[i]=(1+rand()%10)/10.0;
-		std::cout<<x[i]<<",";
-	}
+	double x[24]={0.3,0.1,0.4,0.3,0.8,1,0.5,1,0.7,0.2,0.2,0.3,0.2,0.4,0.6,0.2,0.7,0.3,0.8,0.6,1,1,0.3,0.5};
+	// for(int i=0;i<num;++i)
+	// {
+	// 	x[i]=(1+rand()%10)/10.0;
+	// 	std::cout<<x[i]<<",";
+	// }
 	for(int j=0;j<interpolate_eigenfunction_num_;++j)
 	{
 		for(int k=0;k<3;++k)
@@ -1374,7 +1374,7 @@ void RealTimeExampleBasedDeformer::testObjectiveGradients()
 		}
 	}
 	computeReducedStiffnessMatrix(q,K);
-
+	//
 	std::cout<<"K:\n";
 	for(int j=0;j<interpolate_eigenfunction_num_;++j)
 	{
@@ -1438,7 +1438,7 @@ void RealTimeExampleBasedDeformer::testObjectiveGradients()
 	std::cout<<"df: "<<setprecision(15)<<df<<"\n";
 	std::cout<<"k*dk: "<<setprecision(15)<<dk<<"\n";
 	std::cout<<"rel error: "<<max_rel_error<<"\n";
-	delete[] x;
+	//delete[] x;
 	delete[] dx;
 	delete[] f;
 	delete[] f_plus;
@@ -1591,8 +1591,12 @@ void RealTimeExampleBasedDeformer::computeF(const Vec3d *reduced_dis) const
 			deformed[3*j+2]=restpos_[cubica_idx][3*j+2]+temp(0,2);
 		}
 		Mat3d Ds=computeDs(deformed);
+		// std::cout<<"Ds"<<Ds<<"\n";
+		// std::cout<<"Dm0"<<computeDmInv(0)<<"\n";
 		F_[cubica_idx]=Ds*computeDmInv(ele);//F for each ele
-
+	    // std::cout<<"InvDm:"<<computeDmInv(ele)<<"\n";
+		// std::cout<<"F:"<<F_[0]<<"\n";
+		// getchar();
 	//temp handle invert F_
 	// Mat3d U,V;
     // Vec3d Fhat;
@@ -1664,15 +1668,16 @@ Mat3d RealTimeExampleBasedDeformer::computeF_gradient(const int &ele,const int &
 	// Mat3d DmInv=computeDmInv(ele);
 	// if(vert_idx==3)
 	// {
-	// 	result_matrix[0][0]=DmInv[vert_idx][vert_idx_dim];
-	// 	result_matrix[1][1]=DmInv[vert_idx][vert_idx_dim];
-	// 	result_matrix[2][2]=DmInv[vert_idx][vert_idx_dim];
-	// }
-	// else
-	// {
 	// 	result_matrix[0][0]=(-1.0)*(DmInv[0][vert_idx_dim]+DmInv[1][vert_idx_dim]+DmInv[2][vert_idx_dim]);
 	// 	result_matrix[1][1]=(-1.0)*(DmInv[0][vert_idx_dim]+DmInv[1][vert_idx_dim]+DmInv[2][vert_idx_dim]);
 	// 	result_matrix[2][2]=(-1.0)*(DmInv[0][vert_idx_dim]+DmInv[1][vert_idx_dim]+DmInv[2][vert_idx_dim]);
+	// }
+	// else
+	// {
+	//
+	// 	result_matrix[0][0]=DmInv[vert_idx][vert_idx_dim];
+	// 	result_matrix[1][1]=DmInv[vert_idx][vert_idx_dim];
+	// 	result_matrix[2][2]=DmInv[vert_idx][vert_idx_dim];
 	// }
 	return result_matrix;
 }
@@ -1752,11 +1757,11 @@ void RealTimeExampleBasedDeformer::computeReducedInternalForce(const Vec3d *redu
 void RealTimeExampleBasedDeformer::computeReducedStiffnessMatrix(const Vec3d *reduced_dis,Matrix<double> &reduced_K) const
 {
 	computeF(reduced_dis);//compute F for all cubica elements
-	std::cout<<".................begin............\n";
-	for(int i=0;i<interpolate_eigenfunction_num_;++i)
-		for(int j=0;j<interpolate_eigenfunction_num_;++j)
-			std::cout<<reduced_K(i,j)<<"..";
-			std::cout<<"....end\n";
+	// std::cout<<".................begin............\n";
+	// for(int i=0;i<interpolate_eigenfunction_num_;++i)
+	// 	for(int j=0;j<interpolate_eigenfunction_num_;++j)
+	// 		std::cout<<reduced_K(i,j)<<"..";
+	// 		std::cout<<"....end\n";
 	for(int cubica_idx=0;cubica_idx<1/*object_cubica_ele_num_*/;++cubica_idx)
 	{
 		int ele=object_cubica_elements_[cubica_idx];
@@ -1764,17 +1769,23 @@ void RealTimeExampleBasedDeformer::computeReducedStiffnessMatrix(const Vec3d *re
 		Matrix<double> K(12,12);
 		Mat3d F=F_[cubica_idx];
 		Mat3d DmInv=computeDmInv(ele);
+		// std::cout<<DmInv<<"\n";
 		for(int i=0;i<4;++i)
 		{
 			vector<Mat3d> g_derivative(3);//computes dg/dx_j^0,dg/dx_j^1,dg/dx_j^2
 			g_derivative.clear();
 			for(int j=0;j<3;++j)
 			{
+				//std::cout<<"j:\n";
+				// std::cout<<computeF_gradient(ele,i,j)<<"~~~~~~~~~~~\n";
 				g_derivative[j]=computeP_gradient(ele,F,i,j)*trans(DmInv);
+				// std::cout<<g_derivative[j]<<"\n";
+				// getchar();
 			}
 			//computes df0/dx_j,df1/dx_j,df2/dx_j,df3/dx_j
 			for(int j=0;j<4;++j)
 			{
+			//std::cout<<j<<":\n";
 				Matrix<double> f_derivative(3,3);
 				for(int row=0;row<3;++row)
 				{
@@ -1784,19 +1795,41 @@ void RealTimeExampleBasedDeformer::computeReducedStiffnessMatrix(const Vec3d *re
 							f_derivative(row,col)=(-1.0)*(g_derivative[0][row][col]+g_derivative[1][row][col]+g_derivative[2][row][col]);
 						else
 							f_derivative(row,col)=g_derivative[col][row][j];
-						K(3*i+row,3*j+col)=f_derivative(row,col);
+						//K(3*i+row,3*j+col)=f_derivative(row,col);
 					}
+					//std::cout<<"\n";
 				}
-				// K.SetSubmatrix(3*i,3*j,f_derivative);
-				// for(int row=0;row<3;++row)
-				// 	for(int col=0;col<3;++col)
+				K.SetSubmatrix(3*i,3*j,f_derivative);
+				// for(int row=0;row<12;++row)
+				// {
+				// 	for(int col=0;col<12;++col)
+				// 		std::cout<<K(row,col)<<",";
+				// 	std::cout<<"\n";
+				// }
 
 			}
 		}
+		// std::cout<<"K:\n";
+		// for(int row=0;row<12;++row)
+		// {
+		// 	for(int col=0;col<12;++col)
+		// 		std::cout<<K(row,col)<<",";
+		// 	std::cout<<"\n";
+		// }
+		std::cout<<"```````````````K```````````````:\n";
 		reduced_K=/*+=object_cubica_weights_[cubica_idx]**/Transpose(subU)*K*subU;
-		for(int i=0;i<12;++i)
-			for(int j=0;j<interpolate_eigenfunction_num_;++j)
-				std::cout<<subU(i,j)<<"..";
+		// std::cout<<"reduced_K:\n";
+		// for(int row=0;row<interpolate_eigenfunction_num_;++row)
+		// {
+		// 	for(int col=0;col<interpolate_eigenfunction_num_;++col)
+		// 		std::cout<<reduced_K(row,col)<<",";
+		// 	std::cout<<"\n";
+		// }
+		// 	std::cout<<reduced_K(0,0)<<",";
+		std::cout<<"```````````````reduced_K```````````````:\n";
+		// for(int i=0;i<12;++i)
+		// 	for(int j=0;j<interpolate_eigenfunction_num_;++j)
+		// 		std::cout<<subU(i,j)<<"..";
 		//Matrix<double> ele_K=Transpose(subU)*K*subU*dis_matrix;
 		// for(int i=0;i<interpolate_eigenfunction_num_;++i)
 		// {

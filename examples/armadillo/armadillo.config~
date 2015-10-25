@@ -1,26 +1,23 @@
 *solver
 #implicitBackwardEuler
 #implicitNewmark
-Euler
+#Euler
 #centralDifferences
 #reducedCentralDifferences
-#reducedImplicitNewmark
+reducedImplicitNewmark
 #reducedImplicitBackwardEuler
 
 *deformableModel
-#StVK
 InvertibleFEM
-#CLFEM
-#LinearFEM
+
+*invertibleMaterial
+#neoHookean
+reducedNeoHookean
 
 #for InvertibleFEM
 *principalStretchThreshold
 0.6
 
-*invertibleMaterial
-#neoHookean
-#StVK
-reducedNeoHookean
 *simulationMeshFilename
 armadillo.veg
 
@@ -62,7 +59,7 @@ true
 armadillo.cubature
 
 *reducedBasisFilename
-armadillo.basis
+armadillo-modal.basis
 
 *massMatrixFilename
 armadillo.mass

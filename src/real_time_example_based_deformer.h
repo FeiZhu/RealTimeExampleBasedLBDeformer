@@ -189,7 +189,7 @@ private:
     bool isload_cubica_ = false;
     bool isload_reduced_basis_ = false;
     //used for reduced cubica element Computation
-    int r_;
+    // int r_;
     Matrix<double> *eigen_U_;
     Matrix<double> *reduced_U_;
     Vec3d *q_;

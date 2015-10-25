@@ -31,6 +31,7 @@ namespace RTLB{
 
 class RealTimeExampleBasedDeformer;
 
+
 class OpenGLDriver
 {
 public:
@@ -173,8 +174,13 @@ private:
     IsotropicHyperelasticFEM *isotropic_hyperelastic_fem_ = NULL,*example_isotropic_hyperelastic_fem_ = NULL;
     ForceModel *force_model_ = NULL;
     IntegratorBase *integrator_base_ = NULL;
+    ImplicitNewmarkSparse *implicit_newmark_sparse_ = NULL;
     IntegratorBaseSparse *integrator_base_sparse_ = NULL;
     IntegratorBaseDense *integrator_base_dense_ = NULL;
+    ImplicitNewmarkDense *implicit_newmark_dense_ = NULL;
+    ImplicitBackwardEulerDense *implicit_backward_euler_dense_ = NULL;
+    CentralDifferencesDense *central_differences_dense_ = NULL;
+
 
     int pulled_vertex_=-1; //the index of vertex pulled by user
     double *u_=NULL;
@@ -291,7 +297,7 @@ private:
     //reuced simulation
     bool enable_reduced_simulation_ = false;
     SceneObjectReducedCPU *render_reduced_surface_mesh_;
-    ReducedForceModel *reduced_force_model_;
+    ReducedNeoHookeanForceModel *reduced_neoHookean_force_model_=NULL;
     int r_ = 0;
     double *reduced_mass_matrix_ = NULL;
     double *reduced_stiffness_matrix_ = NULL;
