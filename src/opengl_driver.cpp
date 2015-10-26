@@ -326,6 +326,8 @@ void OpenGLDriver::initSimulation()
     {
         if(strcmp(deformable_model_,"InvertibleFEM")==0)
             deformable_object_type_=INVERTIBLEFEM;
+        if(strcmp(deformable_model_,"ReducedFEM")==0)
+            deformable_object_type_=REDUCEDFEM;
     }
     std::cout<<deformable_model_<<":"<<deformable_object_type_<<"\n";
     if(deformable_object_type_==UNSPECIFIED)
@@ -335,7 +337,7 @@ void OpenGLDriver::initSimulation()
     }
     std::cout<<deformable_object_type_<<"\n";
     //load mesh
-    if(deformable_object_type_==INVERTIBLEFEM)
+    if((deformable_object_type_==INVERTIBLEFEM)||(deformable_object_type_==REDUCEDFEM))
     {
         std::cout<<"Loading object volumetric mesh from file "<<simulation_mesh_file_name_<<".\n";
         if(simulator_->loadSimulationMesh(simulation_mesh_file_name_))
@@ -620,6 +622,7 @@ void OpenGLDriver::initSimulation()
             case REDUCED_INV_NEOHOOKEAN:
                 reduced_neoHookean_force_model_ = new ReducedNeoHookeanForceModel(r_,simulation_mesh_,U,simulator_->objectCubicaEleNum(),
                                             simulator_->objectCubicaWeights(),simulator_->objectCubicaElements(),restpos,add_gravity_,gravity_);
+                reduced_force_model_=reduced_neoHookean_force_model_;
                 simulation_mode_=REDUCEDSPACE;
                 break;
             default:
@@ -629,6 +632,27 @@ void OpenGLDriver::initSimulation()
         }
 
     }
+    // if(deformable_object_type_ == REDUCEDFEM)
+    // {
+    //     tet_mesh_=dynamic_cast<TetMesh*>(simulation_mesh_);
+    //     if(tet_mesh_==NULL)
+    //     {
+    //         std::cout<<"Error: the input mesh is not a tet mesh (CLFEM deformable model).\n";
+    //         exit(1);
+    //     }
+    //     // CorotationalLinearFEM *corotational_linearfem;
+    //     // corotational_linearfem = new CorotationalLinearFEM(tet_mesh_);
+    //     // CorotationalLinearFEMForceModel *corotational_linearfem_force_model=new CorotationalLinearFEMForceModel(corotational_linearfem,1);
+    //     // SparseMatrix *tangentStiffnessMatrix;
+    //     // corotational_linearfem_force_model->GetTangentStiffnessMatrixTopology(&tangentStiffnessMatrix);
+    //     // corotational_linearfem_force_model->GetTangentStiffnessMatrix(u_,tangentStiffnessMatrix);
+    //     precomputed_integrals_=StVKElementABCDLoader::load(simulation_mesh_);
+    //     StVKReducedInternalForces *stvkInternalForces=new StVKInternalForces(r_,U,simulation_mesh_,precomputed_integrals_);
+    //     StVKReducedStiffnessMatrix *stiffnessMatrix = new StVKReducedStiffnessMatrix(stvkInternalForces);
+    //     double *k=new double[r_*r_];
+    //     ReducedLinearForceModel *reduced_linear_force_model=new ReducedLinearForceModel(r_,k);
+    //     reduced_force_model_=reduced_linear_force_model;
+    // }
     delete[] U;
     delete[] restpos;
     //initialize the integrator
@@ -673,26 +697,22 @@ void OpenGLDriver::initSimulation()
     }
     else if(solver_type_==REDUCEDCENTRALDIFFERENCES)
     {
-        std::cout<<"tttttttttttttttttt2\n";
         central_differences_dense_ = new CentralDifferencesDense(r_,time_step_,reduced_mass_matrix_,reduced_neoHookean_force_model_,damping_mass_coef_,
                                                             damping_stiffness_coef_,central_difference_tangential_damping_update_mode_);
-        std::cout<<"tttttttttttttttttt1\n";
         integrator_base_dense_=central_differences_dense_;
         simulation_mode_=REDUCEDSPACE;
     }
     else if(solver_type_==REDUCEDIMPLICITNEWMARK)
     {
-        std::cout<<newmark_beta_<<","<<newmark_gamma_<<"tttttttttttttttttt2\n";
-        implicit_newmark_dense_ = new ImplicitNewmarkDense(r_,time_step_,reduced_mass_matrix_,reduced_neoHookean_force_model_,
+        implicit_newmark_dense_ = new ImplicitNewmarkDense(r_,time_step_,reduced_mass_matrix_,reduced_force_model_,
                                                         ImplicitNewmarkDense::positiveDefiniteMatrixSolver,damping_mass_coef_,damping_stiffness_coef_,
                                                         max_iterations_,integrator_epsilon_,newmark_beta_,newmark_gamma_);
-        std::cout<<"tttttttttttttttttt1\n";
         integrator_base_dense_=implicit_newmark_dense_;
         simulation_mode_=REDUCEDSPACE;
     }
     else if(solver_type_==REDUCEDIMPLICITBACKWARDEULER)
     {
-        implicit_backward_euler_dense_ = new ImplicitBackwardEulerDense(r_,time_step_,reduced_mass_matrix_,reduced_neoHookean_force_model_,
+        implicit_backward_euler_dense_ = new ImplicitBackwardEulerDense(r_,time_step_,reduced_mass_matrix_,reduced_force_model_,
                                                                 ImplicitBackwardEulerDense::positiveDefiniteMatrixSolver,damping_mass_coef_,
                                                                 damping_stiffness_coef_,max_iterations_,integrator_epsilon_);
         integrator_base_dense_=implicit_backward_euler_dense_;
@@ -870,29 +890,32 @@ void OpenGLDriver::displayFunction()
         glEnable(GL_BLEND);
         glEnable(GL_POLYGON_OFFSET_FILL);
         glPolygonOffset(1.0,1.0);
-        //if(active_instance->simulation_mode_==FULLSPACE)
+        //  active_instance->render_surface_mesh_->Render();
+        if(active_instance->simulation_mode_==FULLSPACE)
             active_instance->render_surface_mesh_->Render();
-        // else
-        //     active_instance->render_reduced_surface_mesh_->Render();
+        else
+            active_instance->render_reduced_surface_mesh_->Render();
         if(active_instance->render_vertices_)
         {
             glDisable(GL_LIGHTING);
             glColor3f(0.5,0.0,0.0);
             glPointSize(8.0);
-        //    if(active_instance->simulation_mode_==FULLSPACE)
+            // active_instance->render_surface_mesh_->RenderVertices();
+           if(active_instance->simulation_mode_==FULLSPACE)
                 active_instance->render_surface_mesh_->RenderVertices();
-            // else
-            //     active_instance->render_reduced_surface_mesh_->RenderVertices();
+            else
+                active_instance->render_reduced_surface_mesh_->RenderVertices();
             glEnable(GL_LIGHTING);
         }
         if(active_instance->render_wireframe_)
         {
             glDisable(GL_LIGHTING);
             glColor3f(0.0,0.0,0.0);
-            //if(active_instance->simulation_mode_==FULLSPACE)
+            //  active_instance->render_surface_mesh_->RenderEdges();
+            if(active_instance->simulation_mode_==FULLSPACE)
                 active_instance->render_surface_mesh_->RenderEdges();
-            // else
-            //     active_instance->render_reduced_surface_mesh_->RenderEdges();
+            else
+                active_instance->render_reduced_surface_mesh_->RenderEdges();
             glEnable(GL_LIGHTING);
         }
         glDisable(GL_BLEND);
@@ -1128,7 +1151,7 @@ void OpenGLDriver::idleFunction()
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
     glutSetWindow(active_instance->window_id_);
-
+    // std::cout<<"idlefunction:"<<"\n";
     //test:save deformed tet_mesh
     // if(active_instance->save_tet_mesh_)
     // {
@@ -1137,11 +1160,14 @@ void OpenGLDriver::idleFunction()
     //
     //     active_instance->saveTetMesh(0);
     // }
-    std::cout<<active_instance->simulation_mode_<<"\n";
+    // std::cout<<active_instance->simulation_mode_<<"\n";
+    // getchar();
     if(!active_instance->pause_simulation_)
     {
-        active_instance->reduced_neoHookean_force_model_->testObjectiveGradients();
-
+        // active_instance->reduced_neoHookean_force_model_->testObjectiveGradients();
+        // std::cout<<"----------------------------------------------------------------\n";
+        // // active_instance->simulator_->testObjectiveGradients();
+        // getchar();
         if(active_instance->simulation_mode_==REDUCEDSPACE)
         {
            //reset external forces
@@ -1156,7 +1182,7 @@ void OpenGLDriver::idleFunction()
                     double force_y=(-1.0)*(active_instance->mouse_pos_[1]-active_instance->drag_start_y_);
                     double external_force[3];
                     active_instance->camera_->CameraVector2WorldVector_OrientationOnly3D(force_x,force_y,0,external_force);
-                    std::cout<<"external_force:"<<external_force[0]<<","<<external_force[1]<<","<<external_force[2]<<std::endl;
+                    std::cout<<"external_force:"<<active_instance->pulled_vertex_<<","<<external_force[0]<<","<<external_force[1]<<","<<external_force[2]<<std::endl;
                     active_instance->modal_matrix_->ProjectSingleVertex(active_instance->pulled_vertex_,external_force[0],
                                 external_force[1],external_force[2],active_instance->fq_);
                     for(int i=0;i<active_instance->r_;++i)
@@ -1165,7 +1191,7 @@ void OpenGLDriver::idleFunction()
                         active_instance->fq_[i] = active_instance->fqBase_[i] + active_instance->deformable_object_compliance_ * active_instance->fq_[i];
                         std::cout<<active_instance->fq_[i]<<"....";
                     }
-
+                    //getchar();
                 }
             }
             else
@@ -1175,15 +1201,15 @@ void OpenGLDriver::idleFunction()
             //apply any scripted force loads for reduced space ---not done yet
             if(active_instance->time_step_counter_<active_instance->force_loads_num_)
             {
-                std::cout<<"External forces read from the text input file.\n";
-                for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
-                    active_instance->f_ext_[i]+=active_instance->force_loads_[ELT(3*active_instance->simulation_vertices_num_,i,active_instance->time_step_counter_)];
+                // std::cout<<"External forces read from the text input file.\n";
+                // for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
+                //     active_instance->f_ext_[i]+=active_instance->force_loads_[ELT(3*active_instance->simulation_vertices_num_,i,active_instance->time_step_counter_)];
             }
             //apply the force loads caused by the examples--not done yet
             if(active_instance->enable_example_simulation_)
             {
-                active_instance->simulator_->testObjectiveGradients();
-                getchar();
+                // active_instance->simulator_->testObjectiveGradients();
+                // getchar();
                 //first update the object_eigencoefs_ using current object configuration,input is displacement, output is a shape in LB subspace
             //     active_instance->simulator_->projectOnEigenFunctions(active_instance->simulation_mesh_,active_instance->u_,active_instance->simulator_->objectVertexVolume(),
             //                                         active_instance->simulator_->objectEigenFunctions(),active_instance->simulator_->objectEigenValues(),
@@ -1249,9 +1275,17 @@ void OpenGLDriver::idleFunction()
             //     for(int i=0;i<active_instance->simulation_vertices_num_;++i)
             //         active_instance->f_ext_[i]+=active_instance->f_col_[i];
             // }
+            active_instance->integrator_base_dense_->SetExternalForces(active_instance->fq_);
+            int code=active_instance->integrator_base_->DoTimestep();
             std::cout<<".";
+            //fflush(NULL);
             ++active_instance->time_step_counter_;
             memcpy(active_instance->q_,active_instance->integrator_base_->Getq(),sizeof(double)*active_instance->r_);
+
+            // std::cout<<"q''''''''''''\n";
+            // for(int i=0;i<active_instance->r_;++i)
+            //     if(active_instance->q_[i]>1.0e-7)
+            //         std::cout<<active_instance->q_[i]<<",";
         }
         else
         {
@@ -1259,7 +1293,6 @@ void OpenGLDriver::idleFunction()
             //reset external forces
             for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
                 active_instance->f_ext_[i]=0.0;
-                    std::cout<<"1:\n";
             if(active_instance->left_button_down_)
             {
                 std::cout<<"pulled_vertex_:"<<active_instance->pulled_vertex_<<"\n";
@@ -1329,8 +1362,7 @@ void OpenGLDriver::idleFunction()
             //apply the force loads caused by the examples
             if(active_instance->enable_example_simulation_)
             {
-                //active_instance->simulator_->testObjectiveGradients();
-                //getchar();
+
                 //first update the object_eigencoefs_ using current object configuration,input is displacement, output is a shape in LB subspace
             //     active_instance->simulator_->projectOnEigenFunctions(active_instance->simulation_mesh_,active_instance->u_,active_instance->simulator_->objectVertexVolume(),
             //                                         active_instance->simulator_->objectEigenFunctions(),active_instance->simulator_->objectEigenValues(),
@@ -1406,7 +1438,7 @@ void OpenGLDriver::idleFunction()
             int code=active_instance->integrator_base_->DoTimestep();
 
                             std::cout<<"ee:\n";
-            std::cout<<".";
+            std::cout<<".";fflush(NULL);
             ++active_instance->time_step_counter_;
             memcpy(active_instance->u_,active_instance->integrator_base_->Getq(),sizeof(double)*3*(active_instance->simulation_vertices_num_));
         }
@@ -1415,25 +1447,39 @@ void OpenGLDriver::idleFunction()
     //active_instance->integrator_base_->SetState(active_instance->u_,active_instance->vel_initial_);
 //    active_instance->render_surface_mesh_->SetVertexDeformations(active_instance->u_);//set the displacement of volumetric Surface
     //interpolate deformations from volumetric mesh to object surface mesh, update its configuration
+    // std::cout<<active_instance->simulation_mode_<<"\n";
+    // getchar();
     if(active_instance->render_mesh_type_==VISUAL_MESH)
     {
         if(active_instance->simulation_mode_==REDUCEDSPACE)
         {
+            // std::cout<<"....\n";
+            // for(int i=0;i<active_instance->r_;++i)
+            //     std::cout<<active_instance->q_[i]<<"\n";
             active_instance->render_reduced_surface_mesh_->Setq(active_instance->q_);
             active_instance->render_reduced_surface_mesh_->Compute_uUq();
+            // std::cout<<"q,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\n";
+            // for(int i=0;i<active_instance->r_;++i)
+            //     if(active_instance->u_[i]>1.0e-7)
+            //         std::cout<<active_instance->q_[i]<<",";
+        //    std::cout<<"U:"<<active_instance->modal_matrix_->GetMatrix()[0]<<"AAAAAAAAAAAAAAAA"<<active_instance->modal_matrix_->GetMatrix()[100]<<"\n";
+            // std::cout<<"u,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,\n";
+            // for(int i=0;i<active_instance->simulation_vertices_num_;++i)
+            //     if(active_instance->u_[i]>1.0e-7)
+            //         std::cout<<active_instance->u_[i]<<",";
         }
         else
         {
-            active_instance->render_surface_mesh_->SetVertexDeformations(active_instance->u_render_surface_);
+            // active_instance->render_surface_mesh_->SetVertexDeformations(active_instance->u_render_surface_);
         }
     }
     for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
         if(active_instance->u_[i]>1.0e-7)
             std::cout<<active_instance->u_[i]<<",";
-    VolumetricMesh::interpolate(active_instance->u_,active_instance->u_render_surface_,active_instance->visual_mesh_->Getn(),
-                                active_instance->object_interpolation_element_vertices_num_,active_instance->object_interpolation_vertices_,
-                                active_instance->object_interpolation_weights_);
-    active_instance->visual_mesh_->SetVertexDeformations(active_instance->u_render_surface_);
+    // VolumetricMesh::interpolate(active_instance->u_,active_instance->u_render_surface_,active_instance->visual_mesh_->Getn(),
+    //                             active_instance->object_interpolation_element_vertices_num_,active_instance->object_interpolation_vertices_,
+    //                             active_instance->object_interpolation_weights_);
+    // active_instance->visual_mesh_->SetVertexDeformations(active_instance->u_render_surface_);
     //save object surface mesh to files--not done yet
 
    glutPostRedisplay();
@@ -1964,6 +2010,29 @@ void OpenGLDriver::exitApplication(int code)
     for(int i=0;i<active_instance->extra_objects_num_;++i)
         if(active_instance->extra_objects_[i])
             delete active_instance->extra_objects_[i];
+    //reduced Simulation
+
+    if(active_instance->modal_matrix_)
+        delete[] active_instance->modal_matrix_;
+    if(active_instance->render_reduced_surface_mesh_)
+        delete[] active_instance->render_reduced_surface_mesh_;
+    if(active_instance->reduced_force_model_)
+        delete[] active_instance->reduced_force_model_;
+    if(active_instance->reduced_neoHookean_force_model_)
+        delete[] active_instance->reduced_neoHookean_force_model_;
+    if(active_instance->reduced_mass_matrix_)
+        delete[] active_instance->reduced_mass_matrix_;
+    if(active_instance->reduced_stiffness_matrix_)
+        delete[] active_instance->reduced_stiffness_matrix_;
+    if(active_instance->reduced_f_ext_)
+        delete[] active_instance->reduced_f_ext_;
+    if(active_instance->q_)
+        delete[] active_instance->q_;
+    if(active_instance->fq_)
+        delete[] active_instance->fq_;
+    if(active_instance->fqBase_)
+        delete[] active_instance->fqBase_;
+
     exit(0);
 }
 

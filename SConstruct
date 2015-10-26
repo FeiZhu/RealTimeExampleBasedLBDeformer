@@ -81,8 +81,8 @@ lib_files=[]
 #VegaFEM LIBS
 vega_libs = 'sceneObjectReduced sceneObject reducedElasticForceModel elasticForceModel forceModel loadList \
 	     integratorSparse sparseSolver integratorDense integrator \
-	     insertRows lighting performanceCounter configFile renderVolumetricMesh volumetricMesh openGLHelper getopts camera graph \
-	     isotropicHyperelasticFEM reducedForceModel reducedStvk stvk corotationalLinearFEM polarDecomposition massSpringSystem objMesh \
+	     insertRows lighting performanceCounter configFile renderVolumetricMesh openGLHelper getopts camera graph \
+	     isotropicHyperelasticFEM reducedForceModel reducedStvk stvk corotationalLinearFEM polarDecomposition massSpringSystem  objMesh volumetricMesh\
 	      sparseMatrix modalMatrix matrix matrixIO  minivector glslPhong imageIO \
              objMesh'
 lib_files.append(Split(vega_libs))

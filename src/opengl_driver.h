@@ -166,7 +166,7 @@ private:
     SparseMatrix *mass_matrix_= NULL;
     SparseMatrix *laplacian_matrix_ = NULL;
     SparseMatrix *laplacian_damping_matrix_ = NULL;
-    //StVKElementABCD *precomputed_integrals_ = NULL,*example_precomputed_integrals_ = NULL;
+    StVKElementABCD *precomputed_integrals_ = NULL;
 //    StVKInternalForces *stvk_internal_force_ = NULL,*example_stvk_internal_force_ = NULL;
 //    StVKStiffnessMatrix *stvk_stiffness_matrix_ = NULL,*example_stvk_stiffness_matrix_=NULL;
 //    CorotationalLinearFEM *corotational_linear_fem_ = NULL,*example_corotational_linear_fem_ = NULL;
@@ -273,6 +273,7 @@ private:
     InvertibleMaterialType invertible_material_type_ = INV_NONE;
     enum DeformableObjectType{
         INVERTIBLEFEM,
+        REDUCEDFEM,
         UNSPECIFIED
     };
     DeformableObjectType deformable_object_type_ = UNSPECIFIED;
@@ -296,7 +297,8 @@ private:
     ConfigFile config_file_;
     //reuced simulation
     bool enable_reduced_simulation_ = false;
-    SceneObjectReducedCPU *render_reduced_surface_mesh_;
+    SceneObjectReducedCPU *render_reduced_surface_mesh_=NULL;
+    ReducedForceModel *reduced_force_model_=NULL;
     ReducedNeoHookeanForceModel *reduced_neoHookean_force_model_=NULL;
     int r_ = 0;
     double *reduced_mass_matrix_ = NULL;

@@ -25,7 +25,7 @@
  * LICENSE.TXT for more details.                                         *
  *                                                                       *
  *************************************************************************/
-
+#include <iostream>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,11 +47,13 @@
 
 CentralDifferencesDense::CentralDifferencesDense(int numDOFs, double timestep, double * massMatrix, ReducedForceModel * reducedForceModel, double dampingMassCoef, double dampingStiffnessCoef, int tangentialDampingMode_): IntegratorBaseDense(numDOFs, timestep, massMatrix, reducedForceModel, dampingMassCoef, dampingStiffnessCoef), tangentialDampingMode(tangentialDampingMode_)
 {
+    std::cout<<"A:\n";
   rhs = (double*) malloc (sizeof(double) * r);
   LUFactor = (double*) malloc (sizeof(double) * r2);
   stiffnessMatrix = (double*) malloc (sizeof(double) * r2);
 
   UpdateLU();
+  std::cout<<"B:\n";
 }
 
 CentralDifferencesDense::~CentralDifferencesDense()
@@ -88,7 +90,7 @@ int CentralDifferencesDense::UpdateLU()
   {
     printf("Warning: LAPACK routine DGETRF returned non-zero exit status %d.\n",(int)INFO);
     return INFO;
-  }  
+  }
 
   return 0;
 }
@@ -118,7 +120,7 @@ int CentralDifferencesDense::DoTimestep()
 
   if (tangentialDampingMode)
     UpdateLU();
-  
+
   // update equation is:
   //
   // (massMatrix + dt / 2 * dampingMatrix) * q(t+1) = (dt)^2 * (fr - Rr(q(t))) + dt/2 * dampingMatrix * q(t-1) + massMatrix * (2q(t) - q(t-1))
@@ -149,7 +151,7 @@ int CentralDifferencesDense::DoTimestep()
     for (int j=0; j<r; j++)
       rhs[i] += timestep / 2 * dampingMatrix[ELT(r,i,j)] * q_1[j];
 
-  // rhs += dt * dt * (fr - Rr(q(t))) 
+  // rhs += dt * dt * (fr - Rr(q(t)))
   for (int i=0; i<r; i++)
     rhs[i] += timestep * timestep * (externalForces[i] - internalForces[i]);
 
@@ -186,4 +188,3 @@ int CentralDifferencesDense::DoTimestep()
 
   return 0;
 }
-

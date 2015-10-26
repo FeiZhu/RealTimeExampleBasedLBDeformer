@@ -115,7 +115,7 @@ private:
     Matrix<double> tetSubBasis(const int &ele) const;//12*r
     Mat3d computeDs(const double *reduced_dis) const;
     Mat3d computeDmInv(const int &ele) const;
-    void computeF(const Vec3d *reduced_dis) const;
+    Mat3d computeF(const int &cubica_idx,const Vec3d *reduced_dis) const;
     Mat3d firstPiolaKirchhoff(Mat3d &F) const;
     Mat3d computeF_gradient(const int &ele,const int &vert_idx,const int &vert_idx_dim) const;
     Mat3d computeP_gradient(const int &ele,const Mat3d &F,const int &vert_idx,const int &vert_idx_dim) const;

@@ -3,12 +3,13 @@
 #implicitNewmark
 #Euler
 #centralDifferences
-#reducedCentralDifferences
-reducedImplicitNewmark
+reducedCentralDifferences
+#reducedImplicitNewmark
 #reducedImplicitBackwardEuler
 
 *deformableModel
 InvertibleFEM
+
 
 *invertibleMaterial
 #neoHookean
@@ -59,7 +60,7 @@ true
 armadillo.cubature
 
 *reducedBasisFilename
-armadillo-modal.basis
+armadillo.basis
 
 *massMatrixFilename
 armadillo.mass
@@ -107,7 +108,7 @@ true
 1.0e-6
 
 *deformableObjectCompliance
-300.0
+3000.0
 
 #*maxIterations
 
