@@ -42,6 +42,11 @@ RealTimeExampleBasedDeformer::RealTimeExampleBasedDeformer()
 RealTimeExampleBasedDeformer::~RealTimeExampleBasedDeformer()
 {
 	//delete tetrahedral meshes
+	for(int i=0;i<3*simulation_mesh_->getNumVertices();++i)
+		if(mass_[i])
+			delete[] mass_[i];
+	if(mass_)
+		delete[] mass_;
 	if(simulation_mesh_)
 		delete simulation_mesh_;
 	for(unsigned int i=0;i<example_num_;++i)
@@ -292,8 +297,83 @@ bool RealTimeExampleBasedDeformer::loadReducedBasis(const std::string &file_name
 	}
 	input_file.close();
 	std::cout<<reduced_basis_[reduced_col_num-1][reduced_row_num-1];
+	//normalize eigenfunction with respect to the s-inner product: <f,f>=1 on the volumetric vertices
+	// for(int i=0;i<reduced_basis_num_;++i)
+	// {
+	// 	double sum=0.0;
+	// 	for(int j=0;j<simulation_mesh_->getNumVertices();++j)
+	// 		sum+=reduced_basis_[i][j]*reduced_basis_[i][j];
+	// 	if(sum>epsilon_)
+	// 		sum=sqrt(sum);
+	// 	else
+	// 		std::cout<<"object eigenfunction sum is 0\n";
+	// 	for(int j=0;j<simulation_mesh_->getNumVertices();++j)
+	// 		reduced_basis_[i][j]/=sum;
+	// }
 	isload_reduced_basis_ = true;
     return true;
+}
+//temp:load mass:3nx3n
+bool RealTimeExampleBasedDeformer::loadObjectMass(const std::string &file_name)
+{
+	std::stringstream adaptor;
+	std::fstream rfile;
+	std::string matrix_row_str;
+	std::string matrix_col_str;
+	unsigned int str_num=0;
+	unsigned int line_num = 0;
+	rfile.open(file_name,std::ios::in);
+	double mass_value;
+	if(!rfile)
+	{
+		std::cerr<<"Error: failed to open "<<file_name<<"\n";
+		return false;
+	}
+	std::getline(rfile,matrix_row_str);
+	unsigned int matrix_row_num;
+	adaptor<<matrix_row_str;
+	adaptor>>matrix_row_num;
+	std::getline(rfile,matrix_col_str);
+	unsigned int matrix_col_num;
+	adaptor.str("");
+	adaptor.clear();
+	adaptor<<matrix_col_str;
+	adaptor>>matrix_col_num;
+	unsigned int num=0;
+	unsigned int row_idx,col_idx;
+	mass_=new double*[matrix_row_num];
+	for(int i=0;i<matrix_row_num;++i)
+	{
+		mass_[i]=new double[matrix_col_num];
+		for(int j=0;j<matrix_col_num;++j)
+			mass_[i][j]=0.0;
+	}
+	while((!rfile.eof())&&(rfile.peek()!=std::ifstream::traits_type::eof()))
+	{
+		num++;
+		adaptor.str("");
+		adaptor.clear();
+		std::string line_str;
+		std::getline(rfile,line_str);
+		adaptor<<line_str;
+		if(!(adaptor>>row_idx))
+		{
+			return false;
+		}
+		if(!(adaptor>>col_idx))
+		{
+			return false;
+		}
+		if(!(adaptor>>mass_value))
+		{
+			return false;
+		}
+		mass_[row_idx][col_idx]=mass_value;
+	}
+
+	rfile.close();
+	std::cout<<"loadFineMeshMassMatrix--work done!\n";
+	return true;
 }
 //format:.eigencoef
 //first line:*eigenValues; second line:eigenvalues_num; third line: eigen values
@@ -375,18 +455,18 @@ bool RealTimeExampleBasedDeformer::loadObjectEigenfunctions(const std::string &f
 	}
 	input_file.close();
 	//normalize eigenfunction with respect to the s-inner product: <f,f>=1 on the volumetric vertices
-	// for(int i=0;i<reconstruct_eigenfunction_num_;++i)
-	// {
-	// 	double sum=0.0;
-	// 	for(int j=0;j<simulation_mesh_->getNumVertices();++j)
-	// 		sum+=object_eigenfunctions_[i][j]*object_eigenfunctions_[i][j]*object_vertex_volume_[j];
-	// 	if(sum>epsilon_)
-	// 		sum=sqrt(sum);
-	// 	else
-	// 		std::cout<<"object eigenfunction sum is 0\n";
-	// 	for(int j=0;j<simulation_mesh_->getNumVertices();++j)
-	// 		object_eigenfunctions_[i][j]/=sum;
-	// }
+	for(int i=0;i<reconstruct_eigenfunction_num_;++i)
+	{
+		double sum=0.0;
+		for(int j=0;j<simulation_mesh_->getNumVertices();++j)
+			sum+=object_eigenfunctions_[i][j]*object_eigenfunctions_[i][j]*object_vertex_volume_[j];
+		if(sum>epsilon_)
+			sum=sqrt(sum);
+		else
+			std::cout<<"object eigenfunction sum is 0\n";
+		for(int j=0;j<simulation_mesh_->getNumVertices();++j)
+			object_eigenfunctions_[i][j]/=sum;
+	}
 	//project on eigenfunctions
 	double *dis=new double[3*simulation_mesh_->getNumVertices()];
 	for(int i=0;i<3*simulation_mesh_->getNumVertices();++i)
@@ -1547,7 +1627,7 @@ void RealTimeExampleBasedDeformer::computeReducedEnergy(const Vec3d *reduced_dis
 {
 	energy=0.0;
 	//computeF(reduced_dis);//compute F for all cubica elements
-	for(int cubica_idx=0;cubica_idx<object_cubica_ele_num_;++cubica_idx)
+	for(int cubica_idx=0;cubica_idx<1/*object_cubica_ele_num_*/;++cubica_idx)
 	{
 	//	int ele=object_cubica_elements_[cubica_idx];
 		Mat3d F=computeF(cubica_idx,reduced_dis);
@@ -1563,7 +1643,7 @@ void RealTimeExampleBasedDeformer::computeReducedInternalForce(const Vec3d *redu
 {//r*1
 	memset(forces,0.0,sizeof(double)*3*interpolate_eigenfunction_num_);
 	//computeF(reduced_dis);//compute F for all cubica elements
-	for(int cubica_idx=0;cubica_idx<object_cubica_ele_num_;++cubica_idx)
+	for(int cubica_idx=0;cubica_idx<1/*object_cubica_ele_num_*/;++cubica_idx)
 	{
 		int ele=object_cubica_elements_[cubica_idx];
 		Mat3d F=computeF(cubica_idx,reduced_dis);
@@ -1598,8 +1678,8 @@ void RealTimeExampleBasedDeformer::computeReducedInternalForce(const Vec3d *redu
 			}
 		}
 		for(int i=0;i<3*interpolate_eigenfunction_num_;++i)
-			forces[i] += object_cubica_weights_[cubica_idx]*g[i];
-			//forces[i] =g[i];
+			//forces[i] += object_cubica_weights_[cubica_idx]*g[i];
+			forces[i] =g[i];
 		delete[] g;
 	}
 }

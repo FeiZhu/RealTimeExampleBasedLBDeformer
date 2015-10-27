@@ -48,6 +48,7 @@ public:
     bool loadPlanesInScene(const std::string &file_name, unsigned int plane_num);
     bool loadFixedVertices(const std::string &file_name);
     bool loadObjectCubicaData(const std::string &file_name);//tetID : 0-indexed
+    bool loadObjectMass(const std::string &file_name);
     //bool loadExampleCubicaData(const std::string &file_name_prefix);
     bool saveSimulationMesh(const std::string &file_name) const;
     bool saveExamples(const std::string &file_name_prefix) const;
@@ -56,6 +57,7 @@ public:
     bool saveExampleEigenfunctions(const std::string &file_name_prefix) const;
 
     //get && set
+    double** objectMass() const{return mass_;}
     unsigned int exampleNum() const{return example_num_;}
     void setExampleNum(int num) {example_num_=num;}
     double gravity() const {return gravity_;}
@@ -128,6 +130,7 @@ private:
                            Vec3d *eigencoefs);
 private:
     static RealTimeExampleBasedDeformer *active_instance_;
+    double **mass_ = NULL;
     //volumetric meshes
     VolumetricMesh *simulation_mesh_ = NULL;
     VolumetricMesh **examples_ = NULL;

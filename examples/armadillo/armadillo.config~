@@ -3,8 +3,8 @@
 #implicitNewmark
 #Euler
 #centralDifferences
-reducedCentralDifferences
-#reducedImplicitNewmark
+#reducedCentralDifferences
+reducedImplicitNewmark
 #reducedImplicitBackwardEuler
 
 *deformableModel
@@ -60,7 +60,7 @@ true
 armadillo.cubature
 
 *reducedBasisFilename
-armadillo.basis
+armadillo-modal.basis
 
 *massMatrixFilename
 armadillo.mass
@@ -88,10 +88,10 @@ armadillo.lighting
 #*initialVelocityFilename
 
 *addGravity
-true
+false
 
 *gravity
-9.8e-2
+980
 
 *dampingMassCoef
 0.15

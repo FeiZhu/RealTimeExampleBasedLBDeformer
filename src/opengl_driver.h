@@ -310,6 +310,7 @@ private:
     ModalMatrix *modal_matrix_ = NULL;
     double *fq_ = NULL;
     double *fqBase_ = NULL;
+    double *U_ = NULL;
 };
 
 }  //namespace RTLB
