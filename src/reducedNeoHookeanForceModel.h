@@ -30,6 +30,7 @@ public:
     //virtual void GetReducedInternalForceClass() { return f_; }
 //    virtual void GetReducedStiffnessMatrixClass() { return K_; }
     void SetGravity(bool addGravity,double g,double *U) {this->add_gravity_ = addGravity;InitGravity(U);}
+    void testEnergyGradients();
     void testObjectiveGradients();
 protected:
     void InitGravity(double *U); //aux function
@@ -41,8 +42,9 @@ protected:
     Mat3d firstPiolaKirchhoff(Mat3d &F) const;
     Mat3d computeF_gradient(const int &ele,const int &vert_idx,const int &vert_idx_dim) const;
     Mat3d computeP_gradient(const int &ele,const Mat3d &F,const int &vert_idx,const int &vert_idx_dim) const;
+    void computeReducedEnergy(const double *q,double &energy) const;
     void computeReducedInternalForce(const double *q,double *forces) const;
-    void computeReducedStiffnessMatrix(const double *q,/*double *reduced_K*/Matrix<double> &reduced_K) const;
+    void computeReducedStiffnessMatrix(const double *q,double *reduced_K/*Matrix<double> &reduced_K*/) const;
 
 
 protected:
