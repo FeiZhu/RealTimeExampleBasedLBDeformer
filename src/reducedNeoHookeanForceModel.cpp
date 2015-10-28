@@ -49,11 +49,11 @@ ReducedNeoHookeanForceModel::ReducedNeoHookeanForceModel(const int &r,Volumetric
     //         U_[3*i+2][j]=U[3*r_*i+2*r_+j];
     //     }
 
-        for(int i=0;i<3*num;++i)
-            for(int j=0;j<r_;++j)
-            {
-                U_[i][j]=U[3*num*j+i];
-            }
+    for(int i=0;i<3*num;++i)
+        for(int j=0;j<r_;++j)
+        {
+            U_[i][j]=U[3*num*j+i];
+        }
     //  std::cout<<U_[0][0]<<","<<U_[3][2]<<","<<U_[0][r_-1]<<","<<U_[5][r_-1]<<","<<U_[19][r_-1]<<":\n";
     //  getchar();
     restpos_ = new double*[cubica_num_];
@@ -413,6 +413,9 @@ void ReducedNeoHookeanForceModel::computeReducedInternalForce(const double *q,do
 			forces[i] += cubica_weights_[cubica_idx]*g(i,0);
 		//	forces[i] =g(i,0);
 	}
+    if(add_gravity_)
+        for(int i=0;i<r_;++i)
+            forces[i] -= gravity_force_[i];
 }
 
 void ReducedNeoHookeanForceModel::computeReducedStiffnessMatrix(const double *q,double *reduced_K/*Matrix<double> &reduced_K*/) const

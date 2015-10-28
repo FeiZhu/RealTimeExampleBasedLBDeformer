@@ -74,6 +74,7 @@ private:
     static void resetDeformation(int code);
 
     static void saveTetMesh(int code);
+    static void saveCurrentObjmesh(int code);
     //misc
     void drawAxis(double axis_length) const;
     void drawIndexColorTable() const;
@@ -96,6 +97,7 @@ private:
     char example_eigen_file_name_prefix_[string_length];
     char output_object_eigen_file_name_[string_length];
     char output_eigen_file_name_prefix_[string_length];
+    char output_objmesh_file_name_base_[string_length];
     char object_interpolation_file_name_[string_length];
     char example_cubica_file_name_prefix_[string_length];
     char object_cubica_file_name_[string_length];
@@ -157,7 +159,7 @@ private:
     //deformation
     //double *object_elastic_subspace_force_ = NULL;
     //double *object_elastic_fullspace_force_ = NULL;
-    double *example_guided_subspace_force_ = NULL;
+    double *example_guided_reduced_force_ = NULL;
     double *example_guided_fullspace_force_ = NULL;
     double *example_guided_deformation_ = NULL;
     double *target_initial_deformation_ = NULL;
@@ -243,6 +245,7 @@ private:
     bool isload_cubica_ = false;
     bool isload_example_cubica_ = false;
     bool enable_example_simulation_ = false;
+    bool enable_save_objmesh_ = false;
     bool save_tet_mesh_ = false;
     char solver_method_[string_length];
     enum RenderMeshType{
@@ -294,6 +297,7 @@ private:
     unsigned int current_example_index_ = 0;
     unsigned int current_render_eigen_idx_=0;
     unsigned int save_eigenfunction_num_ = 0;
+    unsigned int output_file_index_ = 0;
     ConfigFile config_file_;
     //reuced simulation
     bool enable_reduced_simulation_ = false;
@@ -311,6 +315,7 @@ private:
     double *fq_ = NULL;
     double *fqBase_ = NULL;
     double *U_ = NULL;
+    double *reduced_force_loads_ = NULL;
 };
 
 }  //namespace RTLB

@@ -283,7 +283,7 @@ bool RealTimeExampleBasedDeformer::loadReducedBasis(const std::string &file_name
 		++total_num;
 		double temp_value;
 		input_file>>temp_value;
-		reduced_basis_[str_num][line_num]=temp_value;
+		reduced_basis_[str_num][line_num]=temp_value*1;
 		if(str_num>=reduced_col_num-1)
 		{
 			str_num=0;
@@ -298,18 +298,18 @@ bool RealTimeExampleBasedDeformer::loadReducedBasis(const std::string &file_name
 	input_file.close();
 	std::cout<<reduced_basis_[reduced_col_num-1][reduced_row_num-1];
 	//normalize eigenfunction with respect to the s-inner product: <f,f>=1 on the volumetric vertices
-	// for(int i=0;i<reduced_basis_num_;++i)
-	// {
-	// 	double sum=0.0;
-	// 	for(int j=0;j<simulation_mesh_->getNumVertices();++j)
-	// 		sum+=reduced_basis_[i][j]*reduced_basis_[i][j];
-	// 	if(sum>epsilon_)
-	// 		sum=sqrt(sum);
-	// 	else
-	// 		std::cout<<"object eigenfunction sum is 0\n";
-	// 	for(int j=0;j<simulation_mesh_->getNumVertices();++j)
-	// 		reduced_basis_[i][j]/=sum;
-	// }
+	for(int i=0;i<reduced_basis_num_;++i)
+	{
+		double sum=0.0;
+		for(int j=0;j<3*simulation_mesh_->getNumVertices();++j)
+			sum+=reduced_basis_[i][j]*reduced_basis_[i][j];
+		if(sum>epsilon_)
+			sum=sqrt(sum);
+		else
+			std::cout<<"object eigenfunction sum is 0\n";
+		for(int j=0;j<3*simulation_mesh_->getNumVertices();++j)
+			reduced_basis_[i][j]/=sum;
+	}
 	isload_reduced_basis_ = true;
     return true;
 }
