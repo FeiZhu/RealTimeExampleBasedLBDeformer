@@ -121,6 +121,9 @@ private:
     double gravity_ = 9.8;
     double time_step_ = 1.0/30;
     int time_step_counter_=0;
+    int total_steps_ = 0;
+    int frame_rate_ = 30;
+    int total_frames_ = 0;
     float newmark_beta_=0.25;
     float newmark_gamma_=0.5;
     float damping_mass_coef_=0.0;

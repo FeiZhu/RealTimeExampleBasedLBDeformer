@@ -298,6 +298,7 @@ void OpenGLDriver::initGLUI()
 
 void OpenGLDriver::initSimulation()
 {
+    total_steps_=(int)((1.0/time_step_)/frame_rate_)*total_frames_;
     std::cout<<lighting_config_file_name_<<"\n";
     try
     {
@@ -408,7 +409,16 @@ void OpenGLDriver::initSimulation()
     isrender_surface_mesh_=true;
     render_surface_mesh_=visual_mesh_;
     if(enable_textures_)
+    {
+        if(simulation_mode_==REDUCEDSPACE)
+        {
+            render_reduced_surface_mesh_->SetUpTextures(SceneObject::MODULATE,SceneObject::NOMIPMAP);
+            render_reduced_surface_mesh_->EnableTextures();
+        }
+
         render_surface_mesh_->SetUpTextures(SceneObject::MODULATE,SceneObject::NOMIPMAP);
+    }
+
     render_surface_mesh_->ResetDeformationToRest();
     render_surface_mesh_->BuildNeighboringStructure();
     render_surface_mesh_->BuildNormals();
@@ -524,6 +534,7 @@ void OpenGLDriver::initSimulation()
         loadObjectCubicaData(0);
     }
     loadReducedBasis(0);
+
     //reduced simulation initialization
     r_=simulator_->reducedBasisNum();
     std::cout<<"r_:"<<r_<<"...\n";
@@ -539,7 +550,6 @@ void OpenGLDriver::initSimulation()
             U_[3*simulation_vertices_num_*j+i]=simulator_->reducedBasis()[j][i];
         }
     }
-
     mass_matrix_->ConjugateMatrix(U_,r_,reduced_mass_matrix_);
     modal_matrix_ = new ModalMatrix(simulation_vertices_num_,r_,U_);
     //delete[] MTilde;
@@ -570,6 +580,7 @@ void OpenGLDriver::initSimulation()
 			restpos[i][3*j+2]=(*simulation_mesh_->getVertex(global_idx))[2];
 		}
 	}
+
     //create force models, to be used by the integrator
     std::cout<<"Creating force model:\n";
     if(deformable_object_type_==INVERTIBLEFEM)
@@ -702,7 +713,10 @@ void OpenGLDriver::initSimulation()
     else
     {
     }
-
+    //
+    // std::cout<<"testInternalForceGradients:\n";
+    // reduced_neoHookean_force_model_->testObjectiveGradients();
+    // getchar();
     for(int i=0;i<3*simulation_vertices_num_;++i)
     {
         u_[i]=0.0;
@@ -728,7 +742,6 @@ void OpenGLDriver::initSimulation()
         integrator_base_->SetState(u_initial_,vel_initial_);
         integrator_base_->SetTimestep(time_step_);
     }
-
     //load extra objects
     if(extra_objects_num_>0)
     {
@@ -1160,7 +1173,7 @@ void OpenGLDriver::idleFunction()
                active_instance->fq_[i]=0.0;
             if(active_instance->left_button_down_)
             {
-                std::cout<<"pulled_vertex_:"<<active_instance->pulled_vertex_<<"\n";
+                // std::cout<<"pulled_vertex_:"<<active_instance->pulled_vertex_<<"\n";
                 if(active_instance->pulled_vertex_!=-1)
                 {
                     double force_x=active_instance->mouse_pos_[0]-active_instance->drag_start_x_;
@@ -1261,16 +1274,18 @@ void OpenGLDriver::idleFunction()
                     active_instance->f_ext_[i]+=active_instance->f_col_[i];
             }
             active_instance->integrator_base_dense_->SetExternalForces(active_instance->fq_);
-            int code=active_instance->integrator_base_dense_->DoTimestep();
-
-            std::cout<<code<<".";
-            //fflush(NULL);
-            ++active_instance->time_step_counter_;
+            // if(active_instance->time_step_counter_ < active_instance->total_steps_)
+            // {
+                int code=active_instance->integrator_base_dense_->DoTimestep();
+                //int code=active_instance->integrator_base_dense_->DoTimestep();
+                std::cout<<".";fflush(NULL);
+                ++active_instance->time_step_counter_;
+            // }
             memcpy(active_instance->q_,active_instance->integrator_base_->Getq(),sizeof(double)*active_instance->r_);
 
-            for(int i=0;i<active_instance->r_;++i)
-                if(active_instance->q_[i]>1.0e-7)
-                    std::cout<<active_instance->q_[i]<<",";
+            // for(int i=0;i<active_instance->r_;++i)
+            //     if(active_instance->q_[i]>1.0e-7)
+            //         std::cout<<active_instance->q_[i]<<",";
         }
         else
         {
@@ -1416,9 +1431,12 @@ void OpenGLDriver::idleFunction()
             //set forces to the integrator
             active_instance->integrator_base_sparse_->SetExternalForces(active_instance->f_ext_);
             //time step the dynamics
-            int code=active_instance->integrator_base_->DoTimestep();
-            std::cout<<".";fflush(NULL);
-            ++active_instance->time_step_counter_;
+            if(active_instance->time_step_counter_ < active_instance->total_steps_)
+            {
+                int code=active_instance->integrator_base_->DoTimestep();
+                std::cout<<".";fflush(NULL);
+                ++active_instance->time_step_counter_;
+            }
             memcpy(active_instance->u_,active_instance->integrator_base_->Getq(),sizeof(double)*3*(active_instance->simulation_vertices_num_));
         }
 
@@ -1437,13 +1455,19 @@ void OpenGLDriver::idleFunction()
             // for(int i=0;i<active_instance->simulation_vertices_num_;++i)
             //     if(active_instance->u_[i]>1.0e-5)
             //         std::cout<<active_instance->u_[i]<<",";
+            VolumetricMesh::interpolate(active_instance->u_,active_instance->u_render_surface_,active_instance->visual_mesh_->Getn(),
+                                        active_instance->object_interpolation_element_vertices_num_,active_instance->object_interpolation_vertices_,
+                                        active_instance->object_interpolation_weights_);
+            active_instance->render_surface_mesh_->SetVertexDeformations(active_instance->u_render_surface_);
+            // active_instance->render_reduced_surface_mesh_->BuildNormals();
+            // active_instance->render_surface_mesh_->BuildNormals();
         }
         else
         {
             VolumetricMesh::interpolate(active_instance->u_,active_instance->u_render_surface_,active_instance->visual_mesh_->Getn(),
                                         active_instance->object_interpolation_element_vertices_num_,active_instance->object_interpolation_vertices_,
                                         active_instance->object_interpolation_weights_);
-             active_instance->render_surface_mesh_->SetVertexDeformations(active_instance->u_render_surface_);
+            active_instance->render_surface_mesh_->SetVertexDeformations(active_instance->u_render_surface_);
         }
     }
     // for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
@@ -1454,7 +1478,7 @@ void OpenGLDriver::idleFunction()
     //                             active_instance->object_interpolation_weights_);
     // active_instance->visual_mesh_->SetVertexDeformations(active_instance->u_render_surface_);
     //save object surface mesh to files--not done yet
-    if((!active_instance->pause_simulation_)&&(active_instance->enable_save_objmesh_))
+    if((!active_instance->pause_simulation_)&&(active_instance->enable_save_objmesh_)&&(active_instance->time_step_counter_))
         active_instance->saveCurrentObjmesh(0);
    glutPostRedisplay();
 }
@@ -1835,12 +1859,27 @@ void OpenGLDriver::saveCurrentObjmesh(int code)
     std::stringstream adaptor;
     std::string output_object_file_name,output_file_index_str;
     std::string output_file_name_base(active_instance->output_objmesh_file_name_base_);
-    adaptor<<active_instance->output_file_index_++;
-    adaptor>>output_file_index_str;
-    output_object_file_name=output_file_name_base+output_file_index_str+".obj";
-    ObjMesh *mesh=active_instance->render_surface_mesh_->GetMesh();
-    mesh->save(output_object_file_name,0);
-    std::cout<<output_object_file_name<<" saved.\n";
+    if(((active_instance->time_step_counter_+1)%(int)(1.0/(active_instance->frame_rate_*active_instance->time_step_))==0)&&(active_instance->time_step_counter_>0))
+    {
+        cout<<"frame "<<(active_instance->time_step_counter_+1)%(int)(1.0/(active_instance->frame_rate_*active_instance->time_step_))<<" begins \n";
+        adaptor<<active_instance->output_file_index_++;
+        adaptor>>output_file_index_str;
+        output_object_file_name=output_file_name_base+output_file_index_str+".obj";
+        if(active_instance->simulation_mode_==FULLSPACE)
+        {
+            ObjMesh *mesh=active_instance->render_surface_mesh_->GetMesh();
+            mesh->save(output_object_file_name,0);
+        }
+        else
+        {
+            ObjMesh *mesh=active_instance->render_reduced_surface_mesh_->GetMesh();
+            mesh->save(output_object_file_name,0);
+        }
+
+
+        std::cout<<output_object_file_name<<" saved.\n";
+    }
+    active_instance->time_step_counter_++;
     // if(!active_instance->simulator_->saveCurrentObjmesh(active_instance->output_file_name_,active_instance->currentMesh));
     // {
     //     std::cout<<"Error:failed to save current objemesh.\n";

@@ -112,9 +112,7 @@ void ReducedNeoHookeanForceModel::GetInternalForce(double * q, double * internal
 
 void ReducedNeoHookeanForceModel::GetTangentStiffnessMatrix(double * q, double * tangentStiffnessMatrix)
 {
-
     computeReducedStiffnessMatrix(q,tangentStiffnessMatrix);
-
 }
 
 
@@ -154,7 +152,6 @@ Matrix<double> ReducedNeoHookeanForceModel::vertexSubBasis(const int &vert_idx) 
             vertex_subBasis(2,j)=U_[3*vert_idx+2][j];
             //  std::cout<<vertex_subBasis(i,j)<<",";
         }
-
     //}
     //  getchar();
 	return vertex_subBasis;
@@ -281,7 +278,7 @@ Mat3d ReducedNeoHookeanForceModel::computeF_gradient(const int &ele,const int &v
 	e_vector[1][1]=1.0;
 	e_vector[2][2]=1.0;
 	Mat3d e_matrix(0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0);
-     Mat3d DmInv=computeDmInv(ele);
+    Mat3d DmInv=computeDmInv(ele);
     //Mat3d DmInv(1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0);
 	//for j=1,2,3 we have dF/dx_j^k=e_k*e_j^T*Dm^-1
 	for(unsigned int row_idx=0;row_idx<3;++row_idx)
@@ -425,9 +422,25 @@ void ReducedNeoHookeanForceModel::computeReducedStiffnessMatrix(const double *q,
 	{
 		int ele=cubica_elements_[cubica_idx];
 		Matrix<double> subU=tetSubBasis(ele);//12*r
+
+    // std::cout<<"..............\n";
+    //     for(int i=0;i<12;++i)
+    //     {
+    //         for(int j=0;j<r_;++j)
+    //             std::cout<<subU(i,j)<<",";
+    //         std::cout<<"\n";
+    //     }
+    // std::cout<<"..............\n";
+        // Matrix<double> t_subU=Transpose(tetSubBasis(ele));//12*r
+        // for(int i=0;i<r_;++i)
+        // {
+        //     for(int j=0;j<12;++j)
+        //         std::cout<<t_subU(i,j)<<",";
+        //     std::cout<<"\n";
+        // }
 		Matrix<double> ele_K(12,12);
         Mat3d F=computeF(cubica_idx,q);
-        std::cout<<det(F)<<"\n";
+        // std::cout<<det(F)<<"\n";
 		Mat3d DmInv=computeDmInv(ele);
 		for(int i=0;i<4;++i)
 		{
@@ -436,9 +449,35 @@ void ReducedNeoHookeanForceModel::computeReducedStiffnessMatrix(const double *q,
 			for(int j=0;j<3;++j)
 			{
 				g_derivative[j]=computeP_gradient(ele,F,i,j)*trans(DmInv);
+                // if(i==1)
+                // std::cout<<"g_derivative:"<<g_derivative[j]<<"\n";
+                // if(j==0)
+                // {
+                    // std::cout<<"i="<<i<<",j="<<j<<",g_derivative=\n";
+                    // std::cout<<g_derivative[j]<<"\n";
+                // }
 			}
-			//computes df0/dx_j,df1/dx_j,df2/dx_j,df3/dx_j
-			for(int j=0;j<4;++j)
+            // std::vector<Mat3d> f_derivative(4);
+            // f_derivative.clear();
+            // f_derivative[i].set(0.0);
+            // for(int j=0;j<4;++j)
+            // {
+            //     for(int row=0;row<3;++row)
+            //     {
+            //         for(int col=0;col<3;++col)
+            //         {
+            //             if(j==3)
+            //                 //f_derivative[j]=-(1.0)*(f_derivative[0]+f_derivative[1]+f_derivative[2]);
+            //                 f_derivative[j][row][col]=-(1.0)*(f_derivative[0][row][col]+f_derivative[1][row][col]+f_derivative[2][row][col]);
+            //             else
+            //                 f_derivative[j][row][col]=g_derivative[col][row][j];
+            //             ele_K(3*i+row,3*j+col)=f_derivative[j][row][col];
+            //         }
+            //     }
+            //     // std::cout<<"i="<<i<<",j="<<j<<",f_derivative=\n";
+            //     // std::cout<<f_derivative[j]<<"\n";
+            // }
+            for(int j=0;j<4;++j)
 			{
 				Matrix<double> f_derivative(3,3);
 				for(int row=0;row<3;++row)
@@ -446,7 +485,7 @@ void ReducedNeoHookeanForceModel::computeReducedStiffnessMatrix(const double *q,
 					for(int col=0;col<3;++col)
 					{
 						if(j==3)
-							f_derivative(row,col)=(-1.0)*(g_derivative[0][row][col]+g_derivative[1][row][col]+g_derivative[2][row][col]);
+							f_derivative(row,col)=(-1.0)*(g_derivative[col][row][0]+g_derivative[col][row][1]+g_derivative[col][row][2]);
 						else
 							f_derivative(row,col)=g_derivative[col][row][j];
 						ele_K(3*i+row,3*j+col)=f_derivative(row,col);
@@ -461,10 +500,15 @@ void ReducedNeoHookeanForceModel::computeReducedStiffnessMatrix(const double *q,
         //         std::cout<<ele_K(i,j)<<",";
         //     std::cout<<"\n";
         // }
-
-		K+=cubica_weights_[cubica_idx]*Transpose(subU)*ele_K*subU;
+		K=/*+=cubica_weights_[cubica_idx]*/Transpose(subU)*ele_K*subU;
+        // std::cout<<"........K......\n";
+        // for(int i=0;i<r_;++i)
+        // {
+        //     for(int j=0;j<r_;++j)
+        //         std::cout<<K(i,j)<<",";
+        //     std::cout<<"\n";
+        // }
 	}
-    // std::cout<<"detK:"<<det(K)<<",";
     // reduced_K=K;
     for(int i=0;i<r_;++i)
         for(int j=0;j<r_;++j)
@@ -512,7 +556,7 @@ void ReducedNeoHookeanForceModel::testObjectiveGradients()
         //test internal force and force gradient--stiffness matrix
 	// int num=20;
 	// double *q=new double[num];
-	// double *x=new double[num];
+	// //double *x=new double[num];
 	// double *dx=new double[num];
 	// double *f=new double[num];
 	// double *f_plus=new double[num];
@@ -521,22 +565,22 @@ void ReducedNeoHookeanForceModel::testObjectiveGradients()
 	// double *dK=new double[num];
 	// srand((unsigned)time(0));
 	// //randomly generate displacement in range [0.1,1]
-	// //double x[24]={0.3,0.1,0.4,0.3,0.8,1,0.5,1,0.7,0.2,0.2,0.3,0.2,0.4,0.6,0.2,0.7,0.3,0.8,0.6,1,1,0.3,0.5};
+	// double x[24]={0.3,0.1,0.4,0.3,0.8,1,0.5,1,0.7,0.2,0.2,0.3,0.2,0.4,0.6,0.2,0.7,0.3,0.8,0.6,1,1,0.3,0.5};
 	// for(int i=0;i<num;++i)
 	// {
 	// 	x[i]=(1+rand()%10)/10.0;
 	// 	std::cout<<x[i]<<",";
 	// }
 	// computeReducedStiffnessMatrix(x,K);
-    // std::cout<<"KKKKKK:\n";
-	// for(int j=0;j<r_;++j)
-	// {
-	// 	for(int k=0;k<r_;++k)
-	// 	{
-	// 		std::cout<<K(j,k)<<",";
-	// 	}
-	// 	std::cout<<"\n";
-	// }
+    // // std::cout<<"KKKKKK:\n";
+	// // for(int j=0;j<r_;++j)
+	// // {
+	// // 	for(int k=0;k<r_;++k)
+	// // 	{
+	// // 		std::cout<<K(j,k)<<",";
+	// // 	}
+	// // 	std::cout<<"\n";
+	// // }
 	// //perturb a little bit
 	// for(int i=0;i<num;++i)
 	// {
@@ -575,7 +619,7 @@ void ReducedNeoHookeanForceModel::testObjectiveGradients()
 	// std::cout<<"df: "<<std::setprecision(15)<<df<<"\n";
 	// std::cout<<"k*dk: "<<std::setprecision(15)<<dk<<"\n";
 	// std::cout<<"rel error: "<<max_rel_error<<"\n";
-	// delete[] x;
+	// //delete[] x;
 	// delete[] dx;
 	// delete[] f;
     // delete[] dK;
