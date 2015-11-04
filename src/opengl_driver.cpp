@@ -1014,7 +1014,7 @@ void OpenGLDriver::displayFunction()
     if(active_instance->render_axis_)
     {
         glLineWidth(1.0);
-        active_instance->drawAxis(1.0);
+        active_instance->drawAxis(10.0);
     }
 
     //render the currently pulled vertex
@@ -1158,14 +1158,18 @@ void OpenGLDriver::idleFunction()
     // getchar();
     if(!active_instance->pause_simulation_)
     {
-        // std::cout<<"testEnergyGradients:\n";
+        // std::cout<<"reduced:testEnergyGradients:\n";
         // active_instance->reduced_neoHookean_force_model_->testEnergyGradients();
         // getchar();
         // std::cout<<"testInternalForceGradients:\n";
         // active_instance->reduced_neoHookean_force_model_->testObjectiveGradients();
+        // std::cout<<"testInternalForceGradients-end:\n";
         // getchar();
-        // // std::cout<<"----------------------------------------------------------------\n";
-        // // // active_instance->simulator_->testObjectiveGradients();
+        // active_instance->simulator_->testEnergyGradients();
+        // getchar();
+        // active_instance->simulator_->testObjectiveGradients();
+        // getchar();
+        // std::cout<<"----------------------------------------------------------------\n";
         if(active_instance->simulation_mode_==REDUCEDSPACE)
         {
            //reset external forces
@@ -1197,87 +1201,87 @@ void OpenGLDriver::idleFunction()
                 memcpy(active_instance->fq_,active_instance->fqBase_,sizeof(double)*active_instance->r_);
             }
             //apply any scripted force loads for reduced space ---not done yet
-            if(active_instance->time_step_counter_<active_instance->force_loads_num_)
-            {
-                // std::cout<<"External forces read from the text input file.\n";
-                for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
-                    active_instance->f_ext_[i]+=active_instance->force_loads_[ELT(3*active_instance->simulation_vertices_num_,i,active_instance->time_step_counter_)];
-                ProjectVector(3*active_instance->simulation_vertices_num_,active_instance->r_,active_instance->U_,
-                                active_instance->reduced_force_loads_,active_instance->f_ext_);
-                for(int i=0;i<active_instance->r_;++i)
-                    active_instance->fq_[i] += active_instance->reduced_force_loads_[i];
-            }
-            //apply the force loads caused by the examples--not done yet
-            if(active_instance->enable_example_simulation_)
-            {
-                // active_instance->simulator_->testObjectiveGradients();
-                // getchar();
-                //first update the object_eigencoefs_ using current object configuration,input is displacement, output is a shape in LB subspace
-                active_instance->simulator_->projectOnEigenFunctions(active_instance->simulation_mesh_,active_instance->u_,active_instance->simulator_->objectVertexVolume(),
-                                                    active_instance->simulator_->objectEigenFunctions(),active_instance->simulator_->objectEigenValues(),
-                                                    active_instance->interpolate_eigenfunction_num_,active_instance->deformed_object_eigencoefs_);
-                std::cout<<"object eigencoefs:\n";
-                for(int i=0;i<active_instance->interpolate_eigenfunction_num_;++i)
-                    std::cout<<active_instance->deformed_object_eigencoefs_[i]<<",";
-                //handle the case if the examples are not the same shape (only similar) with the object
-                //note: the first example is the rest pose of the shape used as example
-                for(int i=0;i<active_instance->interpolate_eigenfunction_num_;++i)
-                {
-                    active_instance->deformed_object_eigencoefs_[i]=active_instance->deformed_object_eigencoefs_[i]-active_instance->initial_object_eigencoefs_[i]
-                                                            +active_instance->example_eigencoefs_[0][i];
-                }
-
-                //project into the example manifold and get target configuration
-            //    memcpy(active_instance->target_eigencoefs_,active_instance->deformed_object_eigencoefs_,sizeof(Vec3d)*active_instance->interpolate_eigenfunction_num_);
-                active_instance->simulator_->projectOnExampleManifold(active_instance->deformed_object_eigencoefs_,active_instance->target_eigencoefs_);
-                //	active_instance->simulator_->testObjectiveGradients();
-                //compute the deformation ,from the delta object coefficients and target coefficients
-                for(int i=0;i<active_instance->interpolate_eigenfunction_num_;++i)
-                   active_instance->target_eigencoefs_[i]=active_instance->deformed_object_eigencoefs_[i]-active_instance->target_eigencoefs_[i];
-                //reconstruct vertices position(the last parameter) from target_eigencoefs
-
-                active_instance->simulator_->reconstructFromEigenCoefs(active_instance->simulator_->objectEigenFunctions(),active_instance->simulator_->objectEigenValues(),
-                                            active_instance->simulator_->objectEigencoefs(),
-                                            active_instance->target_eigencoefs_,active_instance->interpolate_eigenfunction_num_,active_instance->reconstruct_eigenfunction_num_,
-                                            active_instance->simulation_vertices_num_,active_instance->example_guided_deformation_);
-
-                // memset(active_instance->example_guided_reduced_force_,0.0,sizeof(double)*3*active_instance->interpolate_eigenfunction_num_);
-                // active_instance->simulator_->computeReducedInternalForce(active_instance->target_eigencoefs_,active_instance->example_guided_reduced_force_);
-                // memset(active_instance->example_guided_fullspace_force_,0.0,sizeof(double)*3*active_instance->simulation_vertices_num_);
-
-                //project subspace force to full space
-                // for(int i=0;i<active_instance->interpolate_eigenfunction_num_;++i)
-                // {
-                //     for(int j=0;j<active_instance->simulation_vertices_num_;++j)
-                //     {
-                //         active_instance->example_guided_fullspace_force_[3*j]+=active_instance->example_guided_reduced_force_[3*j]*active_instance->simulator_->objectEigenFunctions()[i][j];
-                //         active_instance->example_guided_fullspace_force_[3*j+1]+=active_instance->example_guided_reduced_force_[3*j+1]*active_instance->simulator_->objectEigenFunctions()[i][j];
-                //         active_instance->example_guided_fullspace_force_[3*j+2]+=active_instance->example_guided_reduced_force_[3*j+2]*active_instance->simulator_->objectEigenFunctions()[i][j];
-                //     }
-                // }
-                // std::cout<<"ff\n";
-                //the internal forces are returned with the sign corresponding to f_int(x)
-                // on the left side of the equation M*x'' + f_int(x) = f_ext
-                //so they must to  be substracted from external forces
-                //temp:
-
-                for(int i=0; i<active_instance->r_; ++i)
-                   active_instance->fq_[i]-=(active_instance->example_guided_reduced_force_[i]/*+active_instance->object_elastic_fullspace_force_[i]*/);
-            }
-            //apply the penalty collision forces with planes in scene in reduced space--not done yet
-            if(active_instance->plane_num_>0)
-            {
-                active_instance->planes_->resolveContact(active_instance->simulation_mesh_,active_instance->f_col_);
-                //active_instance->planes_->resolveContact(resolveContact(const ObjMesh *mesh/*,double *forces*/,const double *vel,double *u_new,double *vel_new))
-
-                for(int i=0;i<active_instance->simulation_vertices_num_;++i)
-                    active_instance->f_ext_[i]+=active_instance->f_col_[i];
-            }
+            // if(active_instance->time_step_counter_<active_instance->force_loads_num_)
+            // {
+            //     // std::cout<<"External forces read from the text input file.\n";
+            //     for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
+            //         active_instance->f_ext_[i]+=active_instance->force_loads_[ELT(3*active_instance->simulation_vertices_num_,i,active_instance->time_step_counter_)];
+            //     ProjectVector(3*active_instance->simulation_vertices_num_,active_instance->r_,active_instance->U_,
+            //                     active_instance->reduced_force_loads_,active_instance->f_ext_);
+            //     for(int i=0;i<active_instance->r_;++i)
+            //         active_instance->fq_[i] += active_instance->reduced_force_loads_[i];
+            // }
+            // //apply the force loads caused by the examples--not done yet
+            // if(active_instance->enable_example_simulation_)
+            // {
+            //     // active_instance->simulator_->testObjectiveGradients();
+            //     // getchar();
+            //     //first update the object_eigencoefs_ using current object configuration,input is displacement, output is a shape in LB subspace
+            //     active_instance->simulator_->projectOnEigenFunctions(active_instance->simulation_mesh_,active_instance->u_,active_instance->simulator_->objectVertexVolume(),
+            //                                         active_instance->simulator_->objectEigenFunctions(),active_instance->simulator_->objectEigenValues(),
+            //                                         active_instance->interpolate_eigenfunction_num_,active_instance->deformed_object_eigencoefs_);
+            //     std::cout<<"object eigencoefs:\n";
+            //     for(int i=0;i<active_instance->interpolate_eigenfunction_num_;++i)
+            //         std::cout<<active_instance->deformed_object_eigencoefs_[i]<<",";
+            //     //handle the case if the examples are not the same shape (only similar) with the object
+            //     //note: the first example is the rest pose of the shape used as example
+            //     for(int i=0;i<active_instance->interpolate_eigenfunction_num_;++i)
+            //     {
+            //         active_instance->deformed_object_eigencoefs_[i]=active_instance->deformed_object_eigencoefs_[i]-active_instance->initial_object_eigencoefs_[i]
+            //                                                 +active_instance->example_eigencoefs_[0][i];
+            //     }
+            //
+            //     //project into the example manifold and get target configuration
+            // //    memcpy(active_instance->target_eigencoefs_,active_instance->deformed_object_eigencoefs_,sizeof(Vec3d)*active_instance->interpolate_eigenfunction_num_);
+            //     active_instance->simulator_->projectOnExampleManifold(active_instance->deformed_object_eigencoefs_,active_instance->target_eigencoefs_);
+            //     //	active_instance->simulator_->testObjectiveGradients();
+            //     //compute the deformation ,from the delta object coefficients and target coefficients
+            //     for(int i=0;i<active_instance->interpolate_eigenfunction_num_;++i)
+            //        active_instance->target_eigencoefs_[i]=active_instance->deformed_object_eigencoefs_[i]-active_instance->target_eigencoefs_[i];
+            //     //reconstruct vertices position(the last parameter) from target_eigencoefs
+            //
+            //     active_instance->simulator_->reconstructFromEigenCoefs(active_instance->simulator_->objectEigenFunctions(),active_instance->simulator_->objectEigenValues(),
+            //                                 active_instance->simulator_->objectEigencoefs(),
+            //                                 active_instance->target_eigencoefs_,active_instance->interpolate_eigenfunction_num_,active_instance->reconstruct_eigenfunction_num_,
+            //                                 active_instance->simulation_vertices_num_,active_instance->example_guided_deformation_);
+            //
+            //     // memset(active_instance->example_guided_reduced_force_,0.0,sizeof(double)*3*active_instance->interpolate_eigenfunction_num_);
+            //     // active_instance->simulator_->computeReducedInternalForce(active_instance->target_eigencoefs_,active_instance->example_guided_reduced_force_);
+            //     // memset(active_instance->example_guided_fullspace_force_,0.0,sizeof(double)*3*active_instance->simulation_vertices_num_);
+            //
+            //     //project subspace force to full space
+            //     // for(int i=0;i<active_instance->interpolate_eigenfunction_num_;++i)
+            //     // {
+            //     //     for(int j=0;j<active_instance->simulation_vertices_num_;++j)
+            //     //     {
+            //     //         active_instance->example_guided_fullspace_force_[3*j]+=active_instance->example_guided_reduced_force_[3*j]*active_instance->simulator_->objectEigenFunctions()[i][j];
+            //     //         active_instance->example_guided_fullspace_force_[3*j+1]+=active_instance->example_guided_reduced_force_[3*j+1]*active_instance->simulator_->objectEigenFunctions()[i][j];
+            //     //         active_instance->example_guided_fullspace_force_[3*j+2]+=active_instance->example_guided_reduced_force_[3*j+2]*active_instance->simulator_->objectEigenFunctions()[i][j];
+            //     //     }
+            //     // }
+            //     // std::cout<<"ff\n";
+            //     //the internal forces are returned with the sign corresponding to f_int(x)
+            //     // on the left side of the equation M*x'' + f_int(x) = f_ext
+            //     //so they must to  be substracted from external forces
+            //     //temp:
+            //
+            //     for(int i=0; i<active_instance->r_; ++i)
+            //        active_instance->fq_[i]-=(active_instance->example_guided_reduced_force_[i]/*+active_instance->object_elastic_fullspace_force_[i]*/);
+            // }
+            // //apply the penalty collision forces with planes in scene in reduced space--not done yet
+            // if(active_instance->plane_num_>0)
+            // {
+            //     active_instance->planes_->resolveContact(active_instance->simulation_mesh_,active_instance->f_col_);
+            //     //active_instance->planes_->resolveContact(resolveContact(const ObjMesh *mesh/*,double *forces*/,const double *vel,double *u_new,double *vel_new))
+            //
+            //     for(int i=0;i<active_instance->simulation_vertices_num_;++i)
+            //         active_instance->f_ext_[i]+=active_instance->f_col_[i];
+            // }
             active_instance->integrator_base_dense_->SetExternalForces(active_instance->fq_);
             // if(active_instance->time_step_counter_ < active_instance->total_steps_)
             // {
                 int code=active_instance->integrator_base_dense_->DoTimestep();
-                //int code=active_instance->integrator_base_dense_->DoTimestep();
+
                 std::cout<<".";fflush(NULL);
                 ++active_instance->time_step_counter_;
             // }
@@ -2088,6 +2092,8 @@ void OpenGLDriver::drawAxis(double axis_length) const
         glVertex3fv(vertex);
         glVertex3f(0,0,0);
     }
+    // glLineWidth(1.0);
+    // drawAxes(10.0);
     glEnd();
 }
 //draw color table

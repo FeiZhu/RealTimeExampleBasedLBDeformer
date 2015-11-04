@@ -110,6 +110,7 @@ public:
     void computeReducedEnergy(const Vec3d *reduced_dis,double &energy) const;
     void computeReducedInternalForce(const Vec3d *reduced_dis,double *forces) const;
     void computeReducedStiffnessMatrix(const Vec3d *reduced_dis,Matrix<double> &reduced_K) const;
+    void testEnergyGradients();
     void testObjectiveGradients();
 private:
     void preComputeForReducedSimulation();

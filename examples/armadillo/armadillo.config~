@@ -93,7 +93,7 @@ armadillo.lighting
 false
 
 *gravity
-98000
+9.8e5
 
 *dampingMassCoef
 0.0
