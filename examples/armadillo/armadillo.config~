@@ -1,19 +1,21 @@
+*simulationType
+fullspace
+#reducedspace
+
 *solver
 #implicitBackwardEuler
-#implicitNewmark
+implicitNewmark
 #Euler
 #centralDifferences
 #reducedCentralDifferences
-reducedImplicitNewmark
+#reducedImplicitNewmark
 #reducedImplicitBackwardEuler
 
-*deformableModel
-InvertibleFEM
+#*deformableModel
+#InvertibleFEM
 
-
-*invertibleMaterial
+#*invertibleMaterial
 #neoHookean
-reducedNeoHookean
 
 #for InvertibleFEM
 *principalStretchThreshold
@@ -93,7 +95,7 @@ armadillo.lighting
 false
 
 *gravity
-9.8e5
+9.8e12
 
 *dampingMassCoef
 0.0

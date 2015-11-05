@@ -8,11 +8,12 @@
 #ifndef OPENGL_DRIVER_H_
 #define OPENGL_DRIVER_H_
 
+#include <iostream>
 #include <string>
 #include <cfloat>
 #include "planes.h"
-#include "VegaHeaders.h"
-#include "reducedNeoHookeanForceModel.h"
+#include "getopts.h"
+#include "configFile.h"
 
 class GLUI;
 class GLUI_StaticText;
@@ -24,8 +25,9 @@ class SceneObjectDeformable;
 class ConfigFile;
 class planes;
 class Graph;
-class ReducedNeoHookeanForceModel;
+class RenderVolumetricMesh;
 class ModalMatrix;
+class SceneObjectReducedCPU;
 
 namespace RTLB{
 
@@ -60,14 +62,14 @@ private:
     static void updateCurrentExample(int code);
     static void changeCurrentEigenIndex(int code);
     static void changeSimulationMode(int code);
-    static void enableReducedSimulation(int code);
+//    static void enableReducedSimulation(int code);
+    static void loadMassmatrix(int code);
     static void loadObjectEigenfunctions(int code);
     static void saveObjectEigenfunctions(int code);
     static void loadExampleEigenfunctions(int code);
     static void saveExampleEigenfunctions(int code);
     static void loadReducedBasis(int code);
     static void loadObjectCubicaData(int code);
-    static void loadExampleCubicaData(int code);
     static void exitApplication(int code);
     static void loadCorrespondenceData(int code);
     static void registerEigenfunctions(int code);
@@ -124,8 +126,6 @@ private:
     int total_steps_ = 0;
     int frame_rate_ = 30;
     int total_frames_ = 0;
-    float newmark_beta_=0.25;
-    float newmark_gamma_=0.5;
     float damping_mass_coef_=0.0;
     float damping_stiffness_coef_=0.0;
     float damping_laplacian_coef_=0.0;
@@ -136,17 +136,15 @@ private:
     int max_iterations_=1;
     int force_neighbor_size_=3;//the influence range of the integration force
     int solver_threads_num_=1;//number of threads used for integration solver
-    double principal_stretch_threshold_=-DBL_MAX;
     bool enable_eigen_weight_control_=false;    //enable the explicit weight control
-    int corotational_linearFEM_warp_=1;
-    int central_difference_tangential_damping_update_mode_=1;
-    int positive_definite_=0;
+
     double last_initial_weight_=1.5;//useful when explicit weight control enabled
+    double principal_stretch_threshold_=-DBL_MAX;
 
     VolumetricMesh *simulation_mesh_=NULL;
     VolumetricMesh **example_mesh_=NULL;
     VolumetricMesh *current_example_mesh_=NULL;
-    TetMesh *tet_mesh_=NULL;
+    // TetMesh *tet_mesh_=NULL;
     unsigned int simulation_vertices_num_ = 0;
     RenderVolumetricMesh *render_volumetric_mesh_=NULL;
     SceneObjectDeformable *render_surface_mesh_=NULL;
@@ -168,32 +166,21 @@ private:
     double *target_initial_deformation_ = NULL;
 
     Graph *mesh_graph_ = NULL;
-    SparseMatrix *mass_matrix_= NULL;
-    SparseMatrix *laplacian_matrix_ = NULL;
-    SparseMatrix *laplacian_damping_matrix_ = NULL;
-    StVKElementABCD *precomputed_integrals_ = NULL;
+    // SparseMatrix *mass_matrix_= NULL;
+    // StVKElementABCD *precomputed_integrals_ = NULL;
 //    StVKInternalForces *stvk_internal_force_ = NULL,*example_stvk_internal_force_ = NULL;
 //    StVKStiffnessMatrix *stvk_stiffness_matrix_ = NULL,*example_stvk_stiffness_matrix_=NULL;
 //    CorotationalLinearFEM *corotational_linear_fem_ = NULL,*example_corotational_linear_fem_ = NULL;
-    IsotropicMaterial *isotropic_material_ = NULL,*example_isotropic_material_ = NULL;
-    IsotropicHyperelasticFEM *isotropic_hyperelastic_fem_ = NULL,*example_isotropic_hyperelastic_fem_ = NULL;
-    ForceModel *force_model_ = NULL;
-    IntegratorBase *integrator_base_ = NULL;
-    ImplicitNewmarkSparse *implicit_newmark_sparse_ = NULL;
-    IntegratorBaseSparse *integrator_base_sparse_ = NULL;
-    IntegratorBaseDense *integrator_base_dense_ = NULL;
-    ImplicitNewmarkDense *implicit_newmark_dense_ = NULL;
-    ImplicitBackwardEulerDense *implicit_backward_euler_dense_ = NULL;
-    CentralDifferencesDense *central_differences_dense_ = NULL;
+
 
 
     int pulled_vertex_=-1; //the index of vertex pulled by user
     double *u_=NULL;
-    double *vel_=NULL;
-    double *u_initial_=NULL;
-    double *vel_initial_=NULL;
+    // double *vel_=NULL;
+    // double *u_initial_=NULL;
+    // double *vel_initial_=NULL;
     double *f_ext_=NULL;
-    double *f_col_=NULL;
+    // double *f_col_=NULL;
     int fixed_vertices_num_=0;
     int *fixed_vertices_=NULL;
     int fixed_dofs_num_=0;
@@ -249,7 +236,7 @@ private:
     bool isload_example_cubica_ = false;
     bool enable_example_simulation_ = false;
     bool enable_save_objmesh_ = false;
-    bool save_tet_mesh_ = false;
+    // bool save_tet_mesh_ = false;
     char solver_method_[string_length];
     enum RenderMeshType{
         VISUAL_MESH = 0,
@@ -257,32 +244,21 @@ private:
         EXAMPLE_MESH
     };
     RenderMeshType render_mesh_type_ = VISUAL_MESH;
-    enum SolverType{
-        IMPLICITNEWMARK,
-        IMPLICITBACKWARDEULER,
-        EULER,
-        SYMPLECTICEULER,
-        CENTRALDIFFERENCES,
-        REDUCEDCENTRALDIFFERENCES,
-        REDUCEDIMPLICITNEWMARK,
-        REDUCEDIMPLICITBACKWARDEULER,
-        UNKNOWN
-    };
-    SolverType solver_type_ = UNKNOWN;
-    enum InvertibleMaterialType{
-        INV_STVK,
-        INV_NEOHOOKEAN,
-        REDUCED_STVK,
-        REDUCED_INV_NEOHOOKEAN,
-        INV_NONE
-    };
-    InvertibleMaterialType invertible_material_type_ = INV_NONE;
-    enum DeformableObjectType{
-        INVERTIBLEFEM,
-        REDUCEDFEM,
-        UNSPECIFIED
-    };
-    DeformableObjectType deformable_object_type_ = UNSPECIFIED;
+
+    // enum InvertibleMaterialType{
+    //     INV_NEOHOOKEAN,
+    //     REDUCED_STVK,
+    //     REDUCED_INV_NEOHOOKEAN,
+    //     INV_NONE
+    // };
+    // InvertibleMaterialType invertible_material_type_ = INV_NONE;
+    // enum DeformableObjectType{
+    //     INVERTIBLEFEM,
+    //     REDUCEDFEM,
+    //     UNSPECIFIED
+    // };
+    // DeformableObjectType deformable_object_type_ = UNSPECIFIED;
+    char simulation_type_[string_length];
     enum SimulationMode{
         FULLSPACE,
         REDUCEDSPACE
@@ -303,22 +279,17 @@ private:
     unsigned int output_file_index_ = 0;
     ConfigFile config_file_;
     //reuced simulation
-    bool enable_reduced_simulation_ = false;
     SceneObjectReducedCPU *render_reduced_surface_mesh_=NULL;
-    ReducedForceModel *reduced_force_model_=NULL;
-    ReducedNeoHookeanForceModel *reduced_neoHookean_force_model_=NULL;
+    // ReducedForceModel *reduced_force_model_=NULL;
+    // ReducedNeoHookeanForceModel *reduced_neoHookean_force_model_=NULL;
     int r_ = 0;
-    double *reduced_mass_matrix_ = NULL;
-    double *reduced_stiffness_matrix_ = NULL;
-    double *reduced_f_ext_ = NULL;
-    Vec3d *vec_q_ = NULL;
+    // double *reduced_stiffness_matrix_ = NULL;
     double *q_ = NULL;
-    bool reduced_simulation_ = false;
-    ModalMatrix *modal_matrix_ = NULL;
     double *fq_ = NULL;
     double *fqBase_ = NULL;
-    double *U_ = NULL;
-    double *reduced_force_loads_ = NULL;
+    // double *q_ = NULL;
+    bool reduced_simulation_ = false;
+    // double *reduced_force_loads_ = NULL;
 };
 
 }  //namespace RTLB

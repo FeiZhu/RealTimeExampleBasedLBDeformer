@@ -16,20 +16,20 @@ ReducedNeoHookeanForceModel::ReducedNeoHookeanForceModel(const int &r,Volumetric
                             const int &cubica_num, const double *cubica_weights,const unsigned int *cubica_elements,
                             double **restpos,bool addGravity, double g)
 {
-    std::cout<<"a\n";
+    // std::cout<<"a\n";
     r_=r;
     add_gravity_=addGravity;
     g_=g;
     cubica_num_=cubica_num;
     cubica_weights_ = new double[cubica_num_];
     cubica_elements_ = new double[cubica_num_];
-    std::cout<<"b\n";
+    // std::cout<<"b\n";
     for(int i=0;i<cubica_num_;++i)
     {
         cubica_weights_[i]=cubica_weights[i];
         cubica_elements_[i]=cubica_elements[i];
     }
-    std::cout<<"c\n";
+    // std::cout<<"c\n";
     volumetric_mesh_ = volumetricMesh;
     U_ = new double*[3*volumetricMesh->getNumVertices()];
     for(int i=0;i<3*volumetricMesh->getNumVertices();++i)
@@ -38,7 +38,7 @@ ReducedNeoHookeanForceModel::ReducedNeoHookeanForceModel(const int &r,Volumetric
         for(int j=0;j<r_;++j)
             U_[i][j]=0.0;
     }
-    std::cout<<"d\n";
+    // std::cout<<"d\n";
     int num=volumetricMesh->getNumVertices();
     //change *U to **U_,U_[vert_idx][basis_idx]
     // for(int j=0;j<r_;++j)
@@ -130,17 +130,17 @@ void ReducedNeoHookeanForceModel::InitGravity(double *U)
     memset(gravity_force_,0.0,sizeof(double)*r_);
     volumetric_mesh_->computeGravity(full_gravity_force,1.0);
     ProjectVector(3*n,r_,U,unit_reduced_gravity_force,full_gravity_force);
-    for(int i=0;i<3*n;++i)
-        std::cout<<full_gravity_force[i]<<",";
-    std::cout<<g_<<"\n";
-    getchar();
-    for(int i=0;i<r_;++i)
-    std::cout<<unit_reduced_gravity_force[i]<<",";
+    // for(int i=0;i<3*n;++i)
+    //     std::cout<<full_gravity_force[i]<<",";
+    // std::cout<<g_<<"\n";
+    // getchar();
+    // for(int i=0;i<r_;++i)
+    // std::cout<<unit_reduced_gravity_force[i]<<",";
     for(int i=0;i<r_;++i)
         gravity_force_[i] = g_*unit_reduced_gravity_force[i];
-    for(int i=0;i<r_;++i)
-        std::cout<<gravity_force_[i]<<",";
-       getchar();
+    // for(int i=0;i<r_;++i)
+    //     std::cout<<gravity_force_[i]<<",";
+    //    getchar();
     delete[] full_gravity_force;
     delete[] unit_reduced_gravity_force;
 }
@@ -324,35 +324,6 @@ Mat3d ReducedNeoHookeanForceModel::computeF_gradient(const int &ele,const int &v
 		//compute dF/dx_j^k,j=1,2,3;k=1,2,3
 		result_matrix=e_matrix*DmInv;
 	}
-
-    // Mat3d result_matrix(0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0);
-    // Mat3d DmInv=computeDmInv(ele);
-    // //Mat3d DmInv(1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0);
-    // if(vert_idx==3)
-    // {
-    //     if(vert_idx_dim==0)
-	// 	{
-	// 		result_matrix[0][0]=result_matrix[1][1]=result_matrix[2][2]=(-1.0)*(DmInv[0][0]+DmInv[1][0]+DmInv[2][0]);
-	// 	}
-	// 	else if(vert_idx_dim==1)
-	// 	{
-	// 		result_matrix[0][0]=result_matrix[1][1]=result_matrix[2][2]=(-1.0)*(DmInv[0][1]+DmInv[1][1]+DmInv[2][1]);
-	// 	}
-	// 	else if(vert_idx_dim==2)
-	// 	{
-	// 		result_matrix[0][0]=result_matrix[1][1]=result_matrix[2][2]=(-1.0)*(DmInv[0][2]+DmInv[1][2]+DmInv[2][2]);
-	// 	}
-	// 	else
-	// 	{
-	// 	}
-    // }
-    // else
-    // {
-    //     result_matrix[0][0]=result_matrix[1][1]=result_matrix[2][2]=(-1.0)*DmInv[vert_idx_dim][vert_idx];
-    //
-    // }
-    // std::cout<<"result_matrix:\n";
-    // std::cout<<result_matrix<<"\n";
 	return result_matrix;
 }
 
@@ -424,23 +395,10 @@ void ReducedNeoHookeanForceModel::computeReducedInternalForce(const double *q,do
         Matrix<double> g=Transpose(subU)*ele_force;//rx1
 		for(int i=0;i<r_;++i)
 			forces[i] += cubica_weights_[cubica_idx]*g(i,0);
-			// forces[i] =g(i,0);
 	}
-    std::cout<<"before:\n";
-    for(int i=0;i<r_;++i)
-        std::cout<<forces[i]<<",";
-    std::cout<<"\n";
     if(add_gravity_)
         for(int i=0;i<r_;++i)
             forces[i] -= gravity_force_[i];
-    std::cout<<"gravity:\n";
-    for(int i=0;i<r_;++i)
-        std::cout<<gravity_force_[i]<<",";
-    std::cout<<"\n";
-    std::cout<<"after:\n";
-    for(int i=0;i<r_;++i)
-        std::cout<<forces[i]<<",";
-    std::cout<<"\n";
 }
 
 void ReducedNeoHookeanForceModel::computeReducedStiffnessMatrix(const double *q,double *reduced_K/*Matrix<double> &reduced_K*/) const
@@ -450,25 +408,8 @@ void ReducedNeoHookeanForceModel::computeReducedStiffnessMatrix(const double *q,
 	{
 		int ele=cubica_elements_[cubica_idx];
 		Matrix<double> subU=tetSubBasis(ele);//12*r
-
-    // std::cout<<"..............\n";
-    //     for(int i=0;i<12;++i)
-    //     {
-    //         for(int j=0;j<r_;++j)
-    //             std::cout<<subU(i,j)<<",";
-    //         std::cout<<"\n";
-    //     }
-    // std::cout<<"..............\n";
-        // Matrix<double> t_subU=Transpose(tetSubBasis(ele));//12*r
-        // for(int i=0;i<r_;++i)
-        // {
-        //     for(int j=0;j<12;++j)
-        //         std::cout<<t_subU(i,j)<<",";
-        //     std::cout<<"\n";
-        // }
 		Matrix<double> ele_K(12,12);
         Mat3d F=computeF(cubica_idx,q);
-        // std::cout<<det(F)<<"\n";
 		Mat3d DmInv=computeDmInv(ele);
 		for(int i=0;i<4;++i)
 		{
@@ -478,12 +419,9 @@ void ReducedNeoHookeanForceModel::computeReducedStiffnessMatrix(const double *q,
 			{
                 g_derivative[j].set(0.0);
 				g_derivative[j]=computeP_gradient(ele,F,i,j)*trans(DmInv);
-                // std::cout<<"g_derivative:\n";
-                // std::cout<<j<<","<<g_derivative[j]<<"\n";
 			}
             for(int j=0;j<4;++j)
 			{
-                // std::cout<<j<<":\n";
 				Matrix<double> f_derivative(3,3);
 				for(int row=0;row<3;++row)
 				{
@@ -494,29 +432,12 @@ void ReducedNeoHookeanForceModel::computeReducedStiffnessMatrix(const double *q,
 						else
 							f_derivative(row,col)=g_derivative[row][col][j];
 						ele_K(3*i+row,3*j+col)=f_derivative(row,col);
-                        // std::cout<<f_derivative(row,col)<<",";
 					}
-                    // std::cout<<"\n";
 				}
 			}
 		}
-        // std::cout<<"ele_K:12x12\n";
-        // for(int i=0;i<12;++i)
-        // {
-        //     for(int j=0;j<12;++j)
-        //         std::cout<<ele_K(i,j)<<",";
-        //     std::cout<<"\n";
-        // }
 		K+=cubica_weights_[cubica_idx]*Transpose(subU)*ele_K*subU;
-        // std::cout<<"........K......\n";
-        // for(int i=0;i<r_;++i)
-        // {
-        //     for(int j=0;j<r_;++j)
-        //         std::cout<<K(i,j)<<",";
-        //     std::cout<<"\n";
-        // }
 	}
-
     for(int i=0;i<r_;++i)
         for(int j=0;j<r_;++j)
            reduced_K[i*r_+j]=K(i,j);
