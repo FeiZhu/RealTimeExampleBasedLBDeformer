@@ -398,7 +398,11 @@ void ReducedNeoHookeanForceModel::computeReducedInternalForce(const double *q,do
 	}
     if(add_gravity_)
         for(int i=0;i<r_;++i)
+        {
             forces[i] -= gravity_force_[i];
+            // std::cout<<forces[i]<<",";
+        }
+
 }
 
 void ReducedNeoHookeanForceModel::computeReducedStiffnessMatrix(const double *q,double *reduced_K/*Matrix<double> &reduced_K*/) const

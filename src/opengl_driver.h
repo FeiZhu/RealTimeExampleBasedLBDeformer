@@ -220,6 +220,7 @@ private:
     double render_velocity_scale_ = 1.0;
     //render switches
     unsigned int enable_textures_=0;
+    bool render_fps_ = true;
     bool render_axis_ = true;
     bool render_vertices_ = false;
     bool render_wireframe_ = true;

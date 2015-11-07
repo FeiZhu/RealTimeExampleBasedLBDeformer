@@ -519,6 +519,44 @@ void OpenGLDriver::displayFunction()
         glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE);
         glStencilFunc(GL_ALWAYS,0,~(0u));
     }
+    //show frame_rate on the left top of the window
+    if(active_instance->render_fps_)
+    {
+        double fps=100.0;
+        static int frame = 0, time = 0, time_base = 0;
+        ++frame;
+        time = glutGet(GLUT_ELAPSED_TIME); //millisecond
+        // std::cout<<"time:"<<time<<"...........\n";
+        // std::cout<<"time_base:"<<time_base<<"...........\n";
+        if(time-time_base>10)
+        {
+            fps=frame*1000.0/(time-time_base);
+            time_base=time;
+            frame=0;
+        }
+        std::stringstream adaptor;
+        adaptor.precision(2);
+        std::string str;
+        adaptor<<fps;
+        str=std::string("FPS:") + adaptor.str();
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        glDisable(GL_LIGHTING);
+        glDisable(GL_TEXTURE_2D);
+        gluOrtho2D(0,active_instance->window_width_,0,active_instance->window_height_);
+        glColor3f(1.0,0.0,0.0);
+        glRasterPos2i(5,active_instance->window_height_-19);
+        for(int i=0;i<str.length();++i)
+            glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18,str[i]);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPopMatrix();
+        glEnable(GL_LIGHTING);
+    }
     //render eigenfunction
      if(active_instance->render_eigenfunction_)
      {
@@ -725,7 +763,7 @@ void OpenGLDriver::displayFunction()
     //         Vec3d vert_pos,vert_new_pos;
     //         for(int j=0;j<3;++j)
     //         {
-    //             vert_pos[j]=(*active_instance->simulation_mesh_->getVertex(i))[j]+active_instance->integrator_base_->Getq()[3*i+j];
+    //             vert_pos[j]=(*active_instance->simulation_mesh_->getVertex(i))[j]+active_instance->u_[3*i+j];
     //             vert_new_pos[j]=vert_pos[j]+active_instance->integrator_base_->Getqvel()[3*i+j]*active_instance->render_velocity_scale_;
     //         }
     //         glColor3f(1.0,0.3,0.0);
@@ -953,8 +991,8 @@ void OpenGLDriver::idleFunction()
         else
         {
             active_instance->u_=active_instance->simulator_->Getu();
-            for(int i=0;i<30;++i)
-                std::cout<<active_instance->u_[i]<<",";
+            // for(int i=0;i<30;++i)
+            //     std::cout<<active_instance->u_[i]<<",";
         }
         memset(active_instance->u_render_surface_,0.0,sizeof(double)*3*(active_instance->visual_mesh_->Getn()));
         VolumetricMesh::interpolate(active_instance->u_,active_instance->u_render_surface_,active_instance->visual_mesh_->Getn(),

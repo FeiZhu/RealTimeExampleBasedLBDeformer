@@ -125,9 +125,9 @@ RealTimeExampleBasedDeformer* RealTimeExampleBasedDeformer::activeInstance()
 // }
 void RealTimeExampleBasedDeformer::setupSimulation()
 {
-    std::cout<<"setupsimulation\n";
+    // std::cout<<"setupsimulation\n";
 	//full space
-	std::cout<<".........\n";
+	// std::cout<<".........\n";
 	if(strcmp(simulation_type_.c_str(),"fullspace")==0)
     {
         simulation_mode_=FULLSPACE;
@@ -382,7 +382,7 @@ void RealTimeExampleBasedDeformer::fullspaceSimulation(double *full_drag_force)
 }
 void RealTimeExampleBasedDeformer::reducedspaceSimulation(double *reduced_drag_force)
 {
-	std::cout<<"reducedspaceSimulation begins\n";
+	// std::cout<<"reducedspaceSimulation begins\n";
 	memcpy(fq_,reduced_drag_force_,sizeof(double)*r_);
 	//apply any scripted force loads for reduced space ---not done yet
 	// if(time_step_counter_<force_loads_num_)
@@ -397,7 +397,7 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulation(double *reduced_drag_f
 	//apply the force loads caused by the examples--not done yet
 	if(enable_example_simulation_)
 	{
-
+		
 	}
 	//apply the penalty collision forces with planes in scene in reduced space--not done yet
 	// if(plane_num_>0)
@@ -419,7 +419,7 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulation(double *reduced_drag_f
 bool RealTimeExampleBasedDeformer::loadMassmatrix(const std::string &file_name)
 {
 	//get the mass matrix
-	std::cout<<file_name<<"......\n";
+	// std::cout<<file_name<<"......\n";
     SparseMatrixOutline *mass_matrix_outline;
     try
     {
@@ -439,6 +439,8 @@ bool RealTimeExampleBasedDeformer::loadMassmatrix(const std::string &file_name)
 	// {
 	reduced_mass_matrix_=new double[r_*r_];
     memset(reduced_mass_matrix_,0.0,sizeof(double)*r_*r_);
+	for(int i=0;i<r_;++i)
+		reduced_mass_matrix_[ELT(r_,i,i)] = 1.0;
     //U_ is column major, the column number is r_
     U_ = new double[3*simulation_vertices_num_*r_];
     memset(U_,0.0,sizeof(double)*3*simulation_vertices_num_*r_);
@@ -449,7 +451,7 @@ bool RealTimeExampleBasedDeformer::loadMassmatrix(const std::string &file_name)
             U_[3*simulation_vertices_num_*j+i]=reducedBasis()[j][i];
         }
     }
-    mass_matrix_->ConjugateMatrix(U_,r_,reduced_mass_matrix_);
+    // mass_matrix_->ConjugateMatrix(U_,r_,reduced_mass_matrix_);
     modal_matrix_ = new ModalMatrix(simulation_vertices_num_,r_,U_);
 	// std::cout<<modal_matrix_->Getr()<<"~~~~~lalalal~~~~~~~~~~"<<modal_matrix_->Getn()<<"\n";
 	// getchar();
@@ -1024,7 +1026,7 @@ bool RealTimeExampleBasedDeformer::loadObjectCubicaData(const std::string &file_
 	isPreComputeReducedData_=true;
 	if(isPreComputeReducedData_)
 	{
-		preComputeForReducedSimulation();
+		//preComputeForReducedSimulation();
 		isPreComputeReducedData_=false;
 	}
 	return true;
