@@ -277,6 +277,7 @@ private:
     //used for reduced cubica element Computation
     double **restpos_;//compute rest position for cubica elements
     double *q_=NULL;
+    double *qvel_=NULL;
     double *fq_=NULL;
     double *fqBase_=NULL;
     double *reduced_mass_matrix_ = NULL;

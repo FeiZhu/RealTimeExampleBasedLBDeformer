@@ -11,6 +11,7 @@
 #include "volumetricMeshENuMaterial.h"
 #include "matrix.h"
 #include "matrixProjection.h"
+#include "generateMassMatrix.h"
 
 ReducedNeoHookeanForceModel::ReducedNeoHookeanForceModel(const int &r,VolumetricMesh *volumetricMesh,double *U,
                             const int &cubica_num, const double *cubica_weights,const unsigned int *cubica_elements,
@@ -41,21 +42,11 @@ ReducedNeoHookeanForceModel::ReducedNeoHookeanForceModel(const int &r,Volumetric
     // std::cout<<"d\n";
     int num=volumetricMesh->getNumVertices();
     //change *U to **U_,U_[vert_idx][basis_idx]
-    // for(int j=0;j<r_;++j)
-    //     for(int i=0;i<num;++i)
-    //     {
-    //         U_[3*i][j]=U[3*r_*i+j];
-    //         U_[3*i+1][j]=U[3*r_*i+r_+j];
-    //         U_[3*i+2][j]=U[3*r_*i+2*r_+j];
-    //     }
-
-    for(int i=0;i<3*num;++i)
-        for(int j=0;j<r_;++j)
+    for(int j=0;j<r_;++j)
+        for(int i=0;i<3*num;++i)
         {
             U_[i][j]=U[3*num*j+i];
         }
-    //  std::cout<<U_[0][0]<<","<<U_[3][2]<<","<<U_[0][r_-1]<<","<<U_[5][r_-1]<<","<<U_[19][r_-1]<<":\n";
-    //  getchar();
     restpos_ = new double*[cubica_num_];
     for(int i=0;i<cubica_num_;++i)
     {
@@ -113,14 +104,11 @@ void ReducedNeoHookeanForceModel::GetInternalForce(double * q, double * internal
 void ReducedNeoHookeanForceModel::GetTangentStiffnessMatrix(double * q, double * tangentStiffnessMatrix)
 {
     computeReducedStiffnessMatrix(q,tangentStiffnessMatrix);
-    // std::cout<<"getK::.............";
-
 }
 
 
 void ReducedNeoHookeanForceModel::InitGravity(double *U)
-{//to do:reduced gravity
-    //if(volumetric_mesh_!=NULL)
+{
     int n=volumetric_mesh_->getNumVertices();
     double *full_gravity_force=new double[3*n];
     memset(full_gravity_force,0.0,sizeof(double)*3*n);
@@ -130,16 +118,115 @@ void ReducedNeoHookeanForceModel::InitGravity(double *U)
     memset(gravity_force_,0.0,sizeof(double)*r_);
     volumetric_mesh_->computeGravity(full_gravity_force,1.0);
     ProjectVector(3*n,r_,U,unit_reduced_gravity_force,full_gravity_force);
-    // for(int i=0;i<3*n;++i)
-    //     std::cout<<full_gravity_force[i]<<",";
-    // std::cout<<g_<<"\n";
-    // getchar();
-    // for(int i=0;i<r_;++i)
-    // std::cout<<unit_reduced_gravity_force[i]<<",";
     for(int i=0;i<r_;++i)
         gravity_force_[i] = g_*unit_reduced_gravity_force[i];
+
+    // double *mass=new double[volumetric_mesh_->getNumVertices()];
+    // memset(mass,0.0,sizeof(double)*volumetric_mesh_->getNumVertices());
+    // GenerateMassMatrix::computeVertexMasses(volumetric_mesh_,mass);//mass:nxn
+    // for(int i=0;i<n;++i)
+    // {
+    //     std::cout<<full_gravity_force[3*i]<<"---";
+    //     std::cout<<mass[i]<<",\n";
+    // }
+    // getchar();
+    //     double *mass3n=new double[3*volumetric_mesh_->getNumVertices()];
+    //     memset(mass3n,0.0,sizeof(double)*3*volumetric_mesh_->getNumVertices());
+    // for(int i=0;i<n;++i)
+    // {
+    //     // mass3n[3*i]=mass[i];
+    //     mass3n[3*i+1]=mass[i];
+    //     // mass3n[3*i+2]=mass[i];
+    // }
+    // delete[] mass;
+    // for(int i=0;i<n;++i)
+    // {
+    //     // for(int j=1;j<2;++j)
+    //     // {
+    //     //     std::cout<<"U:"<<U_[3*i+1][j]<<"~~";
+    //     //         std::cout<<"G:"<<full_gravity_force[3*i+1]<<"~~";
+    //     //     std::cout<<"U*G"<<U_[3*i+1][j]*full_gravity_force[3*i+1]<<"~~";
+    //     //     // getchar();
+    //     //     result(j,0)+=U_[3*i+1][j]*full_gravity_force[3*i+1];
+    //     //     std::cout<<result(j,0)<<"\n";
+    //     // }
+    //     full_gravity_force[3*i]=full_gravity_force[3*i+2]=0.0;
+    //     full_gravity_force[3*i+1]=98;
+    // }
+    // ProjectVector(3*n,r_,U,unit_reduced_gravity_force,full_gravity_force);
+
+    // std::cout<<"U:\n";
+    // getchar();
+    // for(int i=0;i<100;++i)
+    // {
+    //     // for(int j=0;j<r_;++j)
+    //     // {
+    //         std::cout<<U[i]<<",";
+    //
+    //     // }
+    // }
+    // getchar();
+
+    // std::cout<<U[3*n]<<","<<U[3*n+1]<<","<<U[3*n+2]<<"......\n";
+    // ProjectVector(3*n,r_,U,unit_reduced_gravity_force,full_gravity_force);
+    // for(int i=0;i<volumetric_mesh_->getNumVertices;++i)
+    //     full_gravity_force[3*i+1]=-9.8;
+    // delete[] mass3n;
+    // Matrix<double> full_g((int)3*n,1);
+    // for(int i=0;i<3*n;++i)
+    //     full_g(i,0)=full_gravity_force[i];
+    // Matrix<double> matrix_u((int)3*n,(int)r_);
+    // for(int i=0;i<3*n;++i)
+    // {
+    //     for(int j=0;j<r_;++j)
+    //     {
+    //         matrix_u(i,j)=0.0;
+    //     }
+    // }
+    // Matrix<double> result((int)r_,1);
+    // for(int i=0;i<3*n;++i)
+    // {
+    //     for(int j=9;j<10;++j)
+    //     {
+    //         // std::cout<<"U:"<<U_[3*i+1][j]<<"~~";
+    //         //     std::cout<<"G:"<<full_gravity_force[3*i+1]<<"~~";
+    //         // std::cout<<"U*G"<<U_[3*i+1][j]*full_gravity_force[3*i+1]<<"~~";
+    //         // getchar();
+    //         result(j,0)+=U_[i][j]*mass[i];
+    //         std::cout<<result(j,0)<<"\n";
+    //     }
+    // }
+    // getchar();
+    // std::cout<<"aaaaaaaaaaaaaaa:\n";
+    // // Matrix<double> result=Transpose(matrix_u)*full_g;
+    // // for(int i=0;i<r_;++i)
+    // //     std::cout<<result(i,0)<<",";
+    // getchar();
+
+// std::cout<<"full_gravity_force:\n";
+//     for(int i=0;i<3*n;++i)
+//         std::cout<<full_gravity_force[i]<<",";
+//     std::cout<<g_<<"\n";
+    // getchar();
+    // std::cout<<"unit_reduced_gravity_force:\n";
     // for(int i=0;i<r_;++i)
-    //     std::cout<<gravity_force_[i]<<",";
+    // std::cout<<unit_reduced_gravity_force[i]<<",";
+    // getchar();
+        // gravity_force_[i] = g_;
+        // -92.3052,2399.9,-393.109,6719.01,983.218,-4554.44,-603.278,1925.24,-230.062,-1743.86
+        // gravity_force_[0]=-92.3052;
+        // gravity_force_[1]=2399.9;
+        // gravity_force_[2]=-393.109;
+        // gravity_force_[3]=6719.01;
+        // gravity_force_[4]=983.218;
+        // gravity_force_[5]=-4554.44;
+        // gravity_force_[6]=-603.278;
+        // gravity_force_[7]=1925.24;
+        // gravity_force_[8]=-230.062;
+        // gravity_force_[9]=-1743.86;
+    // for(int i=0;i<r_;++i)
+    //     gravity_force_[i]=20;
+    // std::cout<<"\n";
     //    getchar();
     delete[] full_gravity_force;
     delete[] unit_reduced_gravity_force;
@@ -402,6 +489,7 @@ void ReducedNeoHookeanForceModel::computeReducedInternalForce(const double *q,do
             forces[i] -= gravity_force_[i];
             // std::cout<<forces[i]<<",";
         }
+        // std::cout<<"\n";
 
 }
 

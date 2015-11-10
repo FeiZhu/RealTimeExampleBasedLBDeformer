@@ -172,6 +172,8 @@ void RealTimeExampleBasedDeformer::setupSimulation()
 	memset(reduced_drag_force_,0.0,sizeof(double)*r_);
 	q_=new double[r_];
 	memset(q_,0.0,sizeof(double)*r_);
+	qvel_=new double[r_];
+	memset(qvel_,0.0,sizeof(double)*r_);
 	fq_=new double[r_];
 	memset(fq_,0.0,sizeof(double)*r_);
 	fqBase_=new double[r_];
@@ -190,7 +192,22 @@ void RealTimeExampleBasedDeformer::setupSimulation()
 			restpos_[i][3*j+2]=(*simulation_mesh_->getVertex(global_idx))[2];
 		}
 	}
-
+	// double *mass_=new double[3*simulation_vertices_num_];
+	// memset(mass_,0.0,sizeof(double)*3*simulation_vertices_num_);
+	// //temp compute mass for each vertex
+	// for(int el=0;el<simulation_mesh_->getNumElements();++el)
+	// {
+	// 	for(int i=0;i<4;++i)
+	// 	{
+	// 		int vertID=simulation_mesh_->getVertexIndex(el,i);
+	// 		mass_[vertID]+=0.25*simulation_mesh_->getElementVolume(el)*simulation_mesh_->getElementDensity(el)/3.0;
+	// 	}
+	// }
+	// std::cout<<"mass:\n";
+	// for(int i=0;i<20;++i)
+	// 	std::cout<<i<<":"<<mass_[i]<<";\n";
+	// 	getchar();
+	//temp compute mass for each vertex-end
     //create force models, to be used by the integrator,deformable_object_type_=INVERTIBLEFEM,neohookean material
     std::cout<<"Creating force model:\n";
 	tet_mesh_=dynamic_cast<TetMesh*>(simulation_mesh_);
@@ -301,6 +318,7 @@ void RealTimeExampleBasedDeformer::setupSimulation()
             exit(1);
         }
         integrator_base_->SetTimestep(time_step_);
+		integrator_base_->SetState(q_,qvel_);
     }
     else
     {
@@ -397,7 +415,7 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulation(double *reduced_drag_f
 	//apply the force loads caused by the examples--not done yet
 	if(enable_example_simulation_)
 	{
-		
+
 	}
 	//apply the penalty collision forces with planes in scene in reduced space--not done yet
 	// if(plane_num_>0)
@@ -415,6 +433,8 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulation(double *reduced_drag_f
 		// ++active_instance->time_step_counter_;
 	// }
 	memcpy(q_,integrator_base_->Getq(),sizeof(double)*r_);
+	// for(int i=0;i<r_;++i)
+	// 	q_[i]+=0.2;
 }
 bool RealTimeExampleBasedDeformer::loadMassmatrix(const std::string &file_name)
 {
@@ -433,14 +453,14 @@ bool RealTimeExampleBasedDeformer::loadMassmatrix(const std::string &file_name)
     }
     mass_matrix_=new SparseMatrix(mass_matrix_outline);
     delete(mass_matrix_outline);
-	std::cout<<simulation_mode_<<"\n";
+	// std::cout<<simulation_mode_<<"\n";
 	//compute for reduced simulation
 	// if(simulation_mode_==REDUCEDSPACE)
 	// {
 	reduced_mass_matrix_=new double[r_*r_];
     memset(reduced_mass_matrix_,0.0,sizeof(double)*r_*r_);
-	for(int i=0;i<r_;++i)
-		reduced_mass_matrix_[ELT(r_,i,i)] = 1.0;
+	// for(int i=0;i<r_;++i)
+	// 	reduced_mass_matrix_[ELT(r_,i,i)] = 1.0;
     //U_ is column major, the column number is r_
     U_ = new double[3*simulation_vertices_num_*r_];
     memset(U_,0.0,sizeof(double)*3*simulation_vertices_num_*r_);
@@ -448,10 +468,13 @@ bool RealTimeExampleBasedDeformer::loadMassmatrix(const std::string &file_name)
     {
         for(int i=0;i<3*simulation_vertices_num_;++i)
         {
-            U_[3*simulation_vertices_num_*j+i]=reducedBasis()[j][i];
+            U_[3*simulation_vertices_num_*j+i]=reduced_basis_[j][i];
         }
     }
+	//reduced_mass_matrix_ is identity()
     // mass_matrix_->ConjugateMatrix(U_,r_,reduced_mass_matrix_);
+	for(int i=0; i<r_; i++)
+    	reduced_mass_matrix_[ELT(r,i,i)] = 1.0;
     modal_matrix_ = new ModalMatrix(simulation_vertices_num_,r_,U_);
 	// std::cout<<modal_matrix_->Getr()<<"~~~~~lalalal~~~~~~~~~~"<<modal_matrix_->Getn()<<"\n";
 	// getchar();
@@ -2194,16 +2217,6 @@ void RealTimeExampleBasedDeformer::testObjectiveGradients()
 	delete[] f_plus;
 	delete[] f_min;
 	delete[] dK;
-
-	// projectOnSubBasis(simulation_mesh_,reduced_basis_,r_,object_eigencoefs_);
-	// projectOnSubBasis(examples_[0],reduced_basis_,r_,example_eigencoefs_[0]);
-	// projectOnSubBasis(examples_[1],reduced_basis_,r_,example_eigencoefs_[1]);
-	// interpolate_eigenfunction_num_=4;
-
-
-
-
-
 }
 int RealTimeExampleBasedDeformer::ModifiedSVD(Mat3d & F, Mat3d & U, Vec3d & Fhat, Mat3d & V) const
 {

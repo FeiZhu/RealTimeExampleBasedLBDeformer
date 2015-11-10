@@ -284,11 +284,9 @@ private:
     // ReducedForceModel *reduced_force_model_=NULL;
     // ReducedNeoHookeanForceModel *reduced_neoHookean_force_model_=NULL;
     int r_ = 0;
-    // double *reduced_stiffness_matrix_ = NULL;
     double *q_ = NULL;
     double *fq_ = NULL;
     double *fqBase_ = NULL;
-    // double *q_ = NULL;
     bool reduced_simulation_ = false;
     // double *reduced_force_loads_ = NULL;
 };

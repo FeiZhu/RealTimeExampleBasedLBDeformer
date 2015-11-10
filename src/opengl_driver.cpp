@@ -34,15 +34,10 @@ OpenGLDriver::OpenGLDriver(const std::string &config_file_name)
     simulator_=new RTLB::RealTimeExampleBasedDeformer();
     //TO DO: init everything and enter mainloop
     initConfigurations(config_file_name);
-    std::cout<<"a\n";
     initGLUT();
-    std::cout<<"b\n";
     initGLUI();
-    std::cout<<"c\n";
     initGraphics();
-    std::cout<<"d\n";
     initSimulation();
-    std::cout<<"#\n";
     glutMainLoop();
 }
 
@@ -307,6 +302,7 @@ void OpenGLDriver::initGLUI()
 void OpenGLDriver::initSimulation()
 {
     std::cout<<"initSimulation:\n";
+    //
     // getchar();
     total_steps_=(int)((1.0/time_step_)/frame_rate_)*total_frames_;
     std::cout<<lighting_config_file_name_<<"\n";
@@ -375,6 +371,8 @@ void OpenGLDriver::initSimulation()
     f_ext_=new double[3*simulation_vertices_num_];
     memset(f_ext_,0.0,sizeof(double)*3*simulation_vertices_num_);
     r_=simulator_->reducedBasisNum();
+    q_= new double[r_];
+    memset(q_,0.0,sizeof(double)*r_);
     fq_= new double[r_];
     memset(fq_,0.0,sizeof(double)*r_);
     fqBase_= new double[r_];
@@ -388,10 +386,11 @@ void OpenGLDriver::initSimulation()
     }
     std::cout<<"Loading the mass matrix from file "<<mass_matrix_file_name_<<".\n";
     loadMassmatrix(0);
+
     // simulator_->setupSimulation();
     render_reduced_surface_mesh_ = new SceneObjectReducedCPU(volumetric_surface_mesh_file_name_,simulator_->getModalmatrix());
 
-    std::cout<<".....T...\n";
+    // std::cout<<".....T...\n";
     if(enable_textures_)
     {
         // if(simulation_mode_==REDUCEDSPACE)
@@ -401,7 +400,7 @@ void OpenGLDriver::initSimulation()
         // }
         render_surface_mesh_->SetUpTextures(SceneObject::MODULATE,SceneObject::NOMIPMAP);
     }
-        std::cout<<".....a...\n";
+        // std::cout<<".....a...\n";
     render_surface_mesh_->ResetDeformationToRest();
     render_surface_mesh_->BuildNeighboringStructure();
     render_surface_mesh_->BuildNormals();
@@ -409,7 +408,7 @@ void OpenGLDriver::initSimulation()
     memset(u_render_surface_,0.0,sizeof(double)*3*visual_mesh_->Getn());
     render_volumetric_mesh_=new RenderVolumetricMesh();
 
-        std::cout<<".....b..\n";
+        // std::cout<<".....b..\n";
     //load interpolation structure for object
     if(strcmp(object_interpolation_file_name_,"none")==0)
     {
@@ -423,7 +422,7 @@ void OpenGLDriver::initSimulation()
         exit(1);
     }
 
-            std::cout<<".....c..\n";
+            // std::cout<<".....c..\n";
     std::cout<<"Num interpolation element vertices: "<<object_interpolation_element_vertices_num_<<".\n";
     VolumetricMesh::loadInterpolationWeights(object_interpolation_file_name_,visual_mesh_->Getn(),object_interpolation_element_vertices_num_,
                                             &object_interpolation_vertices_,&object_interpolation_weights_);
@@ -523,8 +522,11 @@ void OpenGLDriver::displayFunction()
     if(active_instance->render_fps_)
     {
         double fps=100.0;
-        static int frame = 0, time = 0, time_base = 0;
-        ++frame;
+        static int frame = 0, time = 0, time_base = 0,time_step=0;
+        ++time_step;
+        // if((time_step%active_instance->frame_rate_==0)&&(time_step>0))
+            ++frame;
+        // std::cout<<"time_step:"<<time_step<<",frame:"<<frame<<"\n";
         time = glutGet(GLUT_ELAPSED_TIME); //millisecond
         // std::cout<<"time:"<<time<<"...........\n";
         // std::cout<<"time_base:"<<time_base<<"...........\n";
@@ -901,6 +903,13 @@ void OpenGLDriver::idleFunction()
             {
                 memcpy(active_instance->fq_,active_instance->fqBase_,sizeof(double)*active_instance->r_);
             }
+            // for(int i=0;i<active_instance->simulation_mesh_->getNumVertices();++i)
+            // {
+            //     active_instance->f_ext_[3*i+1]=active_instance->f_ext_[3*i+2]=0.0;
+            //     active_instance->f_ext_[3*i]=98.0;
+            //
+            // }
+            // active_instance->simulator_->getModalmatrix()->ProjectVector(active_instance->f_ext_,active_instance->fq_);
             //apply force loads for reduced space from external file---not done yet
             active_instance->simulator_->setExternalForces(active_instance->fq_);
             active_instance->simulator_->advanceStep();
@@ -984,9 +993,29 @@ void OpenGLDriver::idleFunction()
     {
         if(active_instance->simulation_mode_==REDUCEDSPACE)
         {
+            // std::cout<<"a\n";
+        //     active_instance->render_reduced_surface_mesh_->Getu(active_instance->u_);
+        //         // std::cout<<"b\n";
+        //     for(int i=0;i<active_instance->simulation_vertices_num_;++i)
+        //     {
+        //         active_instance->u_[3*i+1]=0.2;
+        //     }
+        //         // std::cout<<"c\n";
+        //     active_instance->simulator_->getModalmatrix()->ProjectVector(active_instance->u_,active_instance->q_);
+        //
+        // for(int i=0;i<active_instance->r_;++i)
+        // {
+        //     active_instance->q_[i]+=active_instance->simulator_->Getq()[i];
+        //     std::cout<<active_instance->q_[i]<<",";
+        // }
+        // getchar();
+                // std::cout<<"d\n";
             active_instance->render_reduced_surface_mesh_->Setq(active_instance->simulator_->Getq());
+                // std::cout<<"e\n";
             active_instance->render_reduced_surface_mesh_->Compute_uUq();
+                // std::cout<<"f\n";
             active_instance->render_reduced_surface_mesh_->Getu(active_instance->u_);
+                // std::cout<<"g\n";
         }
         else
         {

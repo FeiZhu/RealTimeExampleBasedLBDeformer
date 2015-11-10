@@ -29,7 +29,7 @@ public:
 
     //virtual void GetReducedInternalForceClass() { return f_; }
 //    virtual void GetReducedStiffnessMatrixClass() { return K_; }
-    void SetGravity(bool addGravity,double g,double *U) {this->add_gravity_ = addGravity;InitGravity(U);}
+    void SetGravity(bool addGravity,double g,double *U) {this->add_gravity_ = addGravity;}
     void testEnergyGradients();
     void testObjectiveGradients();
 protected:
