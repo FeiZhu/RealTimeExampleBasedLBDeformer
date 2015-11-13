@@ -180,7 +180,7 @@ private:
     // double *u_initial_=NULL;
     // double *vel_initial_=NULL;
     double *f_ext_=NULL;
-    // double *f_col_=NULL;
+    double *f_col_=NULL;
     int fixed_vertices_num_=0;
     int *fixed_vertices_=NULL;
     int fixed_dofs_num_=0;

@@ -280,6 +280,7 @@ private:
     double *qvel_=NULL;
     double *fq_=NULL;
     double *fqBase_=NULL;
+    double *fq_ext_=NULL;
     double *reduced_mass_matrix_ = NULL;
     ModalMatrix *modal_matrix_ = NULL;
     double *U_ = NULL;

@@ -22,7 +22,8 @@ bar.veg
 
 *objectRenderSurfaceMeshFilename
 bar.obj
-
+*objectVolumetricSurfaceMeshFilename
+armadillo_volumetric_surfacemesh.obj
 *objectInterpolationFilename
 bar.interp
 
@@ -36,7 +37,7 @@ ex
 *exampleNum
 2
 *interpolateEigenfunctionNum
-4
+9
 *reconstructEigenfunctionNum
 9
 *exampleEigenFunctionFilenameBase

@@ -66,8 +66,11 @@ armadillo.cubature
 *reducedBasisFilename
 #armadillo-modal.basis
 #nonlinear-65.txt
-nonlinear.txt
+#nonlinear-60.txt
 #armadillo.basis
+#rigid.txt
+nonlinear.txt
+#1.txt
 
 *massMatrixFilename
 armadillo.mass
@@ -82,7 +85,7 @@ armadillo.mass
 *planeNumber
 0
 *planesFilename
-plane.config
+planes.config
 
 *lightingConfigFilename
 armadillo.lighting
@@ -101,15 +104,15 @@ false
 0.98
 
 *dampingMassCoef
-0.01
+0.0
 
 *dampingStiffnessCoef
-0.015
+0.0
 
 *exampleStiffnessScale
 0.01
 *timestep
-0.01
+0.05
 *framerate
 30
 *totalFrame

@@ -321,6 +321,7 @@ void OpenGLDriver::initSimulation()
         if(strcmp(plane_file_name_,"none")!=0)
         {
             planes_=new Planes(plane_file_name_,plane_num_);
+            // simulator_->loadPlanesInScene(plane_file_name_,plane_num_);
         }
         else
         {
@@ -370,6 +371,8 @@ void OpenGLDriver::initSimulation()
     memset(u_,0.0,sizeof(double)*3*simulation_vertices_num_);
     f_ext_=new double[3*simulation_vertices_num_];
     memset(f_ext_,0.0,sizeof(double)*3*simulation_vertices_num_);
+    f_col_=new double[3*simulation_vertices_num_];
+    memset(f_col_,0.0,sizeof(double)*3*simulation_vertices_num_);
     r_=simulator_->reducedBasisNum();
     q_= new double[r_];
     memset(q_,0.0,sizeof(double)*r_);
@@ -898,6 +901,7 @@ void OpenGLDriver::idleFunction()
                     }
                     // std::cout<<"\n";
                 }
+
             }
             else
             {
@@ -910,6 +914,14 @@ void OpenGLDriver::idleFunction()
             //
             // }
             // active_instance->simulator_->getModalmatrix()->ProjectVector(active_instance->f_ext_,active_instance->fq_);
+            //plane--
+            if(active_instance->plane_num_>0)
+        	{
+        		active_instance->planes_->resolveContact(active_instance->render_surface_mesh_->GetMesh(),active_instance->f_col_);
+                for(int i=0;i<active_instance->simulation_vertices_num_;++i)
+                    active_instance->f_ext_[i]+=active_instance->f_col_[i];
+                active_instance->simulator_->getModalmatrix()->ProjectVector(active_instance->f_ext_,active_instance->fq_);
+        	}
             //apply force loads for reduced space from external file---not done yet
             active_instance->simulator_->setExternalForces(active_instance->fq_);
             active_instance->simulator_->advanceStep();

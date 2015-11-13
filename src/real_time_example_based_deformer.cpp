@@ -12,6 +12,7 @@
 #include "coupled_quasi_harmonics.h"
 #include "planes.h"
 #include "real_time_example_based_deformer.h"
+#include "matrixProjection.h"
 using alglib::real_1d_array;
 using alglib::real_2d_array;
 using alglib::integer_1d_array;
@@ -112,22 +113,17 @@ RealTimeExampleBasedDeformer::~RealTimeExampleBasedDeformer()
 		delete[] full_drag_force_;
 	if(reduced_drag_force_)
 		delete[] reduced_drag_force_;
+	//need to be checked
 }
 
 RealTimeExampleBasedDeformer* RealTimeExampleBasedDeformer::activeInstance()
 {
     return active_instance_;
 }
-// void RealTimeExampleBasedDeformer::test()
-// {
-//
-// 	std::cout<<"11111111111111111111....\n";
-// }
 void RealTimeExampleBasedDeformer::setupSimulation()
 {
-    // std::cout<<"setupsimulation\n";
 	//full space
-	// std::cout<<".........\n";
+
 	if(strcmp(simulation_type_.c_str(),"fullspace")==0)
     {
         simulation_mode_=FULLSPACE;
@@ -153,20 +149,20 @@ void RealTimeExampleBasedDeformer::setupSimulation()
     mesh_graph_->GetLaplacian(&laplacian_damping_matrix_,scale_rows);
     laplacian_damping_matrix_->ScalarMultiply(damping_laplacian_coef_);
 	// simulation_vertices_num_=simulation_mesh_->getNumVertices();
-	u_=new double[simulation_vertices_num_];
-	memset(u_,0.0,sizeof(double)*simulation_vertices_num_);
-	vel_=new double[simulation_vertices_num_];
-	memset(vel_,0.0,sizeof(double)*simulation_vertices_num_);
-	u_initial_=new double[simulation_vertices_num_];
-	memset(u_initial_,0.0,sizeof(double)*simulation_vertices_num_);
-	vel_initial_=new double[simulation_vertices_num_];
-	memset(vel_initial_,0.0,sizeof(double)*simulation_vertices_num_);
-	f_ext_=new double[simulation_vertices_num_];
-	memset(f_ext_,0.0,sizeof(double)*simulation_vertices_num_);
-	f_col_=new double[simulation_vertices_num_];
-	memset(f_col_,0.0,sizeof(double)*simulation_vertices_num_);
-	full_drag_force_=new double[simulation_vertices_num_];
-	memset(full_drag_force_,0.0,sizeof(double)*simulation_vertices_num_);
+	u_=new double[3*simulation_vertices_num_];
+	memset(u_,0.0,sizeof(double)*3*simulation_vertices_num_);
+	vel_=new double[3*simulation_vertices_num_];
+	memset(vel_,0.0,sizeof(double)*3*simulation_vertices_num_);
+	u_initial_=new double[3*simulation_vertices_num_];
+	memset(u_initial_,0.0,sizeof(double)*3*simulation_vertices_num_);
+	vel_initial_=new double[3*simulation_vertices_num_];
+	memset(vel_initial_,0.0,sizeof(double)*3*simulation_vertices_num_);
+	f_ext_=new double[3*simulation_vertices_num_];
+	memset(f_ext_,0.0,sizeof(double)*3*simulation_vertices_num_);
+	f_col_=new double[3*simulation_vertices_num_];
+	memset(f_col_,0.0,sizeof(double)*3*simulation_vertices_num_);
+	full_drag_force_=new double[3*simulation_vertices_num_];
+	memset(full_drag_force_,0.0,sizeof(double)*3*simulation_vertices_num_);
 	//reduced space
 	reduced_drag_force_=new double[r_];
 	memset(reduced_drag_force_,0.0,sizeof(double)*r_);
@@ -178,6 +174,8 @@ void RealTimeExampleBasedDeformer::setupSimulation()
 	memset(fq_,0.0,sizeof(double)*r_);
 	fqBase_=new double[r_];
 	memset(fqBase_,0.0,sizeof(double)*r_);
+	fq_ext_=new double[r_];
+	memset(fq_ext_,0.0,sizeof(double)*r_);
 
 	restpos_ = new double*[object_cubica_ele_num_];
 	for(int i=0;i<object_cubica_ele_num_;++i)
@@ -338,7 +336,6 @@ void RealTimeExampleBasedDeformer::setupSimulation()
 
 void RealTimeExampleBasedDeformer::advanceStep()
 {
-    //TO DO--idle function
 	if(simulation_mode_==FULLSPACE)
 		fullspaceSimulation(full_drag_force_);
 	else
@@ -349,17 +346,12 @@ void RealTimeExampleBasedDeformer::setExternalForces(double *ext_forces)
 	if(simulation_mode_==FULLSPACE)
 	{
 		for(int i=0;i<simulation_mesh_->getNumVertices();++i)
-		{
 			full_drag_force_[i]=ext_forces[i];
-			// std::cout<<"full_drag_force_:"<<full_drag_force_[i]<<",";
-		}
 	}
 	else
 	{
 		for(int i=0;i<r_;++i)
-		{
 			reduced_drag_force_[i]=ext_forces[i];
-		}
 	}
 }
 void RealTimeExampleBasedDeformer::fullspaceSimulation(double *full_drag_force)
@@ -377,14 +369,14 @@ void RealTimeExampleBasedDeformer::fullspaceSimulation(double *full_drag_force)
 		//to do
 	}
 	//apply the penalty collision forces with planes in scene
-	if(plane_num_>0)
-	{
-		planes_->resolveContact(simulation_mesh_,f_col_);
-		//active_instance->planes_->resolveContact(resolveContact(const ObjMesh *mesh/*,double *forces*/,const double *vel,double *u_new,double *vel_new))
-
-		for(int i=0;i<simulation_vertices_num_;++i)
-			f_ext_[i]+=f_col_[i];
-	}
+	// if(plane_num_>0)
+	// {
+	// 	planes_->resolveContact(simulation_mesh_,f_col_);
+	// 	//active_instance->planes_->resolveContact(resolveContact(const ObjMesh *mesh/*,double *forces*/,const double *vel,double *u_new,double *vel_new))
+	//
+	// 	for(int i=0;i<simulation_vertices_num_;++i)
+	// 		f_ext_[i]+=f_col_[i];
+	// }
 	//set forces to the integrator
 	integrator_base_sparse_->SetExternalForces(f_ext_);
 	//time step the dynamics
@@ -417,22 +409,36 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulation(double *reduced_drag_f
 	{
 
 	}
-	//apply the penalty collision forces with planes in scene in reduced space--not done yet
+	//apply the penalty collision forces with planes in scene in reduced space
+	// std::cout<<plane_num_<<".....\n";
 	// if(plane_num_>0)
 	// {
+	// 	// std::cout<<"a\n";
 	// 	planes_->resolveContact(simulation_mesh_,f_col_);
-	//
-	// 	for(int i=0;i<simulation_vertices_num_;++i)
-	// 		f_ext_[i]+=f_col_[i];
+	// 	// for(int i=0;i<3*simulation_mesh_->getNumVertices();++i)
+	// 	// if(f_col_[i]>1.0e-6)
+	// 	// std::cout<<f_col_[i]<<",";
+	// 	// 	std::cout<<"b:"<<simulation_vertices_num_<<"\n";
+	// 	ProjectVector(3*simulation_vertices_num_,r_,U_,fq_ext_,f_col_);
+	// 	for(int i=0;i<r_;++i)
+	// 		fq_[i]+=0;
 	// }
+	// for(int i=0;i<r_;++i)
+	// 	std::cout<<fq_[i]<<";";
+	// std::cout<<"~~~~~~~\n";
 	integrator_base_dense_->SetExternalForces(fq_);
+	// for(int i=0;i<r_;++i)
+	// 	std::cout<<fq_[i]<<";";
+	// std::cout<<"aaaaa\n";
 	// if(time_step_counter_ < active_instance->total_steps_)
 	// {
 		int code=integrator_base_dense_->DoTimestep();
 		std::cout<<".";fflush(NULL);
 		// ++active_instance->time_step_counter_;
 	// }
+	// std::cout<<"bbbb\n";
 	memcpy(q_,integrator_base_->Getq(),sizeof(double)*r_);
+	// std::cout<<"cccc\n";
 	// for(int i=0;i<r_;++i)
 	// 	q_[i]+=0.2;
 }
@@ -472,9 +478,16 @@ bool RealTimeExampleBasedDeformer::loadMassmatrix(const std::string &file_name)
         }
     }
 	//reduced_mass_matrix_ is identity()
-    // mass_matrix_->ConjugateMatrix(U_,r_,reduced_mass_matrix_);
-	for(int i=0; i<r_; i++)
-    	reduced_mass_matrix_[ELT(r,i,i)] = 1.0;
+    mass_matrix_->ConjugateMatrix(U_,r_,reduced_mass_matrix_);
+	// for(int i=0; i<r_; i++)
+    // 	reduced_mass_matrix_[ELT(r_,i,i)] = 1.0;
+	// for(int i=0;i<r_;++i)
+	// {
+	// 	for(int j=0;j<r_;++j)
+	// 		std::cout<<reduced_mass_matrix_[i*r_+j]<<",";
+	// 	std::cout<<"\n";
+	// }
+
     modal_matrix_ = new ModalMatrix(simulation_vertices_num_,r_,U_);
 	// std::cout<<modal_matrix_->Getr()<<"~~~~~lalalal~~~~~~~~~~"<<modal_matrix_->Getn()<<"\n";
 	// getchar();
@@ -626,7 +639,12 @@ bool RealTimeExampleBasedDeformer::loadReducedBasis(const std::string &file_name
 	for(unsigned int i=0;i<reduced_col_num;++i)
 	{
 		reduced_basis_[i]=new double[reduced_row_num];
+		// reduced_basis_[i]=new double[24432];
 	}
+	// for(int i=0;i<27;++i)
+	// 	for(int j=0;j<24432;++j)
+	// 		reduced_basis_[i][j]=0.0;
+
 	unsigned int line_num=0,str_num=0,total_num=0;
 	while((!input_file.eof())&&(input_file.peek()!=std::ifstream::traits_type::eof()))
 	{
@@ -663,68 +681,6 @@ bool RealTimeExampleBasedDeformer::loadReducedBasis(const std::string &file_name
 	isload_reduced_basis_ = true;
     return true;
 }
-//temp:load mass:3nx3n
-// bool RealTimeExampleBasedDeformer::loadObjectMass(const std::string &file_name)
-// {
-// 	std::stringstream adaptor;
-// 	std::fstream rfile;
-// 	std::string matrix_row_str;
-// 	std::string matrix_col_str;
-// 	unsigned int str_num=0;
-// 	unsigned int line_num = 0;
-// 	rfile.open(file_name,std::ios::in);
-// 	double mass_value;
-// 	if(!rfile)
-// 	{
-// 		std::cerr<<"Error: failed to open "<<file_name<<"\n";
-// 		return false;
-// 	}
-// 	std::getline(rfile,matrix_row_str);
-// 	unsigned int matrix_row_num;
-// 	adaptor<<matrix_row_str;
-// 	adaptor>>matrix_row_num;
-// 	std::getline(rfile,matrix_col_str);
-// 	unsigned int matrix_col_num;
-// 	adaptor.str("");
-// 	adaptor.clear();
-// 	adaptor<<matrix_col_str;
-// 	adaptor>>matrix_col_num;
-// 	unsigned int num=0;
-// 	unsigned int row_idx,col_idx;
-// 	mass_=new double*[matrix_row_num];
-// 	for(int i=0;i<matrix_row_num;++i)
-// 	{
-// 		mass_[i]=new double[matrix_col_num];
-// 		for(int j=0;j<matrix_col_num;++j)
-// 			mass_[i][j]=0.0;
-// 	}
-// 	while((!rfile.eof())&&(rfile.peek()!=std::ifstream::traits_type::eof()))
-// 	{
-// 		num++;
-// 		adaptor.str("");
-// 		adaptor.clear();
-// 		std::string line_str;
-// 		std::getline(rfile,line_str);
-// 		adaptor<<line_str;
-// 		if(!(adaptor>>row_idx))
-// 		{
-// 			return false;
-// 		}
-// 		if(!(adaptor>>col_idx))
-// 		{
-// 			return false;
-// 		}
-// 		if(!(adaptor>>mass_value))
-// 		{
-// 			return false;
-// 		}
-// 		mass_[row_idx][col_idx]=mass_value;
-// 	}
-//
-// 	rfile.close();
-// 	std::cout<<"loadFineMeshMassMatrix--work done!\n";
-// 	return true;
-// }
 //format:.eigencoef
 //first line:*eigenValues; second line:eigenvalues_num; third line: eigen values
 //*eigenVectors; eigenfunctions_row_num, eigenfunctions_col_num
@@ -959,7 +915,11 @@ bool RealTimeExampleBasedDeformer::loadPlanesInScene(const std::string &file_nam
 		std::cout<<"Error: cannot read "<<file_name<<".\n";
 		return false;
 	}
+	std::cout<<"file_name:"<<file_name<<"\n";
+	std::cout<<"plane_num:"<<plane_num<<"\n";
+	plane_num_=plane_num;
 	planes_=new Planes(file_name.c_str(),plane_num);
+	std::cout<<"ddddddddd:\n";
     if(planes_ == NULL)
     {
         std::cout<<"Error: failed to load planes from "<<file_name<<".\n";
@@ -1002,56 +962,66 @@ bool RealTimeExampleBasedDeformer::loadFixedVertices(const std::string &file_nam
 //tetID : 0-indexed
 bool RealTimeExampleBasedDeformer::loadObjectCubicaData(const std::string &file_name)
 {
-	std::cout<<"Load object cubica data...\n";
-	std::fstream input_file(file_name.c_str());
-	if(!input_file)
+	// std::cout<<"Load object cubica data...\n";
+	// std::fstream input_file(file_name.c_str());
+	// if(!input_file)
+	// {
+	// 	std::cout<<"Error: failed to open file "<<file_name<<".\n";
+	// 	return false;
+	// }
+	// string temp_str;
+	// std::getline(input_file,temp_str);
+	// object_cubica_ele_num_=atoi(temp_str.c_str());
+	// object_cubica_elements_ = new unsigned int[object_cubica_ele_num_];
+	// object_cubica_weights_ = new double [object_cubica_ele_num_];
+	// while(std::getline(input_file,temp_str))
+	// {
+	// 	if(temp_str.compare(0,6,string("*tetID"))==0)
+	// 		break;
+	// }
+	// unsigned int str_num=0;
+	// while((!input_file.eof())&&(input_file.peek()!=std::ifstream::traits_type::eof()))
+	// {
+	// 	unsigned int temp_value;
+	// 	input_file>>temp_value;
+	// 	object_cubica_elements_[str_num]=temp_value;
+	// 	str_num++;
+	// 	if(str_num>=object_cubica_ele_num_)
+	// 		break;
+	// }
+	// while(std::getline(input_file,temp_str))
+	// {
+	// 	if(temp_str.compare(0,10,string("*tetWeight"))==0)
+	// 		break;
+	// }
+	// str_num=0;
+	// while((!input_file.eof())&&(input_file.peek()!=std::ifstream::traits_type::eof()))
+	// {
+	// 	double temp_value;
+	// 	input_file>>temp_value;
+	// 	object_cubica_weights_[str_num]=temp_value;
+	// 	++str_num;
+	// 	if(str_num>=object_cubica_ele_num_)
+	// 		break;
+	// }
+	// std::cout<<"Load object cubica data succeed.\n";
+
+	//test all cubica elements:
+	object_cubica_ele_num_=simulation_mesh_->getNumElements();
+	object_cubica_elements_=new unsigned int[object_cubica_ele_num_];
+	object_cubica_weights_=new double[object_cubica_ele_num_];
+	for(int i=0;i<object_cubica_ele_num_;++i)
 	{
-		std::cout<<"Error: failed to open file "<<file_name<<".\n";
-		return false;
+		object_cubica_elements_[i]=i;
+		object_cubica_weights_[i]=1.0;
 	}
-	string temp_str;
-	std::getline(input_file,temp_str);
-	object_cubica_ele_num_=atoi(temp_str.c_str());
-	object_cubica_elements_ = new unsigned int[object_cubica_ele_num_];
-	object_cubica_weights_ = new double [object_cubica_ele_num_];
-	while(std::getline(input_file,temp_str))
-	{
-		if(temp_str.compare(0,6,string("*tetID"))==0)
-			break;
-	}
-	unsigned int str_num=0;
-	while((!input_file.eof())&&(input_file.peek()!=std::ifstream::traits_type::eof()))
-	{
-		unsigned int temp_value;
-		input_file>>temp_value;
-		object_cubica_elements_[str_num]=temp_value;
-		str_num++;
-		if(str_num>=object_cubica_ele_num_)
-			break;
-	}
-	while(std::getline(input_file,temp_str))
-	{
-		if(temp_str.compare(0,10,string("*tetWeight"))==0)
-			break;
-	}
-	str_num=0;
-	while((!input_file.eof())&&(input_file.peek()!=std::ifstream::traits_type::eof()))
-	{
-		double temp_value;
-		input_file>>temp_value;
-		object_cubica_weights_[str_num]=temp_value;
-		++str_num;
-		if(str_num>=object_cubica_ele_num_)
-			break;
-	}
-	std::cout<<"Load object cubica data succeed.\n";
 	isload_cubica_ = true;
-	isPreComputeReducedData_=true;
-	if(isPreComputeReducedData_)
-	{
-		//preComputeForReducedSimulation();
-		isPreComputeReducedData_=false;
-	}
+	// isPreComputeReducedData_=true;
+	// if(isPreComputeReducedData_)
+	// {
+	// 	//preComputeForReducedSimulation();
+	// 	isPreComputeReducedData_=false;
+	// }
 	return true;
 }
 bool RealTimeExampleBasedDeformer::saveSimulationMesh(const std::string &file_name) const
@@ -1530,32 +1500,6 @@ void RealTimeExampleBasedDeformer::projectOnEigenFunctions(VolumetricMesh *mesh,
 		}
 	}
 }
-//
-// void RealTimeExampleBasedDeformer::projectOnSubBasis(VolumetricMesh *mesh,
-//                                                            double **eigenfunctions, unsigned int eigenfunction_num,
-//                                                            Vec3d *eigencoefs)
-// {
-// 	//local example mode is not written yet
-// 	int vert_num=mesh->getNumVertices();
-// 	double scale_factor;
-// 	for(unsigned int i=0;i<interpolate_eigenfunction_num_;++i)
-// 	{
-// 		for(unsigned int j=0;j<3;++j)
-// 		{
-// 			eigencoefs[i][j]=0.0;
-// 		}
-// 		scale_factor=reduced_basis_values_[i];
-// 		for(unsigned int vert_idx=0;vert_idx<vert_num;++vert_idx)
-// 		{
-// 			Vec3d vert_pos;
-// 			for(unsigned int dim=0;dim<3;++dim)
-// 			{
-// 				vert_pos[dim]=(*mesh->getVertex(vert_idx))[dim];
-// 				eigencoefs[i][dim]+=vert_pos[dim]*reduced_basis_[i][3*vert_idx+i];
-// 			}
-// 		}
-// 	}
-// }
 //input:m*1 eigencoefs (m:eigenfunction_num)
 //output:3n*1 Euclidean pos (n:volumetricMesh vertices num)
 //reconstruct step just used for simulation object and contains two steps
