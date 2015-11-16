@@ -962,59 +962,60 @@ bool RealTimeExampleBasedDeformer::loadFixedVertices(const std::string &file_nam
 //tetID : 0-indexed
 bool RealTimeExampleBasedDeformer::loadObjectCubicaData(const std::string &file_name)
 {
-	// std::cout<<"Load object cubica data...\n";
-	// std::fstream input_file(file_name.c_str());
-	// if(!input_file)
-	// {
-	// 	std::cout<<"Error: failed to open file "<<file_name<<".\n";
-	// 	return false;
-	// }
-	// string temp_str;
-	// std::getline(input_file,temp_str);
-	// object_cubica_ele_num_=atoi(temp_str.c_str());
-	// object_cubica_elements_ = new unsigned int[object_cubica_ele_num_];
-	// object_cubica_weights_ = new double [object_cubica_ele_num_];
-	// while(std::getline(input_file,temp_str))
-	// {
-	// 	if(temp_str.compare(0,6,string("*tetID"))==0)
-	// 		break;
-	// }
-	// unsigned int str_num=0;
-	// while((!input_file.eof())&&(input_file.peek()!=std::ifstream::traits_type::eof()))
-	// {
-	// 	unsigned int temp_value;
-	// 	input_file>>temp_value;
-	// 	object_cubica_elements_[str_num]=temp_value;
-	// 	str_num++;
-	// 	if(str_num>=object_cubica_ele_num_)
-	// 		break;
-	// }
-	// while(std::getline(input_file,temp_str))
-	// {
-	// 	if(temp_str.compare(0,10,string("*tetWeight"))==0)
-	// 		break;
-	// }
-	// str_num=0;
-	// while((!input_file.eof())&&(input_file.peek()!=std::ifstream::traits_type::eof()))
-	// {
-	// 	double temp_value;
-	// 	input_file>>temp_value;
-	// 	object_cubica_weights_[str_num]=temp_value;
-	// 	++str_num;
-	// 	if(str_num>=object_cubica_ele_num_)
-	// 		break;
-	// }
-	// std::cout<<"Load object cubica data succeed.\n";
+	std::cout<<"Load object cubica data...\n";
+	std::fstream input_file(file_name.c_str());
+	if(!input_file)
+	{
+		std::cout<<"Error: failed to open file "<<file_name<<".\n";
+		return false;
+	}
+	string temp_str;
+	std::getline(input_file,temp_str);
+	object_cubica_ele_num_=atoi(temp_str.c_str());
+	object_cubica_elements_ = new unsigned int[object_cubica_ele_num_];
+	object_cubica_weights_ = new double [object_cubica_ele_num_];
+	while(std::getline(input_file,temp_str))
+	{
+		if(temp_str.compare(0,6,string("*tetID"))==0)
+			break;
+	}
+	unsigned int str_num=0;
+	while((!input_file.eof())&&(input_file.peek()!=std::ifstream::traits_type::eof()))
+	{
+		unsigned int temp_value;
+		input_file>>temp_value;
+		object_cubica_elements_[str_num]=temp_value-1;
+		str_num++;
+		if(str_num>=object_cubica_ele_num_)
+			break;
+	}
+	while(std::getline(input_file,temp_str))
+	{
+		if(temp_str.compare(0,10,string("*tetWeight"))==0)
+			break;
+	}
+	str_num=0;
+	while((!input_file.eof())&&(input_file.peek()!=std::ifstream::traits_type::eof()))
+	{
+		double temp_value;
+		input_file>>temp_value;
+		object_cubica_weights_[str_num]=temp_value;
+		++str_num;
+		if(str_num>=object_cubica_ele_num_)
+			break;
+	}
+	std::cout<<"Load object cubica data succeed.\n";
 
 	//test all cubica elements:
-	object_cubica_ele_num_=simulation_mesh_->getNumElements();
-	object_cubica_elements_=new unsigned int[object_cubica_ele_num_];
-	object_cubica_weights_=new double[object_cubica_ele_num_];
-	for(int i=0;i<object_cubica_ele_num_;++i)
-	{
-		object_cubica_elements_[i]=i;
-		object_cubica_weights_[i]=1.0;
-	}
+	// object_cubica_ele_num_=simulation_mesh_->getNumElements();
+	// object_cubica_elements_=new unsigned int[object_cubica_ele_num_];
+	// object_cubica_weights_=new double[object_cubica_ele_num_];
+	// for(int i=0;i<object_cubica_ele_num_;++i)
+	// {
+	// 	object_cubica_elements_[i]=i;
+	// 	double ele_volume=simulation_mesh_->getElementVolume(i);
+	// 	object_cubica_weights_[i]=1.0*ele_volume;
+	// }
 	isload_cubica_ = true;
 	// isPreComputeReducedData_=true;
 	// if(isPreComputeReducedData_)
