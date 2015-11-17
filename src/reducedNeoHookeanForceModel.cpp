@@ -12,6 +12,7 @@
 #include "matrix.h"
 #include "matrixProjection.h"
 #include "generateMassMatrix.h"
+#include "performanceCounter.h"
 
 ReducedNeoHookeanForceModel::ReducedNeoHookeanForceModel(const int &r,VolumetricMesh *volumetricMesh,double *U,
                             const int &cubica_num, const double *cubica_weights,const unsigned int *cubica_elements,
@@ -109,6 +110,8 @@ void ReducedNeoHookeanForceModel::GetTangentStiffnessMatrix(double * q, double *
 
 void ReducedNeoHookeanForceModel::InitGravity(double *U)
 {
+    std::cout<<"IIIIIIIIIIIIIIIIIIIIIIIIIIIIInitGravity:\n";
+    getchar();
     int n=volumetric_mesh_->getNumVertices();
     double *full_gravity_force=new double[3*n];
     memset(full_gravity_force,0.0,sizeof(double)*3*n);
@@ -454,7 +457,11 @@ Mat3d ReducedNeoHookeanForceModel::computeP_gradient(const int &ele,const Mat3d 
 // }
 void ReducedNeoHookeanForceModel::computeReducedInternalForce(const double *q,double *forces) const
 {//q:r*1
+
+	PerformanceCounter counter2;
+	counter2.StartCounter();
 	memset(forces,0.0,sizeof(double)*r_);
+    double total_time=0.0;
     // std::cout<<"q:\n";
     // for(int i=0;i<r_;++i)
     //     std::cout<<q[i]<<",";
@@ -479,7 +486,12 @@ void ReducedNeoHookeanForceModel::computeReducedInternalForce(const double *q,do
 			}
 		}
 		Matrix<double> subU=tetSubBasis(ele);//12xr
+        PerformanceCounter counter5;
+        	counter5.StartCounter();
         Matrix<double> g=Transpose(subU)*ele_force;//rx1
+        counter5.StopCounter();
+        if(counter5.GetElapsedTime()>1.0e-4)
+            total_time+=counter5.GetElapsedTime();
 		for(int i=0;i<r_;++i)
 			forces[i] += cubica_weights_[cubica_idx]*g(i,0);
 	}
@@ -490,19 +502,47 @@ void ReducedNeoHookeanForceModel::computeReducedInternalForce(const double *q,do
             // std::cout<<forces[i]<<",";
         }
         // std::cout<<"\n";
+        counter2.StopCounter();
+        std::cout<<"integrator compute internal force:"<<counter2.GetElapsedTime()-total_time<<"\n";
 
 }
 
 void ReducedNeoHookeanForceModel::computeReducedStiffnessMatrix(const double *q,double *reduced_K/*Matrix<double> &reduced_K*/) const
 {
+
+	// PerformanceCounter counter2;
+	// counter2.StartCounter();
+    double total_time=0.0;
     Matrix<double> K((int)r_,(int)r_);
+    PerformanceCounter counter1;
+    counter1.StartCounter();
 	for(int cubica_idx=0;cubica_idx<cubica_num_;++cubica_idx)
 	{
+
+    	// PerformanceCounter counter2;
+    	// counter2.StartCounter();
 		int ele=cubica_elements_[cubica_idx];
 		Matrix<double> subU=tetSubBasis(ele);//12*r
+
+        // counter2.StopCounter();
+        // std::cout<<"computeK--subU:"<<counter2.GetElapsedTime()<<"\n";
 		Matrix<double> ele_K(12,12);
+
+    	// PerformanceCounter counter1;
+    	// counter1.StartCounter();
         Mat3d F=computeF(cubica_idx,q);
+
+        // counter1.StopCounter();
+        // std::cout<<"computeK--F:"<<counter1.GetElapsedTime()<<"\n";
+
+    	// PerformanceCounter counter3;
+    	// counter3.StartCounter();
 		Mat3d DmInv=computeDmInv(ele);
+
+        // counter3.StopCounter();
+        // std::cout<<"computeK--DmInv:"<<counter3.GetElapsedTime()<<"\n";
+        // PerformanceCounter counter4;
+    	// counter4.StartCounter();
 		for(int i=0;i<4;++i)
 		{
 			std::vector<Mat3d> g_derivative(3);//computes dg/dx_j^0,dg/dx_j^1,dg/dx_j^2
@@ -528,11 +568,26 @@ void ReducedNeoHookeanForceModel::computeReducedStiffnessMatrix(const double *q,
 				}
 			}
 		}
+        // counter4.StopCounter();
+        // std::cout<<"computeK--assemble K:"<<counter4.GetElapsedTime()<<"\n";
+
+        PerformanceCounter counter5;
+    	counter5.StartCounter();
 		K+=cubica_weights_[cubica_idx]*Transpose(subU)*ele_K*subU;
+        counter5.StopCounter();
+        total_time+=counter5.GetElapsedTime();
+
 	}
+
+            counter1.StopCounter();
+            std::cout<<"computeK--for all cubica elements:"<<counter1.GetElapsedTime()-total_time<<"\n";
+            // PerformanceCounter counter6;
+        	// counter6.StartCounter();
     for(int i=0;i<r_;++i)
         for(int j=0;j<r_;++j)
            reduced_K[i*r_+j]=K(i,j);
+        //    counter6.StopCounter();
+        //    std::cout<<"computeK--get the final result:"<<counter6.GetElapsedTime()<<"\n";
             // reduced_K(i,j)=K(i,j);
 }
 void ReducedNeoHookeanForceModel::testEnergyGradients()

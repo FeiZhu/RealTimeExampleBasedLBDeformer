@@ -27,6 +27,7 @@ class planes;
 class Graph;
 class RenderVolumetricMesh;
 class ModalMatrix;
+class SceneObjectReduced;
 class SceneObjectReducedCPU;
 
 namespace RTLB{
@@ -70,6 +71,7 @@ private:
     static void saveExampleEigenfunctions(int code);
     static void loadReducedBasis(int code);
     static void loadObjectCubicaData(int code);
+    static void loadLBObjectCubicaData(int code);
     static void exitApplication(int code);
     static void loadCorrespondenceData(int code);
     static void registerEigenfunctions(int code);
@@ -103,6 +105,7 @@ private:
     char object_interpolation_file_name_[string_length];
     char example_cubica_file_name_prefix_[string_length];
     char object_cubica_file_name_[string_length];
+    char object_LB_cubica_file_name_[string_length];
     char fixed_vertex_file_name_[string_length];
     char force_loads_file_name_[string_length];
     char initial_position_file_name_[string_length];
@@ -122,6 +125,7 @@ private:
     bool add_gravity_=false;
     double gravity_ = 9.8;
     double time_step_ = 1.0/30;
+    double fps_=0.0;
     int time_step_counter_=0;
     int total_steps_ = 0;
     int frame_rate_ = 30;
@@ -135,7 +139,7 @@ private:
     double example_stiffness_scale_=1.0;//the stiffness used to compute example force is scaled
     int max_iterations_=1;
     int force_neighbor_size_=3;//the influence range of the integration force
-    int solver_threads_num_=1;//number of threads used for integration solver
+    //int solver_threads_num_=1;//number of threads used for integration solver
     bool enable_eigen_weight_control_=false;    //enable the explicit weight control
 
     double last_initial_weight_=1.5;//useful when explicit weight control enabled
@@ -234,6 +238,7 @@ private:
     bool isload_object_eigen_ = false;
     bool isload_correspondence_data_ = false;
     bool isload_cubica_ = false;
+    bool isload_LB_cubica_ = false;
     bool isload_example_cubica_ = false;
     bool enable_example_simulation_ = false;
     bool enable_save_objmesh_ = false;
@@ -280,7 +285,8 @@ private:
     unsigned int output_file_index_ = 0;
     ConfigFile config_file_;
     //reuced simulation
-    SceneObjectReducedCPU *render_reduced_surface_mesh_=NULL;
+    SceneObjectReduced *render_reduced_surface_mesh_=NULL;
+    SceneObjectReducedCPU *render_reduced_surface_mesh_cpu_=NULL;
     // ReducedForceModel *reduced_force_model_=NULL;
     // ReducedNeoHookeanForceModel *reduced_neoHookean_force_model_=NULL;
     int r_ = 0;

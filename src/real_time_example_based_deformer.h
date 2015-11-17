@@ -41,7 +41,8 @@ public:
     bool loadExampleEigenFunctions(const std::string &file_name_prefix);//.eigen
     bool loadPlanesInScene(const std::string &file_name, unsigned int plane_num);
     bool loadFixedVertices(const std::string &file_name);
-    bool loadObjectCubicaData(const std::string &file_name);//tetID : 0-indexed
+    bool loadObjectCubicaData(const std::string &file_name);//tetID : 1-indexed
+    bool loadObjectLBCubicaData(const std::string &file_name);//tetID : 1-indexed
     // bool loadObjectMass(const std::string &file_name);
     bool loadMassmatrix(const std::string &file_name);
     //bool loadExampleCubicaData(const std::string &file_name_prefix);
@@ -73,8 +74,8 @@ public:
     void setInterpolateEigenfunctionNum(int num) {interpolate_eigenfunction_num_=num;}
     unsigned int correspondingFunctionNum() const{return corresponding_function_num_;}
     const Planes* planesInScnene() const {return planes_;}
-    unsigned int fixedVertexNum() const{return fixed_vertex_num_;}
-    unsigned int* fixedVertexPtr() const{return fixed_vertices_;}
+    int fixedVertexNum() const{return fixed_vertex_num_;}
+    int* fixedVertexPtr() const{return fixed_vertices_;}
     VolumetricMesh* simulationMesh() const{return simulation_mesh_;}
     VolumetricMesh* exampleMesh(unsigned int example_idx) const;
     const SceneObjectDeformable* visualMesh() const{return visual_mesh_;}
@@ -118,14 +119,16 @@ public:
     //registration of eigenfunctions
     bool loadCorrespondenceData(const std::string &file_name);//the vertex is 1-indexed;
     bool registerEigenfunctions();
-
+private:
     void initDisplacementMatrixOnElement(VolumetricMesh *mesh);
     //project && unproject with eigenfunctions
     void projectOnEigenFunctions(VolumetricMesh *mesh, double *displacement, double *vertex_volume,
-                                 double **eigenfunctions, double *eigenvalues, unsigned int eigenfunction_num,
-                                 Vec3d *eigencoefs);
+                                double **eigenfunctions, double *eigenvalues, unsigned int eigenfunction_num,
+                                Vec3d *eigencoefs);
+    void projectReducedSubspaceOnLBSubspace(double *reduced_dis, Vec3d *eigencoefs);
+    void projectLBSubspaceOnReducedShpae(Vec3d *eigencoefs, double *reduced_dis);
     void reconstructFromEigenCoefs(double **eigenfunctions,double *eigenvalues,Vec3d *eigencoefs,Vec3d *target_eigencoefs,
-                                 const int &eigenfunction_num,const int &input_reconstruct_eigenfunction_num,const int &vert_num, double *vert_pos);
+                                    const int &eigenfunction_num,const int &input_reconstruct_eigenfunction_num,const int &vert_num, double *vert_pos);
     void projectOnExampleManifold(Vec3d *object_eigencoefs, Vec3d *target_eigencoefs);
     static void evaluateObjectiveAndGradient1(const real_1d_array &x, double &func, real_1d_array &grad, void *ptr);
     static void evaluateObjectiveAndGradient2(const real_1d_array &x,double &func, real_1d_array &grad, void *ptr);
@@ -137,14 +140,14 @@ public:
     //the last two parameters is to identify the energy we solved is for example mesh deformation or object deformation
     void computeReducedEnergy(const Vec3d *reduced_dis,double &energy) const;
     void computeReducedInternalForce(const Vec3d *reduced_dis,double *forces) const;
-    void computeReducedStiffnessMatrix(const Vec3d *reduced_dis,Matrix<double> &reduced_K) const;
+//    void computeReducedStiffnessMatrix(const Vec3d *reduced_dis,Matrix<double> &reduced_K) const;
     void testEnergyGradients();
     void testObjectiveGradients();
-    void test();
-private:
+
+
     void fullspaceSimulation(double *full_drag_force);
     void reducedspaceSimulation(double *reduced_drag_force);
-    void preComputeForReducedSimulation();
+    // void preComputeForReducedSimulation();
     Matrix<double> vertexSubBasis(const int &vert_idx) const;//3*r
     Matrix<double> tetSubBasis(const int &ele) const;//12*r
     Mat3d computeDs(const double *reduced_dis) const;
@@ -160,6 +163,7 @@ private:
     void projectOnSubBasis(VolumetricMesh *mesh,
                            double **eigenfunctions, unsigned int eigenfunction_num,
                            Vec3d *eigencoefs);
+
 private:
     static RealTimeExampleBasedDeformer *active_instance_;
     // double **mass_ = NULL;
@@ -187,8 +191,8 @@ private:
     double epsilon_=1.0e-12;
     double integrator_epsilon_=1.0e-6;
     double last_initial_weight_=1.5;//useful when explicit weight control enable
-    unsigned int fixed_vertex_num_ = 0;
-    unsigned int *fixed_vertices_ = NULL;
+    int fixed_vertex_num_ = 0;
+    int *fixed_vertices_ = NULL;
     bool enable_eigen_weight_control_=false;
     bool pure_example_linear_interpolation_=false;
     double principal_stretch_threshold_=-DBL_MAX;
@@ -214,10 +218,14 @@ private:
     unsigned int r_ = 0;
     double **reduced_basis_ = NULL;
     double *reduced_basis_values_ = NULL;
-    //cubica data
+    //cubica data for reduced simulation
     unsigned int object_cubica_ele_num_ = 0;
     unsigned int *object_cubica_elements_ = NULL;
     double *object_cubica_weights_ = NULL;
+    //cubica data for LB space:eigenfunctions
+    unsigned int object_LB_cubica_ele_num_ = 0;
+    unsigned int *object_LB_cubica_elements_ = NULL;
+    double *object_LB_cubica_weights_ = NULL;
     //eigenfunction data
     double **object_eigenfunctions_ = NULL;
     double *object_eigenvalues_ = NULL;
@@ -242,7 +250,7 @@ private:
     //planes in scene, for contact
     Planes *planes_ = NULL;
     unsigned int plane_num_ = 0;
-    bool isPreComputeReducedData_=true;
+    // bool isPreComputeReducedData_=true;
     bool isload_cubica_ = false;
     bool isload_reduced_basis_ = false;
     //material

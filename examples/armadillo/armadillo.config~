@@ -65,11 +65,12 @@ armadillo.cubature
 
 *reducedBasisFilename
 #armadillo-modal.basis
-#nonlinear-65.txt
+nonlinear-65.txt
 #nonlinear-60.txt
 #armadillo.basis
 #rigid.txt
-nonlinear.txt
+#nonlinear.txt
+#fixed_linear.txt
 #1.txt
 
 *massMatrixFilename
