@@ -1,14 +1,14 @@
 *simulationType
-#fullspace
-reducedspace
+fullspace
+#reducedspace
 
 *solver
 #implicitBackwardEuler
-#implicitNewmark
+implicitNewmark
 #Euler
 #centralDifferences
 #reducedCentralDifferences
-reducedImplicitNewmark
+#reducedImplicitNewmark
 #reducedImplicitBackwardEuler
 
 #*deformableModel
@@ -61,17 +61,12 @@ output/a
 *isLoadCubica
 true
 *objectCubicaFilename
-armadillo.cubature
+#linear50.cubature
+linear50-un.cubature
 
 *reducedBasisFilename
-#armadillo-modal.basis
-nonlinear-65.txt
-#nonlinear-60.txt
-#armadillo.basis
-#rigid.txt
-#nonlinear.txt
-#fixed_linear.txt
-#1.txt
+#linear50.txt
+linear50-un.txt
 
 *massMatrixFilename
 armadillo.mass
@@ -81,10 +76,10 @@ armadillo.mass
 #*exampleAffectedVerticesFilenameBase
 
 #*fixedVerticesFilename
-#armadillo.bou
+#new-fixed.bou
 
 *planeNumber
-0
+1
 *planesFilename
 planes.config
 
@@ -105,10 +100,10 @@ false
 0.98
 
 *dampingMassCoef
-0.0
+0.01
 
 *dampingStiffnessCoef
-0.0
+0.015
 
 *exampleStiffnessScale
 0.01

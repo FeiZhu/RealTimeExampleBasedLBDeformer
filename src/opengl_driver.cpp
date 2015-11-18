@@ -255,7 +255,7 @@ void OpenGLDriver::initGLUI()
     glui_object_surface_eigenfunctions_loaded_=glui_->add_statictext_to_panel(eigen_panel,static_text_content.c_str());
     glui_->add_button_to_panel(eigen_panel,"Load Eigenfunctions for Simulation Object Surface",1,loadObjectEigenfunctions);
     glui_->add_separator_to_panel(eigen_panel);
-    glui_->add_button_to_panel(eigen_panel,"Load reduced Basis",0,loadReducedBasis);
+    //glui_->add_button_to_panel(eigen_panel,"Load reduced Basis",0,loadReducedBasis);
     static_text_content.clear();
     static_text_content="Rendering eigenfunctions enable:No";
     glui_rendering_eigenfunctions_enabled_=glui_->add_statictext_to_panel(eigen_panel,static_text_content.c_str());
@@ -439,11 +439,15 @@ void OpenGLDriver::initSimulation()
         if(strcmp(fixed_vertex_file_name_,"none")==0)
         {
             std::cout<<"Error: no fixed vertices file name specified.\n";
-            exit(1);
+        //    exit(1);
         }
-        if(simulator_->loadFixedVertices(fixed_vertex_file_name_))
+        else
         {
-            std::cout<<"load fixed vertices succeed.\n";
+            std::cout<<"load fixed vertex file:\n";
+            if(simulator_->loadFixedVertices(fixed_vertex_file_name_))
+            {
+                std::cout<<"load fixed vertices succeed.\n";
+            }
         }
     }
     //load example volumetric meshes
@@ -572,10 +576,10 @@ void OpenGLDriver::displayFunction()
         glEnable(GL_LIGHTING);
     }
     //render eigenfunction
-     if(active_instance->render_eigenfunction_)
-     {
-        active_instance->drawIndexColorTable();//draw color table at left bottom corner of the window
-     }
+    //  if(active_instance->render_eigenfunction_)
+    //  {
+    //     active_instance->drawIndexColorTable();//draw color table at left bottom corner of the window
+    //  }
 
     //render extra objects
     if(active_instance->extra_objects_num_>0)//render the extra objects in sceneObjectDeformable
@@ -920,7 +924,7 @@ void OpenGLDriver::idleFunction()
             if(active_instance->plane_num_>0)
         	{
         		active_instance->planes_->resolveContact(active_instance->render_reduced_surface_mesh_->GetMesh(),active_instance->f_col_);
-                for(int i=0;i<active_instance->simulation_vertices_num_;++i)
+                for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
                     active_instance->f_ext_[i]+=active_instance->f_col_[i];
                 active_instance->simulator_->getModalmatrix()->ProjectVector(active_instance->f_ext_,active_instance->fq_);
         	}
@@ -929,13 +933,22 @@ void OpenGLDriver::idleFunction()
         	// PerformanceCounter counter;
             // counter.StartCounter();
             active_instance->simulator_->setExternalForces(active_instance->fq_);
+            for(int i=0;i<active_instance->render_reduced_surface_mesh_->GetMesh()->getNumVertices();++i)
+                for(int j=0;j<3;++j)
+                    active_instance->u_[3*i+j]=(active_instance->render_reduced_surface_mesh_->GetMesh()->getPosition(i))[j]
+                                                -(*active_instance->simulation_mesh_->getVertex(i))[j];
+            // for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
+            // if(active_instance->u_[i]>1.0e-6)
+            // std::cout<<active_instance->u_[0]<<",........";
+            // active_instance->simulator_->setu(active_instance->u_);
+            // active_instance->simulator_->setReducedSimulationMesh(active_instance->render_reduced_surface_mesh_);
             // counter.StopCounter();
             // std::cout<<"simulation time for setexternal forces:"<<counter.GetElapsedTime()<<"\n";
-        	PerformanceCounter counter1;
-            counter1.StartCounter();
+        	// PerformanceCounter counter1;
+            // counter1.StartCounter();
             active_instance->simulator_->advanceStep();
-            counter1.StopCounter();
-            std::cout<<"simulation time for each step"<<counter1.GetElapsedTime()<<"\n";
+            // counter1.StopCounter();
+            // std::cout<<"simulation time for each step"<<counter1.GetElapsedTime()<<"\n";
         }
         else
         {
@@ -1007,6 +1020,16 @@ void OpenGLDriver::idleFunction()
                 for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
                     active_instance->f_ext_[i]+=active_instance->force_loads_[ELT(3*active_instance->simulation_vertices_num_,i,active_instance->time_step_counter_)];
             }
+            //plane--
+            // std::cout<<"-------------------\n";
+            if(active_instance->plane_num_>0)
+        	{
+        		active_instance->planes_->resolveContact(active_instance->render_surface_mesh_->GetMesh(),active_instance->f_col_);
+                for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
+                    active_instance->f_ext_[i]+=active_instance->f_col_[i];
+
+        	}
+            // std::cout<<"-------------------end\n";
             active_instance->simulator_->setExternalForces(active_instance->f_ext_);
             active_instance->simulator_->advanceStep();
         }
@@ -1014,9 +1037,9 @@ void OpenGLDriver::idleFunction()
     }
     each_frame_performance_counter.StopCounter();
     each_frame_time=each_frame_performance_counter.GetElapsedTime();
-    std::cout<<"..................:"<<each_frame_time<<"\n";
+    // std::cout<<"..................:"<<each_frame_time<<"\n";
     if(each_frame_time>0)
-        active_instance->fps_=1000.0/each_frame_time;
+        active_instance->fps_=1.0/each_frame_time;
     else
         active_instance->fps_=0.0;
     PerformanceCounter counter3;
@@ -1026,25 +1049,14 @@ void OpenGLDriver::idleFunction()
 
         if(active_instance->simulation_mode_==REDUCEDSPACE)
         {
-                // PerformanceCounter counter2;
-                // counter2.StartCounter();
-            active_instance->render_reduced_surface_mesh_->Setq(active_instance->simulator_->Getq());
-                    // counter2.StopCounter();
-                    // std::cout<<"simulation time for project and set q"<<counter2.GetElapsedTime()<<"\n";
-                            // PerformanceCounter counter22;
-                            // counter22.StartCounter();
+            active_instance->render_reduced_surface_mesh_->Setq(active_instance->simulator_->getq());
             active_instance->render_reduced_surface_mesh_->Compute_uUq();
-                    // counter22.StopCounter();
-                    // std::cout<<"simulation time for project and compute u"<<counter22.GetElapsedTime()<<"\n";
-                            // PerformanceCounter counter222;
-                            // counter222.StartCounter();
             active_instance->render_reduced_surface_mesh_->Getu(active_instance->u_);
-                    // counter222.StopCounter();
-                    // std::cout<<"simulation time for project and get u"<<counter222.GetElapsedTime()<<"\n";
+            // active_instance->u_=active_instance->simulator_->getu();
         }
         else
         {
-            active_instance->u_=active_instance->simulator_->Getu();
+            active_instance->u_=active_instance->simulator_->getu();
         }
 
 
@@ -1055,7 +1067,7 @@ void OpenGLDriver::idleFunction()
 
         active_instance->visual_mesh_->SetVertexDeformations(active_instance->u_render_surface_);
         counter3.StopCounter();
-        std::cout<<"simulation time for interpolate u_surface:"<<counter3.GetElapsedTime()<<"\n";
+        // std::cout<<"simulation time for interpolate u_surface:"<<counter3.GetElapsedTime()<<"\n";
         if(active_instance->simulation_mode_==FULLSPACE)
                 active_instance->render_surface_mesh_->SetVertexDeformations(active_instance->u_render_surface_);
 

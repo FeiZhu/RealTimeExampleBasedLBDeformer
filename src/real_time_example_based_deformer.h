@@ -91,8 +91,9 @@ public:
     unsigned int* objectCubicaElements() const{return object_cubica_elements_;}
     double* objectCubicaWeights() const{return object_cubica_weights_;}
     ModalMatrix* getModalmatrix() const{return modal_matrix_;}
-    double* Getq(){return q_;}
-    double* Getu(){return u_;}
+    double* getq(){return q_;}
+    double* getu(){return u_;}
+    void setu(double *u){u_=u;}
     enum SimulationMode{
         FULLSPACE,
         REDUCEDSPACE
@@ -114,7 +115,7 @@ public:
     void setEnableEigenWeightControl(bool enable_value){enable_eigen_weight_control_=enable_value;}
     void setExternalForces(double *ext_forces);
     void setGravity(bool add_gravity,double gravity);
-
+    // void setReducedSimulationMesh(SceneObjectReduced *mesh){reduced_simulation_mesh_=mesh};
 
     //registration of eigenfunctions
     bool loadCorrespondenceData(const std::string &file_name);//the vertex is 1-indexed;
@@ -236,7 +237,12 @@ private:
     //shapes in LB shape space
     Vec3d *object_eigencoefs_ = NULL;
     Vec3d **example_eigencoefs_ = NULL;
+    Vec3d *object_current_eigencoefs_ = NULL;
     Vec3d *target_eigencoefs_ = NULL;
+    double *example_guided_deformation_ = NULL;
+    double *example_based_LB_forces_ = NULL;
+    double *example_based_forces_ = NULL;
+    double *example_based_fq_ = NULL;
     //total volume and per-vertex volume
     double object_volume_ = 0;
     double *object_vertex_volume_ = NULL;
@@ -293,7 +299,8 @@ private:
     ModalMatrix *modal_matrix_ = NULL;
     double *U_ = NULL;
     double *reduced_drag_force_=NULL;
-
+    // SceneObjectReduced *reduced_simulation_mesh_=NULL;
+    // SceneObjectReducedCPU *reduced_simulation_mesh_cpu_=NULL;
 };
 
 } //namespace RTLB
