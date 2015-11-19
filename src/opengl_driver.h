@@ -293,6 +293,7 @@ private:
     double *q_ = NULL;
     double *fq_ = NULL;
     double *fqBase_ = NULL;
+    double *fq_plane_ = NULL;
     bool reduced_simulation_ = false;
     // double *reduced_force_loads_ = NULL;
 };

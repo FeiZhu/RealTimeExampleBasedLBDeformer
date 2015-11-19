@@ -93,7 +93,7 @@ public:
     ModalMatrix* getModalmatrix() const{return modal_matrix_;}
     double* getq(){return q_;}
     double* getu(){return u_;}
-    void setu(double *u){u_=u;}
+    void setu(double *u);
     enum SimulationMode{
         FULLSPACE,
         REDUCEDSPACE
@@ -110,22 +110,27 @@ public:
         UNKNOWN
     };
     SolverType solver_type_ = UNKNOWN;
-    void setSimulationType(std::string simulation_type){simulation_type_=simulation_type.c_str();std::cout<<simulation_type_<<"...\n";}
+    void setSimulationType(const std::string &simulation_type);
     void setSolverType(std::string solver){solver_method_=solver;std::cout<<solver_method_<<".. aaaaaaaaaaaaaaaa.\n";}
     void setEnableEigenWeightControl(bool enable_value){enable_eigen_weight_control_=enable_value;}
     void setExternalForces(double *ext_forces);
+    void setReducedExternalForces(double *ext_forces);
     void setGravity(bool add_gravity,double gravity);
     // void setReducedSimulationMesh(SceneObjectReduced *mesh){reduced_simulation_mesh_=mesh};
 
     //registration of eigenfunctions
     bool loadCorrespondenceData(const std::string &file_name);//the vertex is 1-indexed;
     bool registerEigenfunctions();
-private:
-    void initDisplacementMatrixOnElement(VolumetricMesh *mesh);
-    //project && unproject with eigenfunctions
+    void testEnergyGradients();
+    void testObjectiveGradients();
     void projectOnEigenFunctions(VolumetricMesh *mesh, double *displacement, double *vertex_volume,
                                 double **eigenfunctions, double *eigenvalues, unsigned int eigenfunction_num,
                                 Vec3d *eigencoefs);
+    void reconstructFromEigenCoefs(Vec3d *target_eigencoefs,double *vert_pos);
+private:
+    void initDisplacementMatrixOnElement(VolumetricMesh *mesh);
+    //project && unproject with eigenfunctions
+
     void projectReducedSubspaceOnLBSubspace(double *reduced_dis, Vec3d *eigencoefs);
     void projectLBSubspaceOnReducedShpae(Vec3d *eigencoefs, double *reduced_dis);
     void reconstructFromEigenCoefs(double **eigenfunctions,double *eigenvalues,Vec3d *eigencoefs,Vec3d *target_eigencoefs,
@@ -141,13 +146,11 @@ private:
     //the last two parameters is to identify the energy we solved is for example mesh deformation or object deformation
     void computeReducedEnergy(const Vec3d *reduced_dis,double &energy) const;
     void computeReducedInternalForce(const Vec3d *reduced_dis,double *forces) const;
-//    void computeReducedStiffnessMatrix(const Vec3d *reduced_dis,Matrix<double> &reduced_K) const;
-    void testEnergyGradients();
-    void testObjectiveGradients();
+   void computeReducedStiffnessMatrix(const Vec3d *reduced_dis,Matrix<double> &reduced_K) const;
 
 
-    void fullspaceSimulation(double *full_drag_force);
-    void reducedspaceSimulation(double *reduced_drag_force);
+    void fullspaceSimulation();
+    void reducedspaceSimulation();
     // void preComputeForReducedSimulation();
     Matrix<double> vertexSubBasis(const int &vert_idx) const;//3*r
     Matrix<double> tetSubBasis(const int &ele) const;//12*r
@@ -287,9 +290,10 @@ private:
     double *vel_initial_=NULL;
     double *f_ext_=NULL;
     double *f_col_=NULL;
-    double *full_drag_force_=NULL;
+    // double *full_drag_force_=NULL;
     //used for reduced cubica element Computation
     double **restpos_;//compute rest position for cubica elements
+    double **LB_restpos_;//compute rest position for LB_cubica elements
     double *q_=NULL;
     double *qvel_=NULL;
     double *fq_=NULL;
@@ -298,7 +302,7 @@ private:
     double *reduced_mass_matrix_ = NULL;
     ModalMatrix *modal_matrix_ = NULL;
     double *U_ = NULL;
-    double *reduced_drag_force_=NULL;
+    // double *reduced_drag_force_=NULL;
     // SceneObjectReduced *reduced_simulation_mesh_=NULL;
     // SceneObjectReducedCPU *reduced_simulation_mesh_cpu_=NULL;
 };

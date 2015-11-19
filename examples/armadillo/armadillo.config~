@@ -22,7 +22,7 @@ implicitNewmark
 0.6
 
 *simulationMeshFilename
-armadillo.veg
+new-armadillo.veg
 
 *objectRenderSurfaceMeshFilename
 armadillo.obj
@@ -57,6 +57,9 @@ new-armadillo.eigen
 *saveObjMeshFilenameBase
 output/a
 
+*reducedBasisFilename
+#linear50.txt
+linear50-un.txt
 
 *isLoadCubica
 true
@@ -64,9 +67,10 @@ true
 #linear50.cubature
 linear50-un.cubature
 
-*reducedBasisFilename
-#linear50.txt
-linear50-un.txt
+*isLoadLBCubica
+true
+*objectLBCubicaFilename
+armadillo-LB-cubica.cubature
 
 *massMatrixFilename
 armadillo.mass
@@ -117,7 +121,7 @@ false
 1.0e-6
 
 *deformableObjectCompliance
-3000.0
+300.0
 
 #*maxIterations
 

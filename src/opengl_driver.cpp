@@ -382,6 +382,8 @@ void OpenGLDriver::initSimulation()
     memset(fq_,0.0,sizeof(double)*r_);
     fqBase_= new double[r_];
     memset(fqBase_,0.0,sizeof(double)*r_);
+    fq_plane_=new double[r_];
+    memset(fq_plane_,0.0,sizeof(double)*r_);
 
     //load mass matrix
     if(strcmp(mass_matrix_file_name_,"none")==0)
@@ -646,24 +648,24 @@ void OpenGLDriver::displayFunction()
             {
                 glDisable(GL_LIGHTING);
                 glColor3f(0.0,0.5,0.0);
-                // active_instance->render_volumetric_mesh_->RenderDeformation(active_instance->simulation_mesh_,active_instance->u_);
-                active_instance->render_volumetric_mesh_->Render(active_instance->simulation_mesh_);
+                active_instance->render_volumetric_mesh_->RenderDeformation(active_instance->simulation_mesh_,active_instance->u_);
+                // active_instance->render_volumetric_mesh_->Render(active_instance->simulation_mesh_);
                 if(active_instance->render_vertices_)
                 {
                     glDisable(GL_LIGHTING);
                     glColor3f(0.5,0.0,0.0);
                     glPointSize(8.0);
-                    // for(int i=0;i<active_instance->simulation_vertices_num_;++i)
-                    //     active_instance->render_volumetric_mesh_->RenderVertexDeformed(active_instance->simulation_mesh_,i,active_instance->u_);
-                    active_instance->render_volumetric_mesh_->RenderVertices(active_instance->simulation_mesh_);
+                    for(int i=0;i<active_instance->simulation_vertices_num_;++i)
+                        active_instance->render_volumetric_mesh_->RenderVertexDeformed(active_instance->simulation_mesh_,i,active_instance->u_);
+                    // active_instance->render_volumetric_mesh_->RenderVertices(active_instance->simulation_mesh_);
                     glEnable(GL_LIGHTING);
                 }
                 if(active_instance->render_wireframe_)
                 {
                     glDisable(GL_LIGHTING);
                     glColor3f(0.0,0.0,0.0);
-                    // active_instance->render_volumetric_mesh_->RenderSolidAndWireframeDeformation(active_instance->simulation_mesh_,active_instance->u_);
-                    active_instance->render_volumetric_mesh_->RenderWireframe(active_instance->simulation_mesh_);
+                    active_instance->render_volumetric_mesh_->RenderSolidAndWireframeDeformation(active_instance->simulation_mesh_,active_instance->u_);
+                    // active_instance->render_volumetric_mesh_->RenderWireframe(active_instance->simulation_mesh_);
                     glEnable(GL_LIGHTING);
                 }
                 glDisable(GL_BLEND);
@@ -905,43 +907,51 @@ void OpenGLDriver::idleFunction()
                     double external_force[3];
                     active_instance->camera_->CameraVector2WorldVector_OrientationOnly3D(force_x,force_y,0,external_force);
 
-                    // std::cout<<"external_force:"<<active_instance->pulled_vertex_<<","<<external_force[0]<<","<<external_force[1]<<","<<external_force[2]<<std::endl;
-                    // std::cout<<"a:"<<active_instance->simulator_->getModalmatrix()->Getr()<<"\n";
+                    std::cout<<"external_force:"<<active_instance->pulled_vertex_<<","<<external_force[0]<<","<<external_force[1]<<","<<external_force[2]<<std::endl;
+
                     active_instance->simulator_->getModalmatrix()->ProjectSingleVertex(active_instance->pulled_vertex_,external_force[0],
                                 external_force[1],external_force[2],active_instance->fq_);
-                    //  std::cout<<active_instance->deformable_object_compliance_<<"\n";
+
                     for(int i=0;i<active_instance->r_;++i)
                     {
                         active_instance->fq_[i] = active_instance->fqBase_[i] + active_instance->deformable_object_compliance_ * active_instance->fq_[i];
+                        // std::cout<<"....."<<active_instance->fq_[i]<<",";
                     }
                 }
             }
-            else
-            {
-                memcpy(active_instance->fq_,active_instance->fqBase_,sizeof(double)*active_instance->r_);
-            }
+            // else
+            // {
+            //     memcpy(active_instance->fq_,active_instance->fqBase_,sizeof(double)*active_instance->r_);
+            // }
             //plane--
             if(active_instance->plane_num_>0)
         	{
         		active_instance->planes_->resolveContact(active_instance->render_reduced_surface_mesh_->GetMesh(),active_instance->f_col_);
                 for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
-                    active_instance->f_ext_[i]+=active_instance->f_col_[i];
-                active_instance->simulator_->getModalmatrix()->ProjectVector(active_instance->f_ext_,active_instance->fq_);
-        	}
+                    active_instance->f_ext_[i]=active_instance->f_col_[i];
+                active_instance->simulator_->getModalmatrix()->ProjectVector(active_instance->f_ext_,active_instance->fq_plane_);
+                for(int i=0;i<active_instance->r_;++i)
+                    active_instance->fq_[i]+=active_instance->fq_plane_[i];
+            }
             //apply force loads for reduced space from external file---not done yet
 
         	// PerformanceCounter counter;
             // counter.StartCounter();
-            active_instance->simulator_->setExternalForces(active_instance->fq_);
+            active_instance->simulator_->setReducedExternalForces(active_instance->fq_);
+            // std::cout<<active_instance->render_reduced_surface_mesh_->GetMesh()->getNumVertices()<<",,,;";
+            //
+            // getchar();
             for(int i=0;i<active_instance->render_reduced_surface_mesh_->GetMesh()->getNumVertices();++i)
                 for(int j=0;j<3;++j)
                     active_instance->u_[3*i+j]=(active_instance->render_reduced_surface_mesh_->GetMesh()->getPosition(i))[j]
                                                 -(*active_instance->simulation_mesh_->getVertex(i))[j];
-            // for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
-            // if(active_instance->u_[i]>1.0e-6)
-            // std::cout<<active_instance->u_[0]<<",........";
-            // active_instance->simulator_->setu(active_instance->u_);
-            // active_instance->simulator_->setReducedSimulationMesh(active_instance->render_reduced_surface_mesh_);
+            // for(int i=0;i<3*active_instance->simulation_mesh_->getNumVertices();++i)
+            //     {
+            //
+            //         if(active_instance->u_[i]>1.0e-6)
+                    // std::cout<<active_instance->u_[0]<<","<<active_instance->u_[1]<<","<<active_instance->u_[2]<<"\n";
+                // }
+            active_instance->simulator_->setu(active_instance->u_);
             // counter.StopCounter();
             // std::cout<<"simulation time for setexternal forces:"<<counter.GetElapsedTime()<<"\n";
         	// PerformanceCounter counter1;
@@ -1021,7 +1031,6 @@ void OpenGLDriver::idleFunction()
                     active_instance->f_ext_[i]+=active_instance->force_loads_[ELT(3*active_instance->simulation_vertices_num_,i,active_instance->time_step_counter_)];
             }
             //plane--
-            // std::cout<<"-------------------\n";
             if(active_instance->plane_num_>0)
         	{
         		active_instance->planes_->resolveContact(active_instance->render_surface_mesh_->GetMesh(),active_instance->f_col_);
@@ -1029,15 +1038,26 @@ void OpenGLDriver::idleFunction()
                     active_instance->f_ext_[i]+=active_instance->f_col_[i];
 
         	}
-            // std::cout<<"-------------------end\n";
             active_instance->simulator_->setExternalForces(active_instance->f_ext_);
+            // for(int i=0;i<active_instance->simulation_mesh_->getNumVertices();++i)
+            //     for(int j=0;j<3;++j)
+            //     {
+            //         active_instance->u_[3*i+j]=(active_instance->render_surface_mesh_->GetMesh()->getPosition(i))[j]
+            //                                     -(*active_instance->simulation_mesh_->getVertex(i))[j];
+            //         if(active_instance->u_[3*i+j]>1.0e-6)
+            //         std::cout<<active_instance->u_[3*i+j]<<",";
+            //     }
+            //     for(int i=0;i<3*active_instance->simulation_mesh_->getNumVertices();++i)
+            //     if(active_instance->u_[i]>1.0e-6)
+            //     std::cout<<active_instance->u_[i]<<",";
+            //
+            // active_instance->simulator_->setu(active_instance->u_);
             active_instance->simulator_->advanceStep();
         }
 
     }
     each_frame_performance_counter.StopCounter();
     each_frame_time=each_frame_performance_counter.GetElapsedTime();
-    // std::cout<<"..................:"<<each_frame_time<<"\n";
     if(each_frame_time>0)
         active_instance->fps_=1.0/each_frame_time;
     else
@@ -1052,7 +1072,6 @@ void OpenGLDriver::idleFunction()
             active_instance->render_reduced_surface_mesh_->Setq(active_instance->simulator_->getq());
             active_instance->render_reduced_surface_mesh_->Compute_uUq();
             active_instance->render_reduced_surface_mesh_->Getu(active_instance->u_);
-            // active_instance->u_=active_instance->simulator_->getu();
         }
         else
         {
@@ -1068,8 +1087,8 @@ void OpenGLDriver::idleFunction()
         active_instance->visual_mesh_->SetVertexDeformations(active_instance->u_render_surface_);
         counter3.StopCounter();
         // std::cout<<"simulation time for interpolate u_surface:"<<counter3.GetElapsedTime()<<"\n";
-        if(active_instance->simulation_mode_==FULLSPACE)
-                active_instance->render_surface_mesh_->SetVertexDeformations(active_instance->u_render_surface_);
+        // if(active_instance->simulation_mode_==FULLSPACE)
+        //         active_instance->render_surface_mesh_->SetVertexDeformations(active_instance->u_render_surface_);
 
     }
     //save object surface mesh to files--not done yet
@@ -1255,13 +1274,15 @@ void OpenGLDriver::mouseFunction(int button, int state, int x, int y)
                     //the pulled vertex is on the exterior surface of the volumetric mesh
                     //virtual int GetClosestVertex(Vec3d & queryPos, double * distance=NULL, double * auxVertexBuffer=NULL);
                     //get pulled_vertex_ index for simulation mesh
-                    if(active_instance->simulation_mode_==REDUCEDSPACE)
-                    // if(active_instance->isrender_surface_mesh_)
-                        active_instance->pulled_vertex_=active_instance->render_reduced_surface_mesh_->GetClosestVertex(pos);
-                    else
-                        active_instance->pulled_vertex_=active_instance->render_surface_mesh_->GetClosestVertex(pos);
-                    // if(active_instance->isrender_volumetric_mesh_)
-                        // active_instance->pulled_vertex_=active_instance->simulation_mesh_->getClosestVertex(pos);
+                    if(active_instance->isrender_surface_mesh_)
+                    {
+                        if(active_instance->simulation_mode_==REDUCEDSPACE)                    //
+                            active_instance->pulled_vertex_=active_instance->render_reduced_surface_mesh_->GetClosestVertex(pos);
+                        else
+                            active_instance->pulled_vertex_=active_instance->render_surface_mesh_->GetClosestVertex(pos);
+                    }
+                    if(active_instance->isrender_volumetric_mesh_)
+                        active_instance->pulled_vertex_=active_instance->simulation_mesh_->getClosestVertex(pos);
                     std::cout<<"Clicked on vertex "<<active_instance->pulled_vertex_<<" (0-indexed)\n";
                 }
                 else
@@ -1455,13 +1476,13 @@ void OpenGLDriver::loadExampleEigenfunctions(int code)
 void OpenGLDriver::saveExampleEigenfunctions(int code)
 {
     //TO DO
-    // OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
-    // assert(active_instance);
-    // if(!active_instance->simulator_->saveExampleEigenfunctions(active_instance->output_eigen_file_name_prefix_));
-    // {
-    //     std::cout<<"Error: failed to save example eigenfunctions.\n";
-    //     return;
-    // }
+    OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
+    assert(active_instance);
+    if(!active_instance->simulator_->saveExampleEigenfunctions(active_instance->output_eigen_file_name_prefix_));
+    {
+        std::cout<<"Error: failed to save example eigenfunctions.\n";
+        return;
+    }
 
 }
 void OpenGLDriver::saveCurrentObjmesh(int code)
