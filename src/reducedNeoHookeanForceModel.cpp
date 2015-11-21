@@ -350,8 +350,8 @@ Mat3d ReducedNeoHookeanForceModel::computeP_gradient(const int &ele,const Mat3d 
 void ReducedNeoHookeanForceModel::computeReducedInternalForce(const double *q,double *forces) const
 {//q:r*1
 
-	PerformanceCounter counter2;
-	counter2.StartCounter();
+	// PerformanceCounter counter2;
+	// counter2.StartCounter();
 	memset(forces,0.0,sizeof(double)*r_);
     double total_time=0.0,other_total_time=0.0,F_time=0.0,assemble_f=0.0;
     // std::cout<<"q:\n";
@@ -417,7 +417,7 @@ void ReducedNeoHookeanForceModel::computeReducedInternalForce(const double *q,do
             // std::cout<<forces[i]<<",";
         }
         // std::cout<<"\n";
-        counter2.StopCounter();
+        // counter2.StopCounter();
         // std::cout<<"computef F_time:"<<F_time<<"\n";
         // std::cout<<"f:assemble_f:"<<assemble_f<<"\n";
         // std::cout<<"computef other_total_time:"<<other_total_time<<"\n";

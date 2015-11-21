@@ -1,14 +1,14 @@
 *simulationType
-fullspace
-#reducedspace
+#fullspace
+reducedspace
 
 *solver
 #implicitBackwardEuler
-implicitNewmark
+#implicitNewmark
 #Euler
 #centralDifferences
 #reducedCentralDifferences
-#reducedImplicitNewmark
+reducedImplicitNewmark
 #reducedImplicitBackwardEuler
 
 #*deformableModel
@@ -41,17 +41,17 @@ ex
 *exampleNum
 2
 *interpolateEigenfunctionNum
-8
+7
 *reconstructEigenfunctionNum
-20
+100
 *exampleEigenFunctionFilenameBase
-new-ex
+new-ex100-
 *objectEigenFunctionFilename
-armadillo.eigen
+new-armadillo100.eigen
 *correspondingFunctionFilename
 armadillo.ini
 *savedExampleEigenFunctionFilenameBase
-new-ex
+new-ex100-
 *savedObjectEigenFunctionFilename
 new-armadillo.eigen
 *saveObjMeshFilenameBase
@@ -70,7 +70,7 @@ linear50-un.cubature
 *isLoadLBCubica
 true
 *objectLBCubicaFilename
-armadillo-LB-cubica.cubature
+armadillo_LB100.cubature
 
 *massMatrixFilename
 armadillo.mass
@@ -102,7 +102,6 @@ false
 
 *gravity
 0.98
-
 *dampingMassCoef
 0.01
 

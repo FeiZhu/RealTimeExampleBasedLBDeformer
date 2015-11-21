@@ -127,6 +127,7 @@ public:
                                 double **eigenfunctions, double *eigenvalues, unsigned int eigenfunction_num,
                                 Vec3d *eigencoefs);
     void reconstructFromEigenCoefs(Vec3d *target_eigencoefs,double *vert_pos);
+    void saveReconstructMesh(double *vert_pos);
 private:
     void initDisplacementMatrixOnElement(VolumetricMesh *mesh);
     //project && unproject with eigenfunctions
@@ -245,6 +246,7 @@ private:
     double *example_guided_deformation_ = NULL;
     double *example_based_LB_forces_ = NULL;
     double *example_based_forces_ = NULL;
+    double *example_based_q_ = NULL;
     double *example_based_fq_ = NULL;
     //total volume and per-vertex volume
     double object_volume_ = 0;
@@ -261,7 +263,9 @@ private:
     unsigned int plane_num_ = 0;
     // bool isPreComputeReducedData_=true;
     bool isload_cubica_ = false;
+    bool isload_LB_cubica_ = false;
     bool isload_reduced_basis_ = false;
+    double **LB_object_eigenfunctions_ = NULL;
     //material
     double mu_=0.0;
     double lamda_=0.0;
