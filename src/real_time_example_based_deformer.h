@@ -147,7 +147,7 @@ private:
     //the last two parameters is to identify the energy we solved is for example mesh deformation or object deformation
     void computeReducedEnergy(const Vec3d *reduced_dis,double &energy) const;
     void computeReducedInternalForce(const Vec3d *reduced_dis,double *forces) const;
-   void computeReducedStiffnessMatrix(const Vec3d *reduced_dis,Matrix<double> &reduced_K) const;
+    void computeReducedStiffnessMatrix(const Vec3d *reduced_dis,Matrix<double> &reduced_K) const;
 
 
     void fullspaceSimulation();
@@ -243,6 +243,8 @@ private:
     Vec3d **example_eigencoefs_ = NULL;
     Vec3d *object_current_eigencoefs_ = NULL;
     Vec3d *target_eigencoefs_ = NULL;
+    Vec3d *target_eigencoefs_diff_ = NULL;
+    double *target_deformation_ = NULL;
     double *example_guided_deformation_ = NULL;
     double *example_based_LB_forces_ = NULL;
     double *example_based_forces_ = NULL;

@@ -1,14 +1,11 @@
 *simulationType
-#fullspace
-reducedspace
+fullspace
+#reducedspace
 
 *solver
 #implicitBackwardEuler
-#implicitNewmark
-#Euler
-#centralDifferences
-#reducedCentralDifferences
-reducedImplicitNewmark
+implicitNewmark
+#reducedImplicitNewmark
 #reducedImplicitBackwardEuler
 
 #*deformableModel

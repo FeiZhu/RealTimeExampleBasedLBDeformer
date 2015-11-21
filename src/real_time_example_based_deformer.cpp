@@ -372,10 +372,14 @@ void RealTimeExampleBasedDeformer::setupSimulation()
 	//initial for example simulation
 	target_eigencoefs_=new Vec3d[interpolate_eigenfunction_num_];
 	memset(target_eigencoefs_,0.0,sizeof(Vec3d)*interpolate_eigenfunction_num_);
+	target_eigencoefs_diff_=new Vec3d[interpolate_eigenfunction_num_];
+	memset(target_eigencoefs_diff_,0.0,sizeof(Vec3d)*interpolate_eigenfunction_num_);
 	object_current_eigencoefs_ = new Vec3d[interpolate_eigenfunction_num_];
 	memset(object_current_eigencoefs_,0.0,sizeof(Vec3d)*interpolate_eigenfunction_num_);
 	example_guided_deformation_ = new double[3*simulation_vertices_num_];
 	memset(example_guided_deformation_,0.0,sizeof(double)*3*simulation_vertices_num_);
+	target_deformation_ = new double[3*simulation_vertices_num_];
+	memset(target_deformation_,0.0,sizeof(double)*3*simulation_vertices_num_);
 	example_based_LB_forces_ = new double[3*interpolate_eigenfunction_num_];
 	memset(example_based_LB_forces_,0.0,sizeof(double)*3*interpolate_eigenfunction_num_);
 	example_based_forces_ = new double[3*simulation_vertices_num_];
@@ -436,7 +440,7 @@ void RealTimeExampleBasedDeformer::fullspaceSimulation()
 		//find target shape for simulation object
 		projectOnExampleManifold(object_current_eigencoefs_,target_eigencoefs_);
 		for(int i=0;i<interpolate_eigenfunction_num_;++i)
-			target_eigencoefs_[i]=target_eigencoefs_[i]-object_eigencoefs_[i];
+			target_eigencoefs_[i]=object_current_eigencoefs_[i]-target_eigencoefs_[i];
 		reconstructFromEigenCoefs(target_eigencoefs_,example_guided_deformation_);
 
 		//explicit force;
@@ -444,7 +448,7 @@ void RealTimeExampleBasedDeformer::fullspaceSimulation()
 		// VolumetricMesh::ENuMaterial *enu_material=downcastENuMaterial(material);
 		// double new_E=1.0*enu_material->getE();
 		for(int i=0;i<3*simulation_vertices_num_;++i)
-			f_ext_[i]+=100.0*example_guided_deformation_[i];
+			f_ext_[i]-=100.0*example_guided_deformation_[i];
 	}
 	//apply the penalty collision forces with planes in scene
 	// if(plane_num_>0)
@@ -469,7 +473,6 @@ void RealTimeExampleBasedDeformer::fullspaceSimulation()
 }
 void RealTimeExampleBasedDeformer::reducedspaceSimulation()
 {
-	// memcpy(f_ext_,full_drag_force_,sizeof(double)*3*simulation_vertices_num_);
 	//apply any scripted force loads for reduced space ---not done yet
 	// if(time_step_counter_<force_loads_num_)
 	// {
@@ -493,52 +496,24 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulation()
 		//find target shape for simulation object
 		projectOnExampleManifold(object_current_eigencoefs_,target_eigencoefs_);
 		for(int i=0;i<interpolate_eigenfunction_num_;++i)
-			target_eigencoefs_[i]=target_eigencoefs_[i]-object_eigencoefs_[i];
-		// computeReducedInternalForce(target_eigencoefs_,example_based_LB_forces_);//get 3mx1 LB subspace example-based forces
-		// Vec3d *temp_forces=new Vec3d[interpolate_eigenfunction_num_];
-		// for(int i=0;i<interpolate_eigenfunction_num_;++i)
-		// 	for(int j=0;j<3;++j)
-		// 	{
-		// 		temp_forces[i][j]=example_based_LB_forces_[3*i+j]*0.01;
-		// 		std::cout<<temp_forces[i][j]<<",";
-		// 	}
+		{
+			target_eigencoefs_diff_[i]=target_eigencoefs_[i]-object_eigencoefs_[i];
+			target_eigencoefs_[i]=object_current_eigencoefs_[i]-target_eigencoefs_[i];
+		}
+
 		reconstructFromEigenCoefs(target_eigencoefs_,example_guided_deformation_);
+		reconstructFromEigenCoefs(target_eigencoefs_diff_,target_deformation_);
 
-		for(int i=0;i<3*simulation_vertices_num_;++i)
-			f_ext_[i]=100.0*example_guided_deformation_[i];
-		 modal_matrix_->ProjectVector(f_ext_,example_based_fq_);
-
-		// modal_matrix_->ProjectVector(example_guided_deformation_,example_based_q_);
-		// reduced_neoHookean_force_model_->computeReducedInternalForce(example_based_q_,example_based_fq_);
+		modal_matrix_->ProjectVector(example_guided_deformation_,example_based_q_);
+		reduced_neoHookean_force_model_->computeReducedElasticInternalForce(example_based_q_,example_based_fq_,target_deformation_);
 		for(int i=0;i<r_;++i)
-			fq_[i]+=example_based_fq_[i];
-		//begins
-		// computeReducedInternalForce(target_eigencoefs_,example_based_LB_forces_);//get 3mx1 LB subspace example-based forces
-		// Vec3d *temp_forces=new Vec3d[interpolate_eigenfunction_num_];
-		// for(int i=0;i<interpolate_eigenfunction_num_;++i)
-		// 	for(int j=0;j<3;++j)
-		// 	{
-		// 		temp_forces[i][j]=example_based_LB_forces_[3*i+j];
-		// 		std::cout<<temp_forces[i][j]<<",";
-		// 	}
-		// 	std::cout<<"\n";
-		// 	std::cout<<"A\n";
-		// reconstructFromEigenCoefs(temp_forces,example_based_forces_);//3mx1->3nx1
-		// delete[] temp_forces;
-		// std::cout<<example_based_forces_[0]<<","<<example_based_forces_[1]<<","<<example_based_forces_[2]<<",\n";
-		// std::cout<<"\n";
-		// modal_matrix_->ProjectVector(example_based_forces_,example_based_fq_);
-		//end
-
-
-		// VolumetricMesh::Material *material=simulation_mesh_->getMaterial(0);
-		// VolumetricMesh::ENuMaterial *enu_material=downcastENuMaterial(material);
-		// // std::cout<<"2";
-		// double new_E=1.0*enu_material->getE();
+			fq_[i]-=50.0*example_based_fq_[i];
+		//linear force
 		// for(int i=0;i<3*simulation_vertices_num_;++i)
-		// 	f_ext_[i]=100*example_guided_deformation_[i];
-		// modal_matrix_->ProjectVector(example_based_forces_,f_ext_);
-		// model_matrix_->ProjectVector()
+		// 	f_ext_[i]=example_guided_deformation_[i];
+		// modal_matrix_->ProjectVector(f_ext_,example_based_fq_);
+		// for(int i=0;i<r_;++i)
+		// 	fq_[i]-=100.0*example_based_fq_[i];
 	}
 	//apply the penalty collision forces with planes in scene in reduced space
 	// if(plane_num_>0)
@@ -1843,7 +1818,7 @@ void RealTimeExampleBasedDeformer::projectOnExampleManifold(Vec3d *input_eigenco
 	//bool initial_weight_in_range = (target_weights[0]>lower_bound)&&(target_weights[0]<upper_bound);
 	enable_eigen_weight_control_=true;
 
-	std::cout<<"....target_weights:"<<target_weights[0]<<"......"<<target_weights[1]<<"\n";
+	// std::cout<<"....target_weights:"<<target_weights[0]<<"......"<<target_weights[1]<<"\n";
 	if(enable_eigen_weight_control_&&example_num_>1)
 	{
 		double bias_factor=0.85; //different biases are used for different simulationMesh
@@ -1871,8 +1846,8 @@ void RealTimeExampleBasedDeformer::projectOnExampleManifold(Vec3d *input_eigenco
 
 	// counter1.StopCounter();
 	// std::cout<<"elapseTime:"<<counter1.GetElapsedTime()<<"\n";
-	// PerformanceCounter counter2;
-	// counter2.StartCounter();
+	PerformanceCounter counter2;
+	counter2.StartCounter();
 	//alternative step2
 	if(pure_example_linear_interpolation_)
 	{
@@ -1910,8 +1885,8 @@ void RealTimeExampleBasedDeformer::projectOnExampleManifold(Vec3d *input_eigenco
 		cout<<target_weights[i]<<",";
 	cout<<"\n";
 
-			// counter2.StopCounter();
-			// std::cout<<"step2:elapseTime:"<<counter2.GetElapsedTime()<<"\n";
+	counter2.StopCounter();
+	std::cout<<"step2:elapseTime:"<<counter2.GetElapsedTime()<<"\n";
 	//	counter3.StopCounter();
 	// for(int i=0;i<interpolate_eigenfunction_num_;++i)
 	// 	std::cout<<projected_eigencoefs[i]<<"\n";

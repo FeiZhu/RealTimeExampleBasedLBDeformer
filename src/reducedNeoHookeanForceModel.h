@@ -33,6 +33,7 @@ public:
     void testEnergyGradients();
     void testObjectiveGradients();
     void computeReducedInternalForce(const double *q,double *forces) const;
+    void computeReducedElasticInternalForce(const double *q,double *forces,const double *u) const;
 protected:
     void InitGravity(double *U); //aux function
     Matrix<double> vertexSubBasis(const int &vert_idx) const;//3*r
@@ -45,6 +46,10 @@ protected:
     Mat3d computeP_gradient(const int &ele,const Mat3d &F,const int &vert_idx,const int &vert_idx_dim) const;
     //void computeReducedEnergy(const double *q,double &energy) const;
     void computeReducedStiffnessMatrix(const double *q,double *reduced_K/*Matrix<double> &reduced_K*/) const;
+
+    //used for example-based elastic energy
+    Mat3d computeElasticDmInv(const int &ele,const double *u) const;
+    Mat3d computeReducedElasticF(const int &cubica_idx,const double *q,const double *u) const;
 
 
 protected:

@@ -515,6 +515,98 @@ void ReducedNeoHookeanForceModel::computeReducedStiffnessMatrix(const double *q,
     // // std::cout<<"computeK--multi matrix:"<<total_time<<"\n";
     // std::cout<<"computeK--for all cubica elements:"<<counter1.GetElapsedTime()<<"\n";
 }
+Mat3d ReducedNeoHookeanForceModel::computeElasticDmInv(const int &ele,const double *u) const
+{//3x3
+	int *global_idx=new int[4];
+	Vec3d *vert_pos=new Vec3d[4];
+	for(int j=0;j<4;++j)
+	{
+		global_idx[j]=volumetric_mesh_->getVertexIndex(ele,j);
+        for(int i=0;i<3;++i)
+		    vert_pos[j][i]=(*volumetric_mesh_->getVertex(global_idx[j]))[i]+u[3*j+i];
+	}
+	Mat3d Dm(0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0);
+	for(int i=0;i<3;++i)
+	{
+		Dm[i][0]=vert_pos[0][i]-vert_pos[3][i];
+		Dm[i][1]=vert_pos[1][i]-vert_pos[3][i];
+		Dm[i][2]=vert_pos[2][i]-vert_pos[3][i];
+	}
+	Mat3d DmInv=inv(Dm);
+	delete[] global_idx;
+	delete[] vert_pos;
+	return DmInv;
+}
+Mat3d ReducedNeoHookeanForceModel::computeReducedElasticF(const int &cubica_idx,const double *q,const double *u) const
+{
+    int ele=cubica_elements_[cubica_idx];
+    // std::cout<<"cubica_idx:"<<cubica_idx<<"ele:"<<ele<<"\n";
+    // std::cout<<"ele:"<<ele<<"\n";
+    Matrix<double> reduced_dis_matrix((int)r_,1);//rx1
+	for(int i=0;i<r_;++i)
+	{
+		reduced_dis_matrix(i,0)=q[i];
+	}
+	//compute displacement x=X+Uq
+	double *deformed=new double[12];
+	memset(deformed,0.0,sizeof(double)*12);
+    Matrix<double> subU=tetSubBasis(ele);//12xr
+    Matrix<double> temp=subU*reduced_dis_matrix;//12xr,rx1->12x1
+    // std::cout<<"x:\n";
+	for(int j=0;j<12;++j)
+	{
+		deformed[j]=restpos_[cubica_idx][j]+u[j]+temp(j,0);
+	}
+    // std::cout<<"\n";
+	Mat3d F=computeDs(deformed)*computeElasticDmInv(ele,u);//F for each ele
+	delete[] deformed;
+    return F;
+}
+void ReducedNeoHookeanForceModel::computeReducedElasticInternalForce(const double *q,double *forces,const double *u) const
+{//q:r*1
+
+	// PerformanceCounter counter2;
+	// counter2.StartCounter();
+	memset(forces,0.0,sizeof(double)*r_);
+    double total_time=0.0,other_total_time=0.0,F_time=0.0,assemble_f=0.0;
+    // std::cout<<"q:\n";
+    // for(int i=0;i<r_;++i)
+    //     std::cout<<q[i]<<",";
+    // std::cout<<"\n";
+	for(int cubica_idx=0;cubica_idx<cubica_num_;++cubica_idx)
+	{
+		int ele=cubica_elements_[cubica_idx];
+        double *temp_u=new double[12];
+        for(int i=0;i<4;++i)
+        {
+            int vertID=volumetric_mesh_->getVertexIndex(ele,i);
+            for(int j=0;j<3;++j)
+            {
+                temp_u[3*i+j]=u[3*vertID+j];
+            }
+        }
+    	Mat3d F=computeReducedElasticF(cubica_idx,q,temp_u);
+		Mat3d P=firstPiolaKirchhoff(F);
+        Mat3d temp=P*trans(computeElasticDmInv(ele,temp_u));
+		Matrix<double> ele_force(12,1);
+		for(int i=0;i<4;++i)
+		{
+			for(int j=0;j<3;++j)
+			{
+				if(i==3)
+					ele_force(3*i+j,0)=(-1.0)*(temp[j][0]+temp[j][1]+temp[j][2]);
+				else
+					ele_force(3*i+j,0)=temp[j][i];
+			}
+		}
+		Matrix<double> subU=tetSubBasis(ele);//12xr
+        Matrix<double> g=Transpose(subU)*ele_force;//rx1
+		for(int i=0;i<r_;++i)
+			forces[i] += cubica_weights_[cubica_idx]*g(i,0);
+
+        delete[] temp_u;
+	}
+}
 void ReducedNeoHookeanForceModel::testEnergyGradients()
 {
     // double *x=new double[r_];
