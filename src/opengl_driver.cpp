@@ -892,6 +892,9 @@ void OpenGLDriver::idleFunction()
         // active_instance->simulator_->testObjectiveGradients();
         // getchar();
         // std::cout<<"-------------"<<active_instance->simulation_mode_<<"----------\n";
+
+                	PerformanceCounter counter1;
+                    counter1.StartCounter();
         if(active_instance->simulation_mode_==REDUCEDSPACE)
         {
            //reset external forces
@@ -935,8 +938,6 @@ void OpenGLDriver::idleFunction()
             }
             //apply force loads for reduced space from external file---not done yet
 
-        	// PerformanceCounter counter;
-            // counter.StartCounter();
             active_instance->simulator_->setReducedExternalForces(active_instance->fq_);
             // std::cout<<active_instance->render_reduced_surface_mesh_->GetMesh()->getNumVertices()<<",,,;";
             //
@@ -952,13 +953,7 @@ void OpenGLDriver::idleFunction()
                     // std::cout<<active_instance->u_[0]<<","<<active_instance->u_[1]<<","<<active_instance->u_[2]<<"\n";
                 // }
             active_instance->simulator_->setu(active_instance->u_);
-            // counter.StopCounter();
-            // std::cout<<"simulation time for setexternal forces:"<<counter.GetElapsedTime()<<"\n";
-        	// PerformanceCounter counter1;
-            // counter1.StartCounter();
             active_instance->simulator_->advanceStep();
-            // counter1.StopCounter();
-            // std::cout<<"simulation time for each step"<<counter1.GetElapsedTime()<<"\n";
         }
         else
         {
@@ -1055,15 +1050,11 @@ void OpenGLDriver::idleFunction()
             active_instance->simulator_->advanceStep();
         }
 
+        counter1.StopCounter();
+        std::cout<<"simulation time for each step"<<counter1.GetElapsedTime()<<"\n";
     }
-    each_frame_performance_counter.StopCounter();
-    each_frame_time=each_frame_performance_counter.GetElapsedTime();
-    if(each_frame_time>0)
-        active_instance->fps_=1.0/each_frame_time;
-    else
-        active_instance->fps_=0.0;
-    PerformanceCounter counter3;
-    counter3.StartCounter();
+    // PerformanceCounter counter3;
+    // counter3.StartCounter();
     if(active_instance->render_mesh_type_==VISUAL_MESH)
     {
 
@@ -1085,12 +1076,20 @@ void OpenGLDriver::idleFunction()
                                     active_instance->object_interpolation_weights_);
 
         active_instance->visual_mesh_->SetVertexDeformations(active_instance->u_render_surface_);
-        counter3.StopCounter();
+        // counter3.StopCounter();
         // std::cout<<"simulation time for interpolate u_surface:"<<counter3.GetElapsedTime()<<"\n";
         // if(active_instance->simulation_mode_==FULLSPACE)
         //         active_instance->render_surface_mesh_->SetVertexDeformations(active_instance->u_render_surface_);
 
     }
+
+    each_frame_performance_counter.StopCounter();
+    each_frame_time=each_frame_performance_counter.GetElapsedTime();
+    if(each_frame_time>0)
+        active_instance->fps_=1.0/each_frame_time;
+    else
+        active_instance->fps_=0.0;
+    std::cout<<"TTTTotal time:"<<each_frame_time<<"\n";
     //save object surface mesh to files--not done yet
     if((!active_instance->pause_simulation_)&&(active_instance->enable_save_objmesh_)&&(active_instance->time_step_counter_))
         active_instance->saveCurrentObjmesh(0);

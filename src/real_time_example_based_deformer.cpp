@@ -151,7 +151,6 @@ void RealTimeExampleBasedDeformer::setu(double *u)
 void RealTimeExampleBasedDeformer::setupSimulation()
 {
 	//full space
-
 	if(!simulation_mesh_)
 	{
 		std::cout<<"simulation mesh is null.\n";
@@ -388,6 +387,15 @@ void RealTimeExampleBasedDeformer::setupSimulation()
 	memset(example_based_q_,0.0,sizeof(double)*r_);
 	example_based_fq_ = new double[r_];
 	memset(example_based_fq_,0.0,sizeof(double)*r_);
+
+
+	// std::cout<<"reduced:testEnergyGradients:\n";
+	// reduced_neoHookean_force_model_->testEnergyGradients();
+	// getchar();
+	// std::cout<<"testInternalForceGradients:\n";
+	// reduced_neoHookean_force_model_->testObjectiveGradients();
+	// std::cout<<"testInternalForceGradients-end:\n";
+	// getchar();
 }
 
 void RealTimeExampleBasedDeformer::advanceStep()
@@ -399,24 +407,12 @@ void RealTimeExampleBasedDeformer::advanceStep()
 }
 void RealTimeExampleBasedDeformer::setExternalForces(double *ext_forces)
 {
-	// std::cout<<"setExternalForces:\n";
-	// PerformanceCounter counter;
-    // counter.StartCounter();
-	// for(int i=0;i<3*simulation_mesh_->getNumVertices();++i)
-	// 	full_drag_force_[i]=ext_forces[i];
 	memcpy(f_ext_,ext_forces,sizeof(double)*3*simulation_mesh_->getNumVertices());
-    // counter.StopCounter();
-    // std::cout<<"simulation time for setexternal forces:"<<counter.GetElapsedTime()<<"\n";
 }
 
 void RealTimeExampleBasedDeformer::setReducedExternalForces(double *ext_forces)
 {
-	// std::cout<<"setExternalForces:\n";
-	// PerformanceCounter counter;
-    // counter.StartCounter();
 	memcpy(fq_,ext_forces,sizeof(double)*r_);
-    // counter.StopCounter();
-    // std::cout<<"simulation time for setexternal forces:"<<counter.GetElapsedTime()<<"\n";
 }
 void RealTimeExampleBasedDeformer::fullspaceSimulation()
 {
@@ -448,7 +444,7 @@ void RealTimeExampleBasedDeformer::fullspaceSimulation()
 		// VolumetricMesh::ENuMaterial *enu_material=downcastENuMaterial(material);
 		// double new_E=1.0*enu_material->getE();
 		for(int i=0;i<3*simulation_vertices_num_;++i)
-			f_ext_[i]-=100.0*example_guided_deformation_[i];
+			f_ext_[i]-=30.0*example_guided_deformation_[i];
 	}
 	//apply the penalty collision forces with planes in scene
 	// if(plane_num_>0)
@@ -487,33 +483,67 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulation()
 	{
 		//project 3nx1 reduced subspace on mx3 LB subspace
 		//first: project rx1 reduced displacement to
+
+
+		PerformanceCounter counter3;
+		counter3.StartCounter();
 		projectOnEigenFunctions(simulation_mesh_,u_,object_vertex_volume_,object_eigenfunctions_,object_eigenvalues_,
 								interpolate_eigenfunction_num_,object_current_eigencoefs_);
+		counter3.StopCounter();
+		std::cout<<"project on eigenfunctions:"<<counter3.GetElapsedTime()<<"\n";
 
 		for(int i=0;i<interpolate_eigenfunction_num_;++i)
 			object_current_eigencoefs_[i]=object_current_eigencoefs_[i]-object_eigencoefs_[i]+example_eigencoefs_[0][i];
 		memcpy(target_eigencoefs_,object_current_eigencoefs_,sizeof(Vec3d)*interpolate_eigenfunction_num_);
+
+		PerformanceCounter counter31;
+		counter31.StartCounter();
 		//find target shape for simulation object
 		projectOnExampleManifold(object_current_eigencoefs_,target_eigencoefs_);
+		counter31.StopCounter();
+		std::cout<<"find target_eigencoefs:"<<counter31.GetElapsedTime()<<"\n";
+		// for(int i=0;i<interpolate_eigenfunction_num_;++i)
+		// 	std::cout<<target_eigencoefs_[i]<<",\n";
 		for(int i=0;i<interpolate_eigenfunction_num_;++i)
 		{
 			target_eigencoefs_diff_[i]=target_eigencoefs_[i]-object_eigencoefs_[i];
 			target_eigencoefs_[i]=object_current_eigencoefs_[i]-target_eigencoefs_[i];
+
 		}
 
-		reconstructFromEigenCoefs(target_eigencoefs_,example_guided_deformation_);
-		reconstructFromEigenCoefs(target_eigencoefs_diff_,target_deformation_);
+		PerformanceCounter counter32;
+		counter32.StartCounter();
+		reconstructFromEigenCoefs(target_eigencoefs_diff_,target_deformation_,0);//reference+target_deformation=target configuration
+		reconstructFromEigenCoefs(target_eigencoefs_,example_guided_deformation_,1);
+		counter32.StopCounter();
+		std::cout<<"reconstruct 2 shapes:"<<counter32.GetElapsedTime()<<"\n";
 
+		PerformanceCounter counter33;
+		counter33.StartCounter();
 		modal_matrix_->ProjectVector(example_guided_deformation_,example_based_q_);
+		counter33.StopCounter();
+		std::cout<<"project on reduced simulation:"<<counter33.GetElapsedTime()<<"\n";
+
+
+		PerformanceCounter counter34;
+		counter34.StartCounter();
 		reduced_neoHookean_force_model_->computeReducedElasticInternalForce(example_based_q_,example_based_fq_,target_deformation_);
+		counter34.StopCounter();
+		std::cout<<"compute reduced elastic internal forces:"<<counter34.GetElapsedTime()<<"\n";
+
 		for(int i=0;i<r_;++i)
-			fq_[i]-=50.0*example_based_fq_[i];
+			fq_[i]-=0.05*example_based_fq_[i];
+		//test.................
+		// reconsturctFromEigenCoefs(target_eigencoefs_diff_,target_deformation_);
+		// modal_matrix_->ProjectVector(target_deformation_,target_q_);
+		// reduced_neoHookean_force_model_->computeReducedInternalForce(target_q_,example_based_fq_);
+		//....test
 		//linear force
 		// for(int i=0;i<3*simulation_vertices_num_;++i)
-		// 	f_ext_[i]=example_guided_deformation_[i];
+		// 	f_ext_[i]=(-100.0)*example_guided_deformation_[i];
 		// modal_matrix_->ProjectVector(f_ext_,example_based_fq_);
 		// for(int i=0;i<r_;++i)
-		// 	fq_[i]-=100.0*example_based_fq_[i];
+		// 	fq_[i]+=example_based_fq_[i];
 	}
 	//apply the penalty collision forces with planes in scene in reduced space
 	// if(plane_num_>0)
@@ -523,16 +553,20 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulation()
 	// 	for(int i=0;i<r_;++i)
 	// 		fq_[i]+=0;
 	// }
+	PerformanceCounter counter1;
+	counter1.StartCounter();
 	integrator_base_dense_->SetExternalForces(fq_);
 
+	counter1.StopCounter();
+	std::cout<<"integrator f_ext:"<<counter1.GetElapsedTime()<<"\n";
 	// if(time_step_counter_ < active_instance->total_steps_)
 	// {
 	PerformanceCounter counter2;
 	counter2.StartCounter();
 		int code=integrator_base_dense_->DoTimestep();
 		std::cout<<".";fflush(NULL);
-		counter2.StopCounter();
-		// std::cout<<"integrator DoTimestep:"<<counter2.GetElapsedTime()<<"\n";
+	counter2.StopCounter();
+	std::cout<<"integrator DoTimestep:"<<counter2.GetElapsedTime()<<"\n";
 		// ++time_step_counter_;
 	// }
 	memcpy(q_,integrator_base_->Getq(),sizeof(double)*r_);
@@ -765,6 +799,7 @@ bool RealTimeExampleBasedDeformer::loadReducedBasis(const std::string &file_name
 	// 		reduced_basis_[i][j]/=sum;
 	// }
 	isload_reduced_basis_ = true;
+
     return true;
 }
 //format:.eigencoef
@@ -1652,24 +1687,7 @@ void RealTimeExampleBasedDeformer::projectOnEigenFunctions(VolumetricMesh *mesh,
 		}
 	}
 }
-//project rx1 to mx3,r:reduced basis num, m:interpolation eigenfunction num
-void RealTimeExampleBasedDeformer::projectReducedSubspaceOnLBSubspace(double *reduced_dis, Vec3d *eigencoefs)
-{
-	// for(unsigned int i=0;i<interpolate_eigenfunction_num_;++i)
-	// {
-	// 	for(unsigned int j=0;j<3;++j)
-	// 		eigencoefs[i][dim]=reduced_dis[i];
-	// }
-}
-//project mx3 to rx1;
-void RealTimeExampleBasedDeformer::projectLBSubspaceOnReducedShpae(Vec3d *eigencoefs,double *reduced_dis)
-{
-	// memset(reduced_dis,0.0,sizeof(double)*r_);
-	// for(unsigned int i=0;i<interpolate_eigenfunction_num_;++i)
-	// {
-	//
-	// }
-}
+
 //input:m*1 eigencoefs (m:eigenfunction_num)
 //output:3n*1 Euclidean pos (n:volumetricMesh vertices num)
 //reconstruct step just used for simulation object and contains two steps
@@ -1701,7 +1719,7 @@ void RealTimeExampleBasedDeformer::projectLBSubspaceOnReducedShpae(Vec3d *eigenc
 // 	}
 //
 // }
-void RealTimeExampleBasedDeformer::reconstructFromEigenCoefs(Vec3d *target_eigencoefs,double *vert_pos)
+void RealTimeExampleBasedDeformer::reconstructFromEigenCoefs(Vec3d *target_eigencoefs,double *vert_pos,int flag)
 {
 	// for(int i=0;i<interpolate_eigenfunction_num_;++i)
 	// std::cout<<reconstruct_eigenfunction_num_<<"\n";
@@ -1724,7 +1742,8 @@ void RealTimeExampleBasedDeformer::reconstructFromEigenCoefs(Vec3d *target_eigen
 		// 	vert_pos[3*vert_idx+2]+=object_eigencoefs_[i][2]*object_eigenfunctions_[i][vert_idx]*scale_factor;
 		// }
 	}
-	// saveReconstructMesh(vert_pos);
+	// if(flag==1)
+	// 	saveReconstructMesh(vert_pos);
 }
 void RealTimeExampleBasedDeformer::saveReconstructMesh(double *new_pos)
 {
@@ -1746,9 +1765,9 @@ void RealTimeExampleBasedDeformer::saveReconstructMesh(double *new_pos)
 	for(unsigned int i=0;i<simulation_mesh_->getNumVertices();++i)
 	{
 		Vec3d pos;
-		pos[0]=(*simulation_mesh_->getVertex(i))[0]+new_pos[3*i];
-		pos[1]=(*simulation_mesh_->getVertex(i))[1]+new_pos[3*i+1];
-		pos[2]=(*simulation_mesh_->getVertex(i))[2]+new_pos[3*i+2];
+		pos[0]=(*simulation_mesh_->getVertex(i))[0]+target_deformation_[3*i]+new_pos[3*i+0];
+		pos[1]=(*simulation_mesh_->getVertex(i))[1]+target_deformation_[3*i+1]+new_pos[3*i+1];
+		pos[2]=(*simulation_mesh_->getVertex(i))[2]+target_deformation_[3*i+2]+new_pos[3*i+2];
 		output_file<<i+1<<" "<<pos[0]<<" "<<pos[1]<<" "<<pos[2]<<" "<<std::endl;
 	}
 	output_file<<"*ELEMENTS"<<std::endl;
@@ -1791,9 +1810,9 @@ void RealTimeExampleBasedDeformer::projectOnExampleManifold(Vec3d *input_eigenco
 	equality_constraint.setcontent(1,example_num_+1,temp_buffer);
 	integer_1d_array constraint_type="[0]";
 	//stop conditions
-	double epsg=integrator_epsilon_*0.1;
-	double epsf=integrator_epsilon_*0.1;
-	double epsx=integrator_epsilon_*0.1;
+	double epsg=integrator_epsilon_;
+	double epsf=integrator_epsilon_;
+	double epsx=integrator_epsilon_;
 	ae_int_t max_iterations= 1000;
 	//start solving
 	minbleicstate state;
@@ -1846,8 +1865,13 @@ void RealTimeExampleBasedDeformer::projectOnExampleManifold(Vec3d *input_eigenco
 
 	// counter1.StopCounter();
 	// std::cout<<"elapseTime:"<<counter1.GetElapsedTime()<<"\n";
-	PerformanceCounter counter2;
-	counter2.StartCounter();
+	// target_weights[0]=0.0;
+	// target_weights[1]=1.0;
+	// for(int i=0;i<interpolate_eigenfunction_num_;++i)
+	// 	for(int j=0;j<3;++j)
+	// 		projected_eigencoefs[i][j]=example_eigencoefs_[1][i][j];
+	// PerformanceCounter counter2;
+	// counter2.StartCounter();
 	//alternative step2
 	if(pure_example_linear_interpolation_)
 	{
@@ -1863,7 +1887,7 @@ void RealTimeExampleBasedDeformer::projectOnExampleManifold(Vec3d *input_eigenco
 		real_1d_array new_eigencoefs;
 		mincgstate new_state;
 		mincgreport new_report;
-		max_iterations=100;
+		max_iterations=1000;
 		//epsg=integrator_epsilon_*0.0001;
 		new_eigencoefs.setcontent(3*interpolate_eigenfunction_num_,temp_buffer);
 		mincgcreate(new_eigencoefs,new_state);
@@ -1871,7 +1895,7 @@ void RealTimeExampleBasedDeformer::projectOnExampleManifold(Vec3d *input_eigenco
 		mincgoptimize(new_state,evaluateObjectiveAndGradient2,NULL,(void*)input_data);
 		mincgresults(new_state,new_eigencoefs,new_report);
 		//print some information about the solver if needed
-		cout<<"Step2 converged in "<<new_report.iterationscount<<" iterations. Terminatin type of the solver: "<<new_report.terminationtype<<".\n";
+		cout<<"Step2 converged in "<<new_report.iterationscount<<" iterations. Termination type of the solver: "<<new_report.terminationtype<<".\n";
 
 		delete[] temp_buffer;
 		delete[] input_data;
@@ -1885,9 +1909,9 @@ void RealTimeExampleBasedDeformer::projectOnExampleManifold(Vec3d *input_eigenco
 		cout<<target_weights[i]<<",";
 	cout<<"\n";
 
-	counter2.StopCounter();
-	std::cout<<"step2:elapseTime:"<<counter2.GetElapsedTime()<<"\n";
-	//	counter3.StopCounter();
+	// counter2.StopCounter();
+	// std::cout<<"step2:elapseTime:"<<counter2.GetElapsedTime()<<"\n";
+		// counter2.StopCounter();
 	// for(int i=0;i<interpolate_eigenfunction_num_;++i)
 	// 	std::cout<<projected_eigencoefs[i]<<"\n";
 
@@ -2227,54 +2251,54 @@ void RealTimeExampleBasedDeformer::computeReducedInternalForce(const Vec3d *redu
 	// p_counter.StopCounter();
 	// std::cout<<"compute internal force:"<<p_counter.GetElapsedTime()<<"\n";
 }
-void RealTimeExampleBasedDeformer::computeReducedStiffnessMatrix(const Vec3d *reduced_dis,Matrix<double> &reduced_K) const
-{
-	// std::cout<<".................begin............\n";
-	// for(int i=0;i<interpolate_eigenfunction_num_;++i)
-	// 	for(int j=0;j<interpolate_eigenfunction_num_;++j)
-	// 		std::cout<<reduced_K(i,j)<<"..";
-	// 		std::cout<<"....end\n";
-	Matrix<double> K((int)interpolate_eigenfunction_num_,(int)interpolate_eigenfunction_num_);
-	for(int cubica_idx=0;cubica_idx<object_LB_cubica_ele_num_;++cubica_idx)
-	{
-		int ele=object_LB_cubica_elements_[cubica_idx];
-		Matrix<double> subU=tetSubBasis(ele);//12*r
-		Matrix<double> ele_K(12,12);
-		//Mat3d F=F_[cubica_idx];
-		Mat3d F=computeF(cubica_idx,reduced_dis);
-		Mat3d DmInv=computeDmInv(ele);
-		for(int i=0;i<4;++i)
-		{
-			vector<Mat3d> g_derivative(3);//computes dg/dx_j^0,dg/dx_j^1,dg/dx_j^2
-			g_derivative.clear();
-			for(int j=0;j<3;++j)
-			{
-                g_derivative[j].set(0.0);
-				g_derivative[j]=computeP_gradient(ele,F,i,j)*trans(DmInv);
-			}
-
-			//computes df0/dx_j,df1/dx_j,df2/dx_j,df3/dx_j
-			for(int j=0;j<4;++j)
-			{
-				Matrix<double> f_derivative(3,3);
-				for(int row=0;row<3;++row)
-				{
-					for(int col=0;col<3;++col)
-					{
-						if(j==3)
-							f_derivative(row,col)=(-1.0)*(g_derivative[row][col][0]+g_derivative[row][col][1]+g_derivative[row][col][2]);
-						else
-							f_derivative(row,col)=g_derivative[row][col][j];
-						ele_K(3*i+row,3*j+col)=f_derivative(row,col);
-					}
-				}
-			}
-		}
-		// std::cout<<"```````````````K```````````````:\n";
-		K+=object_LB_cubica_weights_[cubica_idx]*Transpose(subU)*ele_K*subU;
-	}
-	reduced_K=K;
-}
+// void RealTimeExampleBasedDeformer::computeReducedStiffnessMatrix(const Vec3d *reduced_dis,Matrix<double> &reduced_K) const
+// {
+// 	// std::cout<<".................begin............\n";
+// 	// for(int i=0;i<interpolate_eigenfunction_num_;++i)
+// 	// 	for(int j=0;j<interpolate_eigenfunction_num_;++j)
+// 	// 		std::cout<<reduced_K(i,j)<<"..";
+// 	// 		std::cout<<"....end\n";
+// 	Matrix<double> K((int)interpolate_eigenfunction_num_,(int)interpolate_eigenfunction_num_);
+// 	for(int cubica_idx=0;cubica_idx<object_LB_cubica_ele_num_;++cubica_idx)
+// 	{
+// 		int ele=object_LB_cubica_elements_[cubica_idx];
+// 		Matrix<double> subU=tetSubBasis(ele);//12*r
+// 		Matrix<double> ele_K(12,12);
+// 		//Mat3d F=F_[cubica_idx];
+// 		Mat3d F=computeF(cubica_idx,reduced_dis);
+// 		Mat3d DmInv=computeDmInv(ele);
+// 		for(int i=0;i<4;++i)
+// 		{
+// 			vector<Mat3d> g_derivative(3);//computes dg/dx_j^0,dg/dx_j^1,dg/dx_j^2
+// 			g_derivative.clear();
+// 			for(int j=0;j<3;++j)
+// 			{
+//                 g_derivative[j].set(0.0);
+// 				g_derivative[j]=computeP_gradient(ele,F,i,j)*trans(DmInv);
+// 			}
+//
+// 			//computes df0/dx_j,df1/dx_j,df2/dx_j,df3/dx_j
+// 			for(int j=0;j<4;++j)
+// 			{
+// 				Matrix<double> f_derivative(3,3);
+// 				for(int row=0;row<3;++row)
+// 				{
+// 					for(int col=0;col<3;++col)
+// 					{
+// 						if(j==3)
+// 							f_derivative(row,col)=(-1.0)*(g_derivative[row][col][0]+g_derivative[row][col][1]+g_derivative[row][col][2]);
+// 						else
+// 							f_derivative(row,col)=g_derivative[row][col][j];
+// 						ele_K(3*i+row,3*j+col)=f_derivative(row,col);
+// 					}
+// 				}
+// 			}
+// 		}
+// 		// std::cout<<"```````````````K```````````````:\n";
+// 		K+=object_LB_cubica_weights_[cubica_idx]*Transpose(subU)*ele_K*subU;
+// 	}
+// 	reduced_K=K;
+// }
 void RealTimeExampleBasedDeformer::testEnergyGradients()
 {
 	//test energy and energy gradient-internal force
@@ -2316,106 +2340,106 @@ void RealTimeExampleBasedDeformer::testEnergyGradients()
 	std::cout<<", rel_error= "<<(f_plus-f_min-f_grad_times_dx)/(fabs(f_grad_times_dx)>1e-20?fabs(f_grad_times_dx):1e-20)<<"\n";
 	delete[] temp_buffer;
 }
-void RealTimeExampleBasedDeformer::testObjectiveGradients()
-{
-	//test internal force and force gradient--stiffness matrix
-	int num=3*interpolate_eigenfunction_num_;
-	Vec3d *q=new Vec3d[interpolate_eigenfunction_num_];
-	//double *x=new double[num];
-	double *dx=new double[num];
-	double *f=new double[num];
-	double *f_plus=new double[num];
-	double *f_min=new double[num];
-	Matrix<double> K((int)interpolate_eigenfunction_num_,(int)interpolate_eigenfunction_num_);
-	double *dK=new double[num];
-	srand((unsigned)time(0));
-	//randomly generate displacement in range [0.1,1]
-	double x[24]={0.3,0.1,0.4,0.3,0.8,1,0.5,1,0.7,0.2,0.2,0.3,0.2,0.4,0.6,0.2,0.7,0.3,0.8,0.6,1,1,0.3,0.5};
-	//double x[24]={0.4,0.4,0.4,0.3,0.3,0.3,0.5,0.5,0.5,0.2,0.2,0.2,0.6,0.6,0.6,0.7,0.7,0.7,0.8,0.8,0.8,0.5,0.5,0.5};
-	for(int i=0;i<num;++i)
-	{
-		x[i]=(1+rand()%10)/10.0;
-		std::cout<<x[i]<<",";
-	}
-	for(int j=0;j<interpolate_eigenfunction_num_;++j)
-	{
-		for(int k=0;k<3;++k)
-		{
-			q[j][k]=x[3*j+k];
-		}
-	}
-	computeReducedStiffnessMatrix(q,K);
-	//
-	std::cout<<"K:\n";
-	for(int j=0;j<interpolate_eigenfunction_num_;++j)
-	{
-		for(int k=0;k<interpolate_eigenfunction_num_;++k)
-		{
-			std::cout<<K(j,k)<<",";
-		}
-		std::cout<<"\n";
-	}
-	//perturb a little bit
-	for(int i=0;i<num;++i)
-	{
-		dx[i]=(1+rand()%10)/1.0e7;
-		x[i]+=dx[i];
-	}
-	for(int j=0;j<interpolate_eigenfunction_num_;++j)
-	{
-		for(int k=0;k<3;++k)
-		{
-			q[j][k]=x[3*j+k];
-		}
-	}
-	computeReducedInternalForce(q,f_plus);
-	for(int i=0;i<num;++i)
-	{
-		//dx[i]*=1.0;
-		x[i]-=2*dx[i];
-	}
-	for(int j=0;j<interpolate_eigenfunction_num_;++j)
-	{
-		for(int k=0;k<3;++k)
-		{
-			q[j][k]=x[3*j+k];
-		}
-	}
-	computeReducedInternalForce(q,f_min);
-	Matrix<double> dis_matrix((int)interpolate_eigenfunction_num_,3);
-	for(int i=0;i<interpolate_eigenfunction_num_;++i)
-		for(int j=0;j<3;++j)
-			dis_matrix(i,j)=2.0*dx[3*i+j];
-	Matrix<double> temp_matrix=K*dis_matrix;
-	for(int i=0;i<interpolate_eigenfunction_num_;++i)
-	{
-		for(int j=0;j<3;++j)
-			dK[3*i+j]=temp_matrix(i,j);
-	}
-	double max_rel_error=1000;
-	double df,dk;
-	for(int i=0;i<3*interpolate_eigenfunction_num_;++i)
-	{
-		double rel_error = fabs((f_plus[i]-f_min[i]-dK[i])/dK[i]);
-		//std::cout<<"f_plus:"<<f_plus[i]<<"f_min:"<<f_min[i]<<"dk:"<<dK[i]<<"\n";
-		if(rel_error < max_rel_error)
-		{
-			df=f_plus[i]-f_min[i];
-			dk = dK[i];
-			max_rel_error = rel_error;
-		}
-	}
-	std::cout<<"Max relative error:\n";
-	std::cout<<"df: "<<setprecision(15)<<df<<"\n";
-	std::cout<<"k*dk: "<<setprecision(15)<<dk<<"\n";
-	std::cout<<"rel error: "<<max_rel_error<<"\n";
-	//delete[] x;
-	delete[] dx;
-	delete[] f;
-	delete[] f_plus;
-	delete[] f_min;
-	delete[] dK;
-}
+// void RealTimeExampleBasedDeformer::testObjectiveGradients()
+// {
+// 	//test internal force and force gradient--stiffness matrix
+// 	int num=3*interpolate_eigenfunction_num_;
+// 	Vec3d *q=new Vec3d[interpolate_eigenfunction_num_];
+// 	//double *x=new double[num];
+// 	double *dx=new double[num];
+// 	double *f=new double[num];
+// 	double *f_plus=new double[num];
+// 	double *f_min=new double[num];
+// 	Matrix<double> K((int)interpolate_eigenfunction_num_,(int)interpolate_eigenfunction_num_);
+// 	double *dK=new double[num];
+// 	srand((unsigned)time(0));
+// 	//randomly generate displacement in range [0.1,1]
+// 	double x[24]={0.3,0.1,0.4,0.3,0.8,1,0.5,1,0.7,0.2,0.2,0.3,0.2,0.4,0.6,0.2,0.7,0.3,0.8,0.6,1,1,0.3,0.5};
+// 	//double x[24]={0.4,0.4,0.4,0.3,0.3,0.3,0.5,0.5,0.5,0.2,0.2,0.2,0.6,0.6,0.6,0.7,0.7,0.7,0.8,0.8,0.8,0.5,0.5,0.5};
+// 	for(int i=0;i<num;++i)
+// 	{
+// 		x[i]=(1+rand()%10)/10.0;
+// 		std::cout<<x[i]<<",";
+// 	}
+// 	for(int j=0;j<interpolate_eigenfunction_num_;++j)
+// 	{
+// 		for(int k=0;k<3;++k)
+// 		{
+// 			q[j][k]=x[3*j+k];
+// 		}
+// 	}
+// 	computeReducedStiffnessMatrix(q,K);
+// 	//
+// 	std::cout<<"K:\n";
+// 	for(int j=0;j<interpolate_eigenfunction_num_;++j)
+// 	{
+// 		for(int k=0;k<interpolate_eigenfunction_num_;++k)
+// 		{
+// 			std::cout<<K(j,k)<<",";
+// 		}
+// 		std::cout<<"\n";
+// 	}
+// 	//perturb a little bit
+// 	for(int i=0;i<num;++i)
+// 	{
+// 		dx[i]=(1+rand()%10)/1.0e7;
+// 		x[i]+=dx[i];
+// 	}
+// 	for(int j=0;j<interpolate_eigenfunction_num_;++j)
+// 	{
+// 		for(int k=0;k<3;++k)
+// 		{
+// 			q[j][k]=x[3*j+k];
+// 		}
+// 	}
+// 	computeReducedInternalForce(q,f_plus);
+// 	for(int i=0;i<num;++i)
+// 	{
+// 		//dx[i]*=1.0;
+// 		x[i]-=2*dx[i];
+// 	}
+// 	for(int j=0;j<interpolate_eigenfunction_num_;++j)
+// 	{
+// 		for(int k=0;k<3;++k)
+// 		{
+// 			q[j][k]=x[3*j+k];
+// 		}
+// 	}
+// 	computeReducedInternalForce(q,f_min);
+// 	Matrix<double> dis_matrix((int)interpolate_eigenfunction_num_,3);
+// 	for(int i=0;i<interpolate_eigenfunction_num_;++i)
+// 		for(int j=0;j<3;++j)
+// 			dis_matrix(i,j)=2.0*dx[3*i+j];
+// 	Matrix<double> temp_matrix=K*dis_matrix;
+// 	for(int i=0;i<interpolate_eigenfunction_num_;++i)
+// 	{
+// 		for(int j=0;j<3;++j)
+// 			dK[3*i+j]=temp_matrix(i,j);
+// 	}
+// 	double max_rel_error=1000;
+// 	double df,dk;
+// 	for(int i=0;i<3*interpolate_eigenfunction_num_;++i)
+// 	{
+// 		double rel_error = fabs((f_plus[i]-f_min[i]-dK[i])/dK[i]);
+// 		//std::cout<<"f_plus:"<<f_plus[i]<<"f_min:"<<f_min[i]<<"dk:"<<dK[i]<<"\n";
+// 		if(rel_error < max_rel_error)
+// 		{
+// 			df=f_plus[i]-f_min[i];
+// 			dk = dK[i];
+// 			max_rel_error = rel_error;
+// 		}
+// 	}
+// 	std::cout<<"Max relative error:\n";
+// 	std::cout<<"df: "<<setprecision(15)<<df<<"\n";
+// 	std::cout<<"k*dk: "<<setprecision(15)<<dk<<"\n";
+// 	std::cout<<"rel error: "<<max_rel_error<<"\n";
+// 	//delete[] x;
+// 	delete[] dx;
+// 	delete[] f;
+// 	delete[] f_plus;
+// 	delete[] f_min;
+// 	delete[] dK;
+// }
 int RealTimeExampleBasedDeformer::ModifiedSVD(Mat3d & F, Mat3d & U, Vec3d & Fhat, Mat3d & V) const
 {
     // The code handles the following necessary special situations (see the code below) :

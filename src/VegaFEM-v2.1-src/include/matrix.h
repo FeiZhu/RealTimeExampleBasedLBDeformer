@@ -65,7 +65,7 @@ class Matrix
 {
 public:
   // load matrix from a file (see matrixIO.h for the binary file format)
-  Matrix(const char * filename);
+  Matrix(const char * filename); 
 
   // create a m x n matrix; "data" must an array of length m*n, giving the matrix entries in column-major order
   // if "makeInternalDataCopy" is true (default), the class will internally make a copy of the data; otherwise, it will only direct its internal pointer to the user-provided array data
@@ -88,6 +88,7 @@ public:
   inline int Getm() const { return m; }
   inline int Getn() const { return n; }
   inline real * GetData() const { return data; }
+
   const Matrix operator+ (const Matrix & mtx2) const;
   const Matrix operator- (const Matrix & mtx2) const;
   const Matrix operator* (const Matrix & mtx2) const;

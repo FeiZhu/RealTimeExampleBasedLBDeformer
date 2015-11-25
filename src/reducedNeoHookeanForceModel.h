@@ -44,7 +44,7 @@ protected:
     Mat3d firstPiolaKirchhoff(Mat3d &F) const;
     Mat3d computeF_gradient(const int &ele,const int &vert_idx,const int &vert_idx_dim) const;
     Mat3d computeP_gradient(const int &ele,const Mat3d &F,const int &vert_idx,const int &vert_idx_dim) const;
-    //void computeReducedEnergy(const double *q,double &energy) const;
+    void computeReducedEnergy(const double *q,double &energy) const;
     void computeReducedStiffnessMatrix(const double *q,double *reduced_K/*Matrix<double> &reduced_K*/) const;
 
     //used for example-based elastic energy
@@ -54,21 +54,24 @@ protected:
 
 protected:
     int r_;
-    VolumetricMesh *volumetric_mesh_;
-    double **U_;
+    VolumetricMesh *volumetric_mesh_=NULL;
+    double **U_=NULL;
     int cubica_num_;
-    double *cubica_elements_;
-    double *cubica_weights_;
+    double *cubica_elements_=NULL;
+    double *cubica_weights_=NULL;
+    double ***cubica_subBasis_ = NULL;
     bool add_gravity_;
     double g_;
-    double *gravity_force_;
+    double *gravity_force_=NULL;
     // double *f_=NULL;
     // double *K_=NULL;
-    double **restpos_;
+    double **restpos_=NULL;
     //material
     double mu_=0.0;
     double lamda_=0.0;
     bool own_neoHookean_stiffness_matrix_=false;
+    double *gf_=NULL;
+    double *test_=NULL;
 };
 
 #endif

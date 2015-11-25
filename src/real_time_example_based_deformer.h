@@ -126,7 +126,7 @@ public:
     void projectOnEigenFunctions(VolumetricMesh *mesh, double *displacement, double *vertex_volume,
                                 double **eigenfunctions, double *eigenvalues, unsigned int eigenfunction_num,
                                 Vec3d *eigencoefs);
-    void reconstructFromEigenCoefs(Vec3d *target_eigencoefs,double *vert_pos);
+    void reconstructFromEigenCoefs(Vec3d *target_eigencoefs,double *vert_pos,int flag=0);
     void saveReconstructMesh(double *vert_pos);
 private:
     void initDisplacementMatrixOnElement(VolumetricMesh *mesh);
@@ -210,7 +210,7 @@ private:
     bool add_gravity_ = false;
     double gravity_=9.8;
     int max_iterations_=1;
-    int solver_threads_num_=1;//number of threads used for integration solver
+    int solver_threads_num_=4;//number of threads used for integration solver
     int positive_definite_=0;
     int central_difference_tangential_damping_update_mode_=1;
     // Mat3d *object_init_element_dis_matrix_ = NULL;

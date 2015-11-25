@@ -242,6 +242,7 @@ private:
     bool isload_example_cubica_ = false;
     bool enable_example_simulation_ = false;
     bool enable_save_objmesh_ = false;
+    // bool eachstep_flag_ = true;
     // bool save_tet_mesh_ = false;
     char solver_method_[string_length];
     enum RenderMeshType{
