@@ -18,7 +18,6 @@ ReducedNeoHookeanForceModel::ReducedNeoHookeanForceModel(const int &r,Volumetric
                             const int &cubica_num, const double *cubica_weights,const unsigned int *cubica_elements,
                             double **restpos,bool addGravity, double g)
 {
-    // std::cout<<"a\n";
     r_=r;
     add_gravity_=addGravity;
     g_=g;
@@ -79,6 +78,9 @@ ReducedNeoHookeanForceModel::ReducedNeoHookeanForceModel(const int &r,Volumetric
             }
         }
     }
+    deformed_=new double[12];
+	memset(deformed_,0.0,sizeof(double)*12);
+    // modal_matrix_ = new ModalMatrix(volumetric_mesh_->getNumVertices(),r_,U);
     VolumetricMesh::Material * material = volumetric_mesh_->getElementMaterial(0);
 	VolumetricMesh::ENuMaterial * eNuMaterial = downcastENuMaterial(material);
 	if (eNuMaterial == NULL)
@@ -113,13 +115,15 @@ ReducedNeoHookeanForceModel::~ReducedNeoHookeanForceModel()
         delete[] gf_;
     for(int i=0;i<cubica_num_;++i)
     {
-        for(int j=0;j<12;++j)
-        {
-            if(cubica_subBasis_[i][j])
-                delete[] cubica_subBasis_[i][j];
-        }
         if(cubica_subBasis_[i])
+        {
+            for(int j=0;j<12;++j)
+            {
+                if(cubica_subBasis_[i][j])
+                    delete[] cubica_subBasis_[i][j];
+            }
             delete[] cubica_subBasis_[i];
+        }
     }
 }
 
@@ -151,27 +155,31 @@ void ReducedNeoHookeanForceModel::InitGravity(double *U)
     delete[] unit_reduced_gravity_force;
 }
 
-Matrix<double> ReducedNeoHookeanForceModel::tetSubBasis(const int &ele) const
+Matrix<double> ReducedNeoHookeanForceModel::tetSubBasis(const int &cubica_idx) const
 {//tet_subBasis is 12*r
 	Matrix<double> tet_subBasis(12,(int)r_,true);
-	int *global_idx=new int[4];
-	for(int i=0;i<4;++i)
-		global_idx[i]=volumetric_mesh_->getVertexIndex(ele,i);
+	// int *global_idx=new int[4];
+	// for(int i=0;i<4;++i)
+	// 	global_idx[i]=volumetric_mesh_->getVertexIndex(ele,i);
     // std::cout<<"tetBasis:\n";
 	for(int j=0;j<4;++j)
 	{
         // std::cout<<"vertex:"<<global_idx[j]*3<<",\n";
-        int vertID=volumetric_mesh_->getVertexIndex(ele,j);
+        // int vertID=volumetric_mesh_->getVertexIndex(ele,j);
 		for(int i=0;i<r_;++i)
 		{
-			tet_subBasis(3*j,i)=U_[3*global_idx[j]][i];
-			tet_subBasis(3*j+1,i)=U_[3*global_idx[j]+1][i];
-			tet_subBasis(3*j+2,i)=U_[3*global_idx[j]+2][i];
+			tet_subBasis(3*j,i)=cubica_subBasis_[cubica_idx][3*j][i];
+			tet_subBasis(3*j+1,i)=cubica_subBasis_[cubica_idx][3*j+1][i];
+			tet_subBasis(3*j+2,i)=cubica_subBasis_[cubica_idx][3*j+2][i];
+
+			// tet_subBasis(3*j,i)=U_[3*global_idx[j]][i];
+			// tet_subBasis(3*j+1,i)=U_[3*global_idx[j]+1][i];
+			// tet_subBasis(3*j+2,i)=U_[3*global_idx[j]+2][i];
             // std::cout<<tet_subBasis(3*j,i)<<","<<tet_subBasis(3*j+1,i)<<","<<tet_subBasis(3*j+2,i)<<",\n";
 		}
 	}
     // getchar();
-	delete[] global_idx;
+	// delete[] global_idx;
 	return tet_subBasis;
 }
 Mat3d ReducedNeoHookeanForceModel::computeDs(const double *reduced_dis) const
@@ -209,16 +217,6 @@ Mat3d ReducedNeoHookeanForceModel::computeDmInv(const int &ele) const
 Mat3d ReducedNeoHookeanForceModel::computeF(const int &cubica_idx,const double *q) const//q:rx1
 {//for all cubica elements
     int ele=cubica_elements_[cubica_idx];
-    // Matrix<double> reduced_dis_matrix((int)r_,1);//rx1
-	// for(int i=0;i<r_;++i)
-	// {
-	// 	reduced_dis_matrix(i,0)=q[i];
-	// }
-	//compute displacement x=X+Uq
-	double *deformed=new double[12];
-	memset(deformed,0.0,sizeof(double)*12);
-    // Matrix<double> subU=tetSubBasis(ele);//12xr
-    //Matrix<double> temp=subU*reduced_dis_matrix;//12xr,rx1->12x1
     double *temp=new double[12];
     memset(temp,0.0,sizeof(double)*12);
     for(int i=0;i<12;++i)
@@ -226,11 +224,9 @@ Mat3d ReducedNeoHookeanForceModel::computeF(const int &cubica_idx,const double *
             temp[i]+=cubica_subBasis_[cubica_idx][i][j]*q[j];
 
 	for(int i=0;i<12;++i)
-		deformed[i]=restpos_[cubica_idx][i]+temp[i];
-	Mat3d F=computeDs(deformed)*computeDmInv(ele);//F for each ele
-
+		deformed_[i]=restpos_[cubica_idx][i]+temp[i];
+	Mat3d F=computeDs(deformed_)*computeDmInv(ele);//F for each ele
     delete[] temp;
-	delete[] deformed;
     return F;
 }
 Mat3d ReducedNeoHookeanForceModel::computeF_gradient(const int &ele,const int &vert_idx,const int &vert_idx_dim) const
@@ -311,21 +307,18 @@ void ReducedNeoHookeanForceModel::computeReducedEnergy(const double *q,double &e
 	//computeF(reduced_dis);//compute F for all cubica elements
 	for(int cubica_idx=0;cubica_idx<cubica_num_;++cubica_idx)
 	{
-	//	int ele=object_cubica_elements_[cubica_idx];
 		Mat3d F=computeF(cubica_idx,q);
 		Mat3d temp=trans(F)*F;
 		double trace_c=temp[0][0]+temp[1][1]+temp[2][2];
 		double lnJ=log(det(F));
 		double element_energy=0.5*mu_*(trace_c-3)-mu_*lnJ+0.5*lamda_*lnJ*lnJ;
 		energy += cubica_weights_[cubica_idx]*element_energy;
-        // energy = element_energy;
 	}
-
 }
 void ReducedNeoHookeanForceModel::computeReducedInternalForce(const double *q,double *forces) const
 {//q:r*1
-	// PerformanceCounter counter2;
-	// counter2.StartCounter();
+	PerformanceCounter counter2;
+	counter2.StartCounter();
 	memset(forces,0.0,sizeof(double)*r_);
     // double total_time=0.0,other_total_time=0.0,F_time=0.0,assemble_f=0.0;
 	for(int cubica_idx=0;cubica_idx<cubica_num_;++cubica_idx)
@@ -335,7 +328,6 @@ void ReducedNeoHookeanForceModel::computeReducedInternalForce(const double *q,do
 		Mat3d P=firstPiolaKirchhoff(F);
         Mat3d temp1=trans(computeDmInv(ele));
         Mat3d temp=P*temp1;
-		//Matrix<double> ele_force(12,1);
         double *ele_force=new double[12];
         memset(ele_force,0.0,sizeof(double)*12);
 		for(int i=0;i<4;++i)
@@ -348,8 +340,6 @@ void ReducedNeoHookeanForceModel::computeReducedInternalForce(const double *q,do
 					ele_force[3*i+j]=temp[j][i];
 			}
 		}
-		// Matrix<double> subU=tetSubBasis(ele);//12xr
-        //Matrix<double> g=Transpose(subU)*ele_force;//rx1
         memset(gf_,0.0,sizeof(double)*r_);
         for(int i=0;i<r_;++i)
             for(int j=0;j<12;++j)
@@ -361,41 +351,46 @@ void ReducedNeoHookeanForceModel::computeReducedInternalForce(const double *q,do
     if(add_gravity_)
         for(int i=0;i<r_;++i)
             forces[i] -= gravity_force_[i];
-        // counter2.StopCounter();
-        // std::cout<<"integrator compute internal force:"<<counter2.GetElapsedTime()<<"\n";
+    counter2.StopCounter();
+    std::cout<<"integrator compute internal force:"<<counter2.GetElapsedTime()<<"\n";
 }
 
 void ReducedNeoHookeanForceModel::computeReducedStiffnessMatrix(const double *q,double *reduced_K/*Matrix<double> &reduced_K*/) const
 {
-    double total_time=0.0,other_count_time=0.0,assemble_k=0.0,F_time=0.0;
+    double total_time=0.0,else_time=0.0,other_count_time=0.0,assemble_k=0.0,F_time=0.0,whole_time=0.0;
+    static int count=1;
+    // ++count;
     Matrix<double> K((int)r_,(int)r_);
-    // PerformanceCounter counter1;
-    // counter1.StartCounter();
+    PerformanceCounter counter1;
+    counter1.StartCounter();
     // std::cout<<cubica_num_<<"\n";
 	for(int cubica_idx=0;cubica_idx<cubica_num_;++cubica_idx)
 	{
 
-    	// PerformanceCounter counter21;
-    	// counter21.StartCounter();
+    	PerformanceCounter counter21;
+    	counter21.StartCounter();
+
+            	PerformanceCounter counter33;
+            	counter33.StartCounter();
 		int ele=cubica_elements_[cubica_idx];
-		Matrix<double> subU=tetSubBasis(ele);//12*r
+		Matrix<double> subU=tetSubBasis(cubica_idx);//12*r
+
+        counter33.StopCounter();
+        else_time+=counter33.GetElapsedTime();
 		Matrix<double> ele_K(12,12);
-    	// PerformanceCounter counter2;
-    	// counter2.StartCounter();
+    	PerformanceCounter counter2;
+    	counter2.StartCounter();
         Mat3d F=computeF(cubica_idx,q);
-
-        // counter2.StopCounter();
-        // F_time+=counter2.GetElapsedTime();
-
+        counter2.StopCounter();
+        F_time+=counter2.GetElapsedTime();
 
     	// PerformanceCounter counter3;
     	// counter3.StartCounter();
 		Mat3d trans_DmInv=trans(computeDmInv(ele));
         // counter3.StopCounter();
         // std::cout<<"computeK-counter3:"<<counter3.GetElapsedTime()<<"\n";
-
-        // PerformanceCounter counter4;
-    	// counter4.StartCounter();
+        PerformanceCounter counter4;
+    	counter4.StartCounter();
 		for(int i=0;i<4;++i)
 		{
 			std::vector<Mat3d> g_derivative(3);//computes dg/dx_j^0,dg/dx_j^1,dg/dx_j^2
@@ -413,39 +408,54 @@ void ReducedNeoHookeanForceModel::computeReducedStiffnessMatrix(const double *q,
 					for(int col=0;col<3;++col)
 					{
 						if(j==3)
-							ele_K(3*i+row,3*j+col)=(-1.0)*(g_derivative[row][col][0]+g_derivative[row][col][1]+g_derivative[row][col][2]);
+                        {
+                            ele_K(3*i+row,3*j+col)=(-1.0)*(g_derivative[row][col][0]+g_derivative[row][col][1]+g_derivative[row][col][2]);
+                        }
 						else
 							ele_K(3*i+row,3*j+col)=g_derivative[row][col][j];
-						// ele_K(3*i+row,3*j+col)=f_derivative[row][col];
 					}
 				}
 			}
 		}
-        // counter4.StopCounter();
-        // assemble_k+=counter4.GetElapsedTime();
+        counter4.StopCounter();
+        assemble_k+=counter4.GetElapsedTime();
 
-
-        // counter21.StopCounter();
-        // other_count_time+=counter21.GetElapsedTime();
-        // PerformanceCounter counter5;
-    	// counter5.StartCounter();
+        counter21.StopCounter();
+        other_count_time+=counter21.GetElapsedTime();
+        PerformanceCounter counter5;
+    	counter5.StartCounter();
         // MultiplyMatrix()
+        // modal_matrix_ = new ModalMatrix(volumetric_mesh_->getNumVertices(),r_,U);
+        // modal_matrix_->ProjectMatrix(r_,ele_K,)
         Matrix<double> temp=subU.MultiplyT(ele_K);
+
+        // for(int i=0;i<r_;++i)
+        // {
+        //     for(int j=0;j<12;++j)
+        //         std::cout<<temp(i,j)<<",";
+        //     std::cout<<"\n";
+        // }
+        // std::cout<<"\n";
+        // std::cout<<"\n";
+        // if(cubica_idx==0)
+        //     getchar();
         Matrix<double> temp1=temp*subU;
         K+=(cubica_weights_[cubica_idx]*temp1);
-            // counter5.StopCounter();
-            // total_time+=counter5.GetElapsedTime();
+        counter5.StopCounter();
+        total_time+=counter5.GetElapsedTime();
 	}
     for(int i=0;i<r_;++i)
         for(int j=0;j<r_;++j)
            reduced_K[i*r_+j]=K(i,j);
             // reduced_K(i,j)=K(i,j);
-    // counter1.StopCounter();
-    // std::cout<<"computeK--F:"<<F_time<<"\n";
-    // std::cout<<"computeK--assemble K:"<<assemble_k<<"\n";
-    // std::cout<<"computeK--other time:"<<other_count_time<<"\n";    //
-    // std::cout<<"computeK--multi matrix:"<<total_time<<"\n";
-    // std::cout<<"computeK--for all cubica elements:"<<counter1.GetElapsedTime()<<"\n";
+    counter1.StopCounter();
+    whole_time+=counter1.GetElapsedTime();
+    std::cout<<"computeK--F:"<<F_time/count<<"\n";
+    std::cout<<"computeK--assemble K:"<<assemble_k/count<<"\n";
+    std::cout<<"computeK--else time:"<<else_time/count<<"\n";
+    std::cout<<"computeK--other time:"<<other_count_time/count<<"\n";    //
+    std::cout<<"computeK--multi matrix:"<<total_time/count<<"\n";
+    std::cout<<"computeK--for all cubica elements:"<<whole_time/count<<"\n";
 }
 Mat3d ReducedNeoHookeanForceModel::computeElasticDmInv(const int &ele,const double *u) const
 {//3x3int *global_idx=new int[4];

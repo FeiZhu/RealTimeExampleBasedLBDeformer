@@ -13,6 +13,7 @@
 #include "matrix.h"
 #include "volumetricMesh.h"
 #include "mat3d.h"
+#include "modalMatrix.h"
 // #include "reducedNeoHookeanInternalForces.h"
 // #include "ReducedNeoHookeanStiffnessMatrix.h"
 class VolumetricMesh;
@@ -36,7 +37,7 @@ public:
     void computeReducedElasticInternalForce(const double *q,double *forces,const double *u) const;
 protected:
     void InitGravity(double *U); //aux function
-    Matrix<double> vertexSubBasis(const int &vert_idx) const;//3*r
+    // Matrix<double> vertexSubBasis(const int &vert_idx) const;//3*r
     Matrix<double> tetSubBasis(const int &ele) const;//12*r
     Mat3d computeDs(const double *reduced_dis) const;
     Mat3d computeDmInv(const int &ele) const;
@@ -66,12 +67,14 @@ protected:
     // double *f_=NULL;
     // double *K_=NULL;
     double **restpos_=NULL;
+    double *deformed_ = NULL;
     //material
     double mu_=0.0;
     double lamda_=0.0;
     bool own_neoHookean_stiffness_matrix_=false;
     double *gf_=NULL;
     double *test_=NULL;
+    ModalMatrix *modal_matrix_ = NULL;
 };
 
 #endif

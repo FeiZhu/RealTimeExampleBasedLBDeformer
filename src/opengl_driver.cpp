@@ -1051,7 +1051,7 @@ void OpenGLDriver::idleFunction()
         }
 
         counter1.StopCounter();
-        std::cout<<"simulation time for each step"<<counter1.GetElapsedTime()<<"\n";
+        // std::cout<<"simulation time for each step"<<counter1.GetElapsedTime()<<"\n";
     }
     // PerformanceCounter counter3;
     // counter3.StartCounter();
@@ -1089,7 +1089,7 @@ void OpenGLDriver::idleFunction()
         active_instance->fps_=1.0/each_frame_time;
     else
         active_instance->fps_=0.0;
-    std::cout<<"TTTTotal time:"<<each_frame_time<<"\n";
+    // std::cout<<"TTTTotal time:"<<each_frame_time<<"\n";
     //save object surface mesh to files--not done yet
     if((!active_instance->pause_simulation_)&&(active_instance->enable_save_objmesh_)&&(active_instance->time_step_counter_))
         active_instance->saveCurrentObjmesh(0);

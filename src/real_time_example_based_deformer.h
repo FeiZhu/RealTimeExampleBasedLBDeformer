@@ -152,9 +152,6 @@ private:
 
     void fullspaceSimulation();
     void reducedspaceSimulation();
-    // void preComputeForReducedSimulation();
-    Matrix<double> vertexSubBasis(const int &vert_idx) const;//3*r
-    Matrix<double> tetSubBasis(const int &ele) const;//12*r
     Mat3d computeDs(const double *reduced_dis) const;
     Mat3d computeDmInv(const int &ele) const;
     Mat3d computeF(const int &cubica_idx,const Vec3d *reduced_dis) const;
@@ -267,7 +264,8 @@ private:
     bool isload_cubica_ = false;
     bool isload_LB_cubica_ = false;
     bool isload_reduced_basis_ = false;
-    double **LB_object_eigenfunctions_ = NULL;
+    // double **LB_object_eigenfunctions_ = NULL;
+    double ***cubica_LB_tetsubBasis_ = NULL;
     //material
     double mu_=0.0;
     double lamda_=0.0;
@@ -298,8 +296,9 @@ private:
     double *f_col_=NULL;
     // double *full_drag_force_=NULL;
     //used for reduced cubica element Computation
-    double **restpos_;//compute rest position for cubica elements
-    double **LB_restpos_;//compute rest position for LB_cubica elements
+    double **restpos_ = NULL;//compute rest position for cubica elements
+    double *deformed_ = NULL;
+    double **LB_restpos_ = NULL;//compute rest position for LB_cubica elements
     double *q_=NULL;
     double *qvel_=NULL;
     double *fq_=NULL;
