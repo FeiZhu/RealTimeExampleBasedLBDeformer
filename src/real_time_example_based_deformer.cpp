@@ -162,7 +162,7 @@ void RealTimeExampleBasedDeformer::setu(double *u)
 }
 void RealTimeExampleBasedDeformer::setupSimulation()
 {
-	//full space
+	std::cout<<"setupSimulation begins\n";
 	if(!simulation_mesh_)
 	{
 		std::cout<<"simulation mesh is null.\n";
@@ -193,6 +193,7 @@ void RealTimeExampleBasedDeformer::setupSimulation()
 	//reduced space
 	// reduced_drag_force_=new double[r_];
 	// memset(reduced_drag_force_,0.0,sizeof(double)*r_);
+	std::cout<<"r:------------"<<r_<<"\n";
 	q_=new double[r_];
 	memset(q_,0.0,sizeof(double)*r_);
 	qvel_=new double[r_];
@@ -271,6 +272,8 @@ void RealTimeExampleBasedDeformer::setupSimulation()
 		reduced_neoHookean_force_model_ = new ReducedNeoHookeanForceModel(r_,simulation_mesh_,U_,object_cubica_ele_num_,
 									object_cubica_weights_,object_cubica_elements_,restpos_,add_gravity_,gravity_);
 		reduced_force_model_=reduced_neoHookean_force_model_;
+		if(reduced_force_model_)
+			std::cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!reduced force model is not null\n";
 	}
 	if(strcmp(solver_method_.c_str(),"implicitNewmark")==0)
         solver_type_=IMPLICITNEWMARK;
@@ -332,7 +335,6 @@ void RealTimeExampleBasedDeformer::setupSimulation()
         central_differences_dense_ = new CentralDifferencesDense(r_,time_step_,reduced_mass_matrix_,reduced_neoHookean_force_model_,damping_mass_coef_,
                                                             damping_stiffness_coef_,central_difference_tangential_damping_update_mode_);
         integrator_base_dense_=central_differences_dense_;
-        simulation_mode_=REDUCEDSPACE;
     }
     else if(solver_type_==REDUCEDIMPLICITNEWMARK)
     {
@@ -340,7 +342,9 @@ void RealTimeExampleBasedDeformer::setupSimulation()
                                                         ImplicitNewmarkDense::positiveDefiniteMatrixSolver,damping_mass_coef_,damping_stiffness_coef_,
                                                         max_iterations_,integrator_epsilon_,newmark_beta_,newmark_gamma_);
         integrator_base_dense_=implicit_newmark_dense_;
-        simulation_mode_=REDUCEDSPACE;
+		std::cout<<"reducedImplicitNewmark\n";
+		if(integrator_base_dense_)
+			std::cout<<"...............integrator base dense is not null\n";
     }
     else if(solver_type_==REDUCEDIMPLICITBACKWARDEULER)
     {
@@ -353,6 +357,7 @@ void RealTimeExampleBasedDeformer::setupSimulation()
     else
     {
     }
+	std::cout<<"--------------------------\n";
     //set integration parameters
     if(simulation_mode_==REDUCEDSPACE)
     {
@@ -363,7 +368,16 @@ void RealTimeExampleBasedDeformer::setupSimulation()
             exit(1);
         }
         integrator_base_->SetTimestep(time_step_);
-		integrator_base_->SetState(q_,qvel_);
+		// std::cout<<"a\n";
+		// for(int i=0;i<r_;++i)
+		// {
+		// 	std::cout<<q_[i]<<","<<qvel_[i]<<",--";
+		// }
+		// 	std::cout<<"\n";
+		// if(integrator_base_dense_)
+		// 	std::cout<<"...............integrator base is not null\n";
+		// implicit_newmark_dense_->SetState(q_,qvel_);
+		// std::cout<<"b\n";
     }
     else
     {
@@ -564,10 +578,11 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulation()
 	// 	for(int i=0;i<r_;++i)
 	// 		fq_[i]+=0;
 	// }
+	std::cout<<"1\n";
 	PerformanceCounter counter1;
 	counter1.StartCounter();
 	integrator_base_dense_->SetExternalForces(fq_);
-
+std::cout<<"2\n";
 	counter1.StopCounter();
 	// std::cout<<"integrator f_ext:"<<counter1.GetElapsedTime()<<"\n";
 	// if(time_step_counter_ < active_instance->total_steps_)
@@ -576,10 +591,12 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulation()
 	counter2.StartCounter();
 		int code=integrator_base_dense_->DoTimestep();
 		std::cout<<".";fflush(NULL);
+		std::cout<<"3\n";
 	counter2.StopCounter();
 	// std::cout<<"integrator DoTimestep:"<<counter2.GetElapsedTime()<<"\n";
 		// ++time_step_counter_;
 	// }
+	std::cout<<",,,,,,,,,,,,,,,,,,,,,,,,\n";
 	memcpy(q_,integrator_base_->Getq(),sizeof(double)*r_);
 }
 bool RealTimeExampleBasedDeformer::loadMassmatrix(const std::string &file_name)
@@ -1874,7 +1891,7 @@ void RealTimeExampleBasedDeformer::projectOnExampleManifold(Vec3d *input_eigenco
 		}
 	}
 	free(temp_buffer);
-	pure_example_linear_interpolation_=true;
+	pure_example_linear_interpolation_=false;
 
 	// counter1.StopCounter();
 	// std::cout<<"elapseTime:"<<counter1.GetElapsedTime()<<"\n";
@@ -2171,7 +2188,7 @@ void RealTimeExampleBasedDeformer::computeReducedInternalForce(const Vec3d *redu
 		Mat3d F=computeF(cubica_idx,reduced_dis);
 		Mat3d P=firstPiolaKirchhoff(F);
 		Mat3d temp=P*trans(computeDmInv(ele));
-		
+
 		double *temp1=new double[12];
 		memset(temp1,0.0,sizeof(double)*12);
 		for(int j=0;j<4;++j)

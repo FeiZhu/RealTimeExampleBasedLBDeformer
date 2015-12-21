@@ -898,8 +898,10 @@ void OpenGLDriver::idleFunction()
         if(active_instance->simulation_mode_==REDUCEDSPACE)
         {
            //reset external forces
+           std::cout<<"a\n";
            for(int i=0;i<active_instance->r_;++i)
                active_instance->fq_[i]=0.0;
+               std::cout<<"B\n";
             if(active_instance->left_button_down_)
             {
                 // std::cout<<"pulled_vertex_:"<<active_instance->pulled_vertex_<<"\n";
@@ -938,10 +940,12 @@ void OpenGLDriver::idleFunction()
             }
             //apply force loads for reduced space from external file---not done yet
 
+            std::cout<<"c\n";
             active_instance->simulator_->setReducedExternalForces(active_instance->fq_);
             // std::cout<<active_instance->render_reduced_surface_mesh_->GetMesh()->getNumVertices()<<",,,;";
             //
             // getchar();
+            std::cout<<"d\n";
             for(int i=0;i<active_instance->render_reduced_surface_mesh_->GetMesh()->getNumVertices();++i)
                 for(int j=0;j<3;++j)
                     active_instance->u_[3*i+j]=(active_instance->render_reduced_surface_mesh_->GetMesh()->getPosition(i))[j]
@@ -952,8 +956,14 @@ void OpenGLDriver::idleFunction()
             //         if(active_instance->u_[i]>1.0e-6)
                     // std::cout<<active_instance->u_[0]<<","<<active_instance->u_[1]<<","<<active_instance->u_[2]<<"\n";
                 // }
+
+                std::cout<<"e\n";
             active_instance->simulator_->setu(active_instance->u_);
+
+            std::cout<<"f\n";
             active_instance->simulator_->advanceStep();
+
+            std::cout<<"g\n";
         }
         else
         {
@@ -1018,6 +1028,7 @@ void OpenGLDriver::idleFunction()
                     }
                 }
             }
+            std::cout<<"c\n";
             //apply any scripted force loads
             if(active_instance->time_step_counter_<active_instance->force_loads_num_)
             {
@@ -1034,6 +1045,7 @@ void OpenGLDriver::idleFunction()
 
         	}
             active_instance->simulator_->setExternalForces(active_instance->f_ext_);
+            std::cout<<"d\n";
             // for(int i=0;i<active_instance->simulation_mesh_->getNumVertices();++i)
             //     for(int j=0;j<3;++j)
             //     {
