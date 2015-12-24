@@ -825,41 +825,41 @@ void OpenGLDriver::displayFunction()
 void OpenGLDriver::saveTetMesh(int code)
 {
     //std::cout<<"aaaaaaaaaaaaaaaa\n";
-    // OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
-    // assert(active_instance);
-    // std::string file_name="1.veg";
-    // std::ofstream output_file(file_name.c_str());
-	// if(!output_file)
-	// {
-	// 	std::cout<<"Error: failed to open "<<file_name<<".\n";
-	// 	return;
-	// }
-	// output_file<<"*VERTICES"<<std::endl;
-	// output_file<<active_instance->simulation_mesh_->getNumVertices()<<" 3 0 0"<<std::endl;
-	// for(unsigned int i=0;i<active_instance->simulation_mesh_->getNumVertices();++i)
-	// {
-    //     Vec3d new_dis;
-    //     new_dis[0]=(*active_instance->simulation_mesh_->getVertex(i))[0]+active_instance->u_[3*i];
-    //     new_dis[1]=(*active_instance->simulation_mesh_->getVertex(i))[1]+active_instance->u_[3*i+1];
-    //     new_dis[2]=(*active_instance->simulation_mesh_->getVertex(i))[2]+active_instance->u_[3*i+2];
-	// 	output_file<<i+1<<" "<<new_dis[0]<<" ";
-	// 	output_file<<new_dis[1]<<" ";
-	// 	output_file<<new_dis[2]<<std::endl;
-	// }
-	// output_file<<"*ELEMENTS"<<std::endl;
-	// output_file<<"TET"<<std::endl;
-	// output_file<<active_instance->simulation_mesh_->getNumElements()<<" 4 0"<<std::endl;
-	// for(unsigned int i=0;i<active_instance->simulation_mesh_->getNumElements();++i)
-	// {
-	// 	output_file<<i+1;
-	// 	for(unsigned int j=0;j<active_instance->simulation_mesh_->getNumElementVertices();++j)
-	// 	{
-	// 		unsigned int global_idx=active_instance->simulation_mesh_->getVertexIndex(i,j);
-	// 		output_file<<" "<<global_idx+1;
-	// 	}
-	// 	output_file<<std::endl;
-	// }
-	// output_file.close();
+    OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
+    assert(active_instance);
+    std::string file_name="1.veg";
+    std::ofstream output_file(file_name.c_str());
+	if(!output_file)
+	{
+		std::cout<<"Error: failed to open "<<file_name<<".\n";
+		return;
+	}
+	output_file<<"*VERTICES"<<std::endl;
+	output_file<<active_instance->simulation_mesh_->getNumVertices()<<" 3 0 0"<<std::endl;
+	for(unsigned int i=0;i<active_instance->simulation_mesh_->getNumVertices();++i)
+	{
+        Vec3d new_dis;
+        new_dis[0]=(*active_instance->simulation_mesh_->getVertex(i))[0]+active_instance->u_[3*i];
+        new_dis[1]=(*active_instance->simulation_mesh_->getVertex(i))[1]+active_instance->u_[3*i+1];
+        new_dis[2]=(*active_instance->simulation_mesh_->getVertex(i))[2]+active_instance->u_[3*i+2];
+		output_file<<i+1<<" "<<new_dis[0]<<" ";
+		output_file<<new_dis[1]<<" ";
+		output_file<<new_dis[2]<<std::endl;
+	}
+	output_file<<"*ELEMENTS"<<std::endl;
+	output_file<<"TET"<<std::endl;
+	output_file<<active_instance->simulation_mesh_->getNumElements()<<" 4 0"<<std::endl;
+	for(unsigned int i=0;i<active_instance->simulation_mesh_->getNumElements();++i)
+	{
+		output_file<<i+1;
+		for(unsigned int j=0;j<active_instance->simulation_mesh_->getNumElementVertices();++j)
+		{
+			unsigned int global_idx=active_instance->simulation_mesh_->getVertexIndex(i,j);
+			output_file<<" "<<global_idx+1;
+		}
+		output_file<<std::endl;
+	}
+	output_file.close();
 }
 void OpenGLDriver::idleFunction()
 {
@@ -869,12 +869,11 @@ void OpenGLDriver::idleFunction()
     assert(active_instance);
     glutSetWindow(active_instance->window_id_);
     //test:save deformed tet_mesh
-    // if(active_instance->save_tet_mesh_)
-    // {
-    //     std::cout<<"------------\n";
-    //     active_instance->save_tet_mesh_=false;    //
-    //     active_instance->saveTetMesh(0);
-    // }
+    if(active_instance->save_tet_mesh_)
+    {
+        active_instance->save_tet_mesh_=false;    //
+        active_instance->saveTetMesh(0);
+    }
     PerformanceCounter each_frame_performance_counter;
     double each_frame_time=0.0;
     each_frame_performance_counter.StartCounter();
@@ -898,10 +897,8 @@ void OpenGLDriver::idleFunction()
         if(active_instance->simulation_mode_==REDUCEDSPACE)
         {
            //reset external forces
-           std::cout<<"a\n";
            for(int i=0;i<active_instance->r_;++i)
                active_instance->fq_[i]=0.0;
-               std::cout<<"B\n";
             if(active_instance->left_button_down_)
             {
                 // std::cout<<"pulled_vertex_:"<<active_instance->pulled_vertex_<<"\n";
@@ -940,12 +937,10 @@ void OpenGLDriver::idleFunction()
             }
             //apply force loads for reduced space from external file---not done yet
 
-            std::cout<<"c\n";
             active_instance->simulator_->setReducedExternalForces(active_instance->fq_);
             // std::cout<<active_instance->render_reduced_surface_mesh_->GetMesh()->getNumVertices()<<",,,;";
             //
             // getchar();
-            std::cout<<"d\n";
             for(int i=0;i<active_instance->render_reduced_surface_mesh_->GetMesh()->getNumVertices();++i)
                 for(int j=0;j<3;++j)
                     active_instance->u_[3*i+j]=(active_instance->render_reduced_surface_mesh_->GetMesh()->getPosition(i))[j]
@@ -956,14 +951,8 @@ void OpenGLDriver::idleFunction()
             //         if(active_instance->u_[i]>1.0e-6)
                     // std::cout<<active_instance->u_[0]<<","<<active_instance->u_[1]<<","<<active_instance->u_[2]<<"\n";
                 // }
-
-                std::cout<<"e\n";
             active_instance->simulator_->setu(active_instance->u_);
-
-            std::cout<<"f\n";
             active_instance->simulator_->advanceStep();
-
-            std::cout<<"g\n";
         }
         else
         {
@@ -1028,7 +1017,6 @@ void OpenGLDriver::idleFunction()
                     }
                 }
             }
-            std::cout<<"c\n";
             //apply any scripted force loads
             if(active_instance->time_step_counter_<active_instance->force_loads_num_)
             {
@@ -1045,7 +1033,6 @@ void OpenGLDriver::idleFunction()
 
         	}
             active_instance->simulator_->setExternalForces(active_instance->f_ext_);
-            std::cout<<"d\n";
             // for(int i=0;i<active_instance->simulation_mesh_->getNumVertices();++i)
             //     for(int j=0;j<3;++j)
             //     {
@@ -1152,7 +1139,7 @@ void OpenGLDriver::keyboardFunction(unsigned char key, int x, int y)
         active_instance->camera_->Reset();
         break;
     case 's':
-        //active_instance->save_tet_mesh_ = !(active_instance->save_tet_mesh_ );
+        active_instance->save_tet_mesh_ = !(active_instance->save_tet_mesh_ );
         active_instance->enable_save_objmesh_ = !(active_instance->enable_save_objmesh_);
         break;
     case 32: //space button, pause simulation

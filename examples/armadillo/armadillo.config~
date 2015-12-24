@@ -58,15 +58,19 @@ output/a
 #linear50.txt
 #linear30-un.txt
 #linear50-un.txt
-linear100-un.txt
+#linear100-un.txt
+nonlinear-65.txt
+#LB100-basis.txt
 
 *isLoadCubica
 true
 *objectCubicaFilename
-#linear50.cubature
+linear50.cubature
 #linear30-un.cubature
 #linear50-un.cubature
-linear100-un.cubature
+#linear100-un.cubature
+#nonlinear-65.cubature
+#LB100-basis.cubature
 
 *isLoadLBCubica
 true
@@ -105,7 +109,7 @@ false
 *gravity
 0.98
 *dampingMassCoef
-0.01
+0.001
 
 *dampingStiffnessCoef
 0.015
@@ -113,7 +117,7 @@ false
 *exampleStiffnessScale
 0.01
 *timestep
-0.05
+0.01
 *framerate
 30
 *totalFrame

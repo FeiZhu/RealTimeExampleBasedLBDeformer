@@ -51,6 +51,9 @@ protected:
     //used for example-based elastic energy
     Mat3d computeElasticDmInv(const int &ele,const double *u) const;
     Mat3d computeReducedElasticF(const int &cubica_idx,const double *q,const double *u) const;
+    Mat3d firstPiolaKirchhoffElastic(Mat3d &F) const;
+    void FindOrthonormalVector(Vec3d & v, Vec3d & result) const;
+    int ModifiedSVD(Mat3d & F, Mat3d & U, Vec3d & Fhat, Mat3d & V) const;
 
 
 protected:

@@ -14,6 +14,7 @@
 #include "VegaHeaders.h"
 #include "optimization.h"
 #include "reducedNeoHookeanForceModel.h"
+#include "reducedStVKCubatureForceModel.h"
 using alglib::real_1d_array;
 
 class Planes;
@@ -282,6 +283,7 @@ private:
 
     ReducedForceModel *reduced_force_model_=NULL;
     ReducedNeoHookeanForceModel *reduced_neoHookean_force_model_=NULL;
+    ReducedStVKCubatureForceModel *reduced_stvk_cubature_force_model_= NULL;
     IntegratorBaseDense *integrator_base_dense_ = NULL;
     ImplicitNewmarkDense *implicit_newmark_dense_ = NULL;
     ImplicitBackwardEulerDense *implicit_backward_euler_dense_ = NULL;
@@ -307,6 +309,8 @@ private:
     double *reduced_mass_matrix_ = NULL;
     ModalMatrix *modal_matrix_ = NULL;
     double *U_ = NULL;
+    VolumetricMesh *temp_mesh_ = NULL;
+    double *examples_deformation_=NULL;//temp
     // double *reduced_drag_force_=NULL;
     // SceneObjectReduced *reduced_simulation_mesh_=NULL;
     // SceneObjectReducedCPU *reduced_simulation_mesh_cpu_=NULL;

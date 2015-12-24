@@ -243,7 +243,7 @@ private:
     bool enable_example_simulation_ = false;
     bool enable_save_objmesh_ = false;
     // bool eachstep_flag_ = true;
-    // bool save_tet_mesh_ = false;
+    bool save_tet_mesh_ = false;
     char solver_method_[string_length];
     enum RenderMeshType{
         VISUAL_MESH = 0,
@@ -288,8 +288,6 @@ private:
     //reuced simulation
     SceneObjectReduced *render_reduced_surface_mesh_=NULL;
     SceneObjectReducedCPU *render_reduced_surface_mesh_cpu_=NULL;
-    // ReducedForceModel *reduced_force_model_=NULL;
-    // ReducedNeoHookeanForceModel *reduced_neoHookean_force_model_=NULL;
     int r_ = 0;
     double *q_ = NULL;
     double *fq_ = NULL;
