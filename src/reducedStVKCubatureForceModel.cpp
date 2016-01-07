@@ -11,7 +11,6 @@
 #include "volumetricMeshENuMaterial.h"
 #include "matrix.h"
 #include "matrixProjection.h"
-#include "generateMassMatrix.h"
 #include "performanceCounter.h"
 
 ReducedStVKCubatureForceModel::ReducedStVKCubatureForceModel(const int &r,VolumetricMesh *volumetricMesh,double *U,
@@ -42,11 +41,41 @@ ReducedStVKCubatureForceModel::ReducedStVKCubatureForceModel(const int &r,Volume
     // std::cout<<"d\n";
     int num=volumetricMesh->getNumVertices();
     //change *U to **U_,U_[vert_idx][basis_idx]
+// Matrix<double> Umatrix((int)(3*num),(int)r_);
+// Matrix<double> M((int)(3*num),(int)(3*num));
     for(int j=0;j<r_;++j)
         for(int i=0;i<3*num;++i)
         {
             U_[i][j]=U[3*num*j+i];
+            // Umatrix(i,j)=U_[i][j];
         }
+    // for(int i=0;i<3*num;++i)
+    //     for(int j=0;j<3*num;++j)
+    //     {
+    //         if(i==j)
+    //             M(i,j)=1.0/8144;
+    //         else
+    //             M(i,j)=0.0;
+    //     }
+    //
+    //         Matrix<double> temp=Umatrix.MultiplyT(M);
+    //         Matrix<double> temp1=temp*Umatrix;
+    //         for(int i=0;i<r_;++i)
+    //             {
+    //                 for(int j=0;j<r_;++j)
+    //                 {
+    //                     std::cout<<temp1(i,j)<<",";
+    //                 }
+    //                 std::cout<<"\n";
+    //             }
+    //             getchar();
+    //test U is normalized or not
+    // double test=0.0;
+    // for(int i=0;i<3*num;++i)
+    // {
+    //     test+=U_[1][i]*U_[2][i]*(1.0/8144);
+    // }
+    // std::cout<<test<<"\n";
     restpos_ = new double*[cubica_num_];
     for(int i=0;i<cubica_num_;++i)
     {

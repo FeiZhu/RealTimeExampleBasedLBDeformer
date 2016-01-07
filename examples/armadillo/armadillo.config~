@@ -1,18 +1,19 @@
 *simulationType
-#fullspace
-reducedspace
+fullspace
+#reducedspace
 
 *solver
 #implicitBackwardEuler
-#implicitNewmark
-reducedImplicitNewmark
+implicitNewmark
+#reducedImplicitNewmark
 #reducedImplicitBackwardEuler
 
 #*deformableModel
 #InvertibleFEM
 
-#*invertibleMaterial
-#neoHookean
+*invertibleMaterial
+reducedNeoHookean
+#reducedStVK
 
 #for InvertibleFEM
 *principalStretchThreshold
@@ -55,21 +56,25 @@ new-armadillo.eigen
 output/a
 
 *reducedBasisFilename
-#linear50.txt
-#linear30-un.txt
-#linear50-un.txt
-#linear100-un.txt
-nonlinear-65.txt
+#linear.basis
+#linear100-un.basis
+#nonlinear-50.basis
+#nonlinear-65.basis
+#nonlinear-40.basis
+nonlinear-28-LargeModal.basis
+#nonlinear-fixed-34.basis
+#result.txt
 #LB100-basis.txt
 
 *isLoadCubica
 true
 *objectCubicaFilename
-linear50.cubature
-#linear30-un.cubature
-#linear50-un.cubature
-#linear100-un.cubature
+#linear.cubature
+#nonlinear-50.cubature
 #nonlinear-65.cubature
+#nonlinear-40.cubature
+nonlinear-28-LargeModal.cubature
+#nonlinear-fixed-34.cubature
 #LB100-basis.cubature
 
 *isLoadLBCubica
@@ -79,8 +84,8 @@ true
 armadillo_LB100.cubature
 
 *massMatrixFilename
+#armadillo_temp.mass
 armadillo.mass
-
 #*objectAffectedVerticesFilename
 
 #*exampleAffectedVerticesFilenameBase
@@ -107,7 +112,7 @@ armadillo.lighting
 false
 
 *gravity
-0.98
+98
 *dampingMassCoef
 0.001
 

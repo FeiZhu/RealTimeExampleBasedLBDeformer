@@ -84,7 +84,7 @@ vega_libs = 'sceneObjectReduced sceneObject reducedElasticForceModel elasticForc
 	     insertRows lighting performanceCounter configFile renderVolumetricMesh openGLHelper getopts camera graph \
 	     isotropicHyperelasticFEM reducedForceModel reducedStvk stvk corotationalLinearFEM polarDecomposition massSpringSystem  objMesh volumetricMesh\
 	      sparseMatrix modalMatrix matrix matrixIO  minivector glslPhong imageIO \
-             objMesh'
+             objMesh rigidBodyDynamics'
 lib_files.append(Split(vega_libs))
 #NLOPT,OPT++ LIBS
 lib_files.append('nlopt')

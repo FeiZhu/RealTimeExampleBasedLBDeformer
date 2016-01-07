@@ -11,10 +11,12 @@
 
 #include <string>
 #include <cfloat>
+#include <map>
 #include "VegaHeaders.h"
 #include "optimization.h"
 #include "reducedNeoHookeanForceModel.h"
 #include "reducedStVKCubatureForceModel.h"
+#include "rigidBody.h"
 using alglib::real_1d_array;
 
 class Planes;
@@ -111,8 +113,14 @@ public:
         UNKNOWN
     };
     SolverType solver_type_ = UNKNOWN;
+    enum MaterialMode{
+        REDUCED_NEOHOOKEAN,
+        REDUCED_STVK
+    };
+    MaterialMode material_mode_ = REDUCED_STVK;
     void setSimulationType(const std::string &simulation_type);
-    void setSolverType(std::string solver){solver_method_=solver;std::cout<<solver_method_<<".. aaaaaaaaaaaaaaaa.\n";}
+    void setMaterialType(const std::string &material_type);
+    void setSolverType(std::string solver){solver_method_=solver;}
     void setEnableEigenWeightControl(bool enable_value){enable_eigen_weight_control_=enable_value;}
     void setExternalForces(double *ext_forces);
     void setReducedExternalForces(double *ext_forces);
@@ -130,6 +138,10 @@ public:
     void reconstructFromEigenCoefs(Vec3d *target_eigencoefs,double *vert_pos,int flag=0);
     void saveReconstructMesh(double *vert_pos);
 private:
+    void preAllocateLocalFrameCorrespondingVertices();
+    void rigidBodyPreComputation();
+    void generateLocalDetailVector(const double *vert_pos);
+    void generateNewDetailVector(const double *vert_pos);
     void initDisplacementMatrixOnElement(VolumetricMesh *mesh);
     //project && unproject with eigenfunctions
 
@@ -271,6 +283,7 @@ private:
     double mu_=0.0;
     double lamda_=0.0;
     std::string simulation_type_;
+    std::string material_type_;
     std::string solver_method_;
     SparseMatrix *mass_matrix_= NULL;
     SparseMatrixOutline *mass_matrix_outline;
@@ -314,6 +327,15 @@ private:
     // double *reduced_drag_force_=NULL;
     // SceneObjectReduced *reduced_simulation_mesh_=NULL;
     // SceneObjectReducedCPU *reduced_simulation_mesh_cpu_=NULL;
+
+    //temp mesh_eigen_skeleton
+    double *initial_eigen_skeleton_=NULL;
+	double *initial_detail_vector_=NULL;
+    double *local_detail_vector_=NULL;
+    double *deformed_detail_vector_=NULL;
+    std::map<int,int> vert_vertex1,vert_vertex2;
+    double mass_=0.0;
+    Vec3d rigid_center_;
 };
 
 } //namespace RTLB

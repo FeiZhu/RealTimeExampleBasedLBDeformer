@@ -251,7 +251,7 @@ private:
         EXAMPLE_MESH
     };
     RenderMeshType render_mesh_type_ = VISUAL_MESH;
-
+    char invertible_material_type_[string_length];
     // enum InvertibleMaterialType{
     //     INV_NEOHOOKEAN,
     //     REDUCED_STVK,

@@ -72,6 +72,7 @@ void OpenGLDriver::initConfigurations(const std::string &config_file_name)
     config_file_.addOptionOptional("exampleCubicaFilenameBase",example_cubica_file_name_prefix_,"none");
     //solver and materials config
     config_file_.addOptionOptional("simulationType",simulation_type_,"UNKNOWN");
+    config_file_.addOptionOptional("invertibleMaterial",invertible_material_type_,"reducedStVK");
     config_file_.addOptionOptional("solver",solver_method_,"UNKNOWN");
     config_file_.addOptionOptional("deformableModel",deformable_model_,"neoHookean");
     config_file_.addOptionOptional("invertibleMaterial",invertible_material_,"none");
@@ -135,6 +136,18 @@ void OpenGLDriver::initConfigurations(const std::string &config_file_name)
     }
     //print the variables that were just parsed
     config_file_.printOptions();
+    simulator_->setTimeStep(time_step_);
+    simulator_->setFrameRate(frame_rate_);
+    simulator_->setTotalFrames(total_frames_);
+    simulator_->setDampingMassCoef(damping_mass_coef_);
+    simulator_->setDampingStiffnessCoef(damping_stiffness_coef_);
+    simulator_->setExampleStiffnessScale(example_stiffness_scale_);
+    simulator_->setPrincipalStretchThreshold(principal_stretch_threshold_);
+    //enable eigen weight control
+    simulator_->setEnableEigenWeightControl(enable_eigen_weight_control_);
+    simulator_->enableGravity(add_gravity_);
+    simulator_->setGravity(gravity_);
+    simulator_->setSolverType(solver_method_);
     //set simulation mode
     if(strcmp(simulation_type_,"fullspace")==0)
     {
@@ -149,19 +162,8 @@ void OpenGLDriver::initConfigurations(const std::string &config_file_name)
         std::cout<<"Error:unknown simulation mode specified."<<std::endl;
         exit(0);
     }
-    simulator_->setTimeStep(time_step_);
-    simulator_->setFrameRate(frame_rate_);
-    simulator_->setTotalFrames(total_frames_);
-    simulator_->setDampingMassCoef(damping_mass_coef_);
-    simulator_->setDampingStiffnessCoef(damping_stiffness_coef_);
-    simulator_->setExampleStiffnessScale(example_stiffness_scale_);
-    simulator_->setPrincipalStretchThreshold(principal_stretch_threshold_);
-    //enable eigen weight control
-    simulator_->setEnableEigenWeightControl(enable_eigen_weight_control_);
-    simulator_->enableGravity(add_gravity_);
-    simulator_->setGravity(gravity_);
-    simulator_->setSolverType(solver_method_);
     simulator_->setSimulationType(simulation_type_);
+    simulator_->setMaterialType(invertible_material_type_);
 }
 
 OpenGLDriver* OpenGLDriver::activeInstance()
