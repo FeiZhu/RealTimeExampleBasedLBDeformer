@@ -829,7 +829,7 @@ void OpenGLDriver::saveTetMesh(int code)
     //std::cout<<"aaaaaaaaaaaaaaaa\n";
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
-    std::string file_name="1.veg";
+    std::string file_name="3.veg";
     std::ofstream output_file(file_name.c_str());
 	if(!output_file)
 	{

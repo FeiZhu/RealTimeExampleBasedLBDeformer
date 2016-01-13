@@ -16,7 +16,8 @@
 #include "optimization.h"
 #include "reducedNeoHookeanForceModel.h"
 #include "reducedStVKCubatureForceModel.h"
-#include "rigidBody.h"
+#include "rigidBody_generalTensor.h"
+
 using alglib::real_1d_array;
 
 class Planes;
@@ -135,11 +136,13 @@ public:
     void projectOnEigenFunctions(VolumetricMesh *mesh, double *displacement, double *vertex_volume,
                                 double **eigenfunctions, double *eigenvalues, unsigned int eigenfunction_num,
                                 Vec3d *eigencoefs);
-    void reconstructFromEigenCoefs(Vec3d *target_eigencoefs,double *vert_pos,int flag=0);
+    void reconstructFromEigenCoefs(Vec3d *target_eigencoefs,double *vert_pos);//full space
+    void reconstructFromEigenCoefs(Vec3d *target_eigencoefs,int flag=0);//reduced_space
     void saveReconstructMesh(double *vert_pos);
 private:
     void preAllocateLocalFrameCorrespondingVertices();
     void rigidBodyPreComputation();
+    void computeNonInertiaForces();
     void generateLocalDetailVector(const double *vert_pos);
     void generateNewDetailVector(const double *vert_pos);
     void initDisplacementMatrixOnElement(VolumetricMesh *mesh);
@@ -323,19 +326,21 @@ private:
     ModalMatrix *modal_matrix_ = NULL;
     double *U_ = NULL;
     VolumetricMesh *temp_mesh_ = NULL;
-    double *examples_deformation_=NULL;//temp
-    // double *reduced_drag_force_=NULL;
-    // SceneObjectReduced *reduced_simulation_mesh_=NULL;
-    // SceneObjectReducedCPU *reduced_simulation_mesh_cpu_=NULL;
 
     //temp mesh_eigen_skeleton
-    double *initial_eigen_skeleton_=NULL;
-	double *initial_detail_vector_=NULL;
+    double *examples_deformation_=NULL;//temp
+    // double *initial_eigen_skeleton_=NULL;
+	// double *initial_detail_vector_=NULL;
     double *local_detail_vector_=NULL;
-    double *deformed_detail_vector_=NULL;
+    double *target_reconstruction_=NULL;
+    // Vec3d *temp_eigencoefs_=NULL;
+    // double *examples_deformation0_=NULL;//temp
+    // Vec3d *temp_eigencoefs0_=NULL;
     std::map<int,int> vert_vertex1,vert_vertex2;
     double mass_=0.0;
     Vec3d rigid_center_;
+    double initial_inertia_tensor_[9];
+    RigidBody_GeneralTensor *rigid_=NULL;
 };
 
 } //namespace RTLB
