@@ -894,8 +894,8 @@ void OpenGLDriver::idleFunction()
         // getchar();
         // std::cout<<"-------------"<<active_instance->simulation_mode_<<"----------\n";
 
-                	PerformanceCounter counter1;
-                    counter1.StartCounter();
+    	PerformanceCounter counter1;
+        counter1.StartCounter();
         if(active_instance->simulation_mode_==REDUCEDSPACE)
         {
            //reset external forces
@@ -921,6 +921,15 @@ void OpenGLDriver::idleFunction()
                         active_instance->fq_[i] = active_instance->fqBase_[i] + active_instance->deformable_object_compliance_ * active_instance->fq_[i];
                         // std::cout<<"....."<<active_instance->fq_[i]<<",";
                     }
+
+                    active_instance_->simulator_->getRigid()->SetExternalForce(external_force[0],external_force[1],external_force[2]);
+                    Vec3d pos;
+                    pos[0]=(*active_instance->simulation_mesh_->getVertex(active_instance->pulled_vertex_))[0];
+                    pos[1]=(*active_instance->simulation_mesh_->getVertex(active_instance->pulled_vertex_))[1];
+                    pos[2]=(*active_instance->simulation_mesh_->getVertex(active_instance->pulled_vertex_))[2];
+                    double torquex,torquey,torquez;
+                    active_instance->simulator_->getRigid()->ComputeTorque(pos[0],pos[1],pos[2],external_force[0],external_force[1],external_force[2],&torquex,&torquey,&torquez);
+                    active_instance->simulator_->getRigid()->SetExternalTorque(torquex,torquey,torquez);
                 }
             }
             // else
@@ -938,7 +947,8 @@ void OpenGLDriver::idleFunction()
                     active_instance->fq_[i]+=active_instance->fq_plane_[i];
             }
             //apply force loads for reduced space from external file---not done yet
-
+            for(int i=0;i<active_instance->r_;++i)
+                active_instance->fq_[i]=0.0;
             active_instance->simulator_->setReducedExternalForces(active_instance->fq_);
             // std::cout<<active_instance->render_reduced_surface_mesh_->GetMesh()->getNumVertices()<<",,,;";
             //
@@ -1061,9 +1071,10 @@ void OpenGLDriver::idleFunction()
 
         if(active_instance->simulation_mode_==REDUCEDSPACE)
         {
-            active_instance->render_reduced_surface_mesh_->Setq(active_instance->simulator_->getq());
-            active_instance->render_reduced_surface_mesh_->Compute_uUq();
-            active_instance->render_reduced_surface_mesh_->Getu(active_instance->u_);
+            // active_instance->render_reduced_surface_mesh_->Setq(active_instance->simulator_->getq());
+            // active_instance->render_reduced_surface_mesh_->Compute_uUq();
+            // active_instance->render_reduced_surface_mesh_->Getu(active_instance->u_);
+            active_instance->u_=active_instance->simulator_->getu();
         }
         else
         {

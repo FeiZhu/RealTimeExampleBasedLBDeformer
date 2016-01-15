@@ -112,7 +112,7 @@ armadillo.lighting
 false
 
 *gravity
-98
+0.5
 *dampingMassCoef
 0.001
 
@@ -131,7 +131,7 @@ false
 1.0e-6
 
 *deformableObjectCompliance
-300.0
+10000.0
 
 #*maxIterations
 

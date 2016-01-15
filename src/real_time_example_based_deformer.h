@@ -97,6 +97,7 @@ public:
     ModalMatrix* getModalmatrix() const{return modal_matrix_;}
     double* getq(){return q_;}
     double* getu(){return u_;}
+    RigidBody_GeneralTensor* getRigid() const{return rigid_;}
     void setu(double *u);
     enum SimulationMode{
         FULLSPACE,
@@ -142,7 +143,6 @@ public:
 private:
     void preAllocateLocalFrameCorrespondingVertices();
     void rigidBodyPreComputation();
-    void computeNonInertiaForces();
     void generateLocalDetailVector(const double *vert_pos);
     void generateNewDetailVector(const double *vert_pos);
     void initDisplacementMatrixOnElement(VolumetricMesh *mesh);
@@ -337,10 +337,30 @@ private:
     // double *examples_deformation0_=NULL;//temp
     // Vec3d *temp_eigencoefs0_=NULL;
     std::map<int,int> vert_vertex1,vert_vertex2;
-    double mass_=0.0;
+
+    //rigid body simulation
+    RigidBody_GeneralTensor *rigid_=NULL;
+    double total_mass_=0.0;
+    double *vert_mass_=NULL;
     Vec3d rigid_center_;
     double initial_inertia_tensor_[9];
-    RigidBody_GeneralTensor *rigid_=NULL;
+    // double inertia_tensor_[9];
+    Vec3d linear_velocity_;
+    Vec3d angular_velocity_;
+    Vec3d new_linear_velocity_;
+    Vec3d new_angular_velocity_;
+    // Vec3d linear_acc_;
+    // Vec3d angular_acc_;
+    // double *f_cor_=NULL;
+    // double *f_ine_=NULL;
+    // double *f_enl_=NULL;
+    // double *f_cen_=NULL;
+    // double *vert_f_ext_=NULL;
+    double R_[9];
+    double t_[3];
+    double *local_reference_=NULL;
+    double *local_u_=NULL;
+    double *temp_=NULL;
 };
 
 } //namespace RTLB
