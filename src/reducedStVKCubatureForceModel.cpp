@@ -407,9 +407,9 @@ void ReducedStVKCubatureForceModel::computeReducedInternalForce(const double *q,
 		for(int i=0;i<r_;++i)
 			forces[i] += cubica_weights_[cubica_idx]*gf_[i];
 	}
-    if(add_gravity_)
-        for(int i=0;i<r_;++i)
-            forces[i] -= gravity_force_[i];
+    // if(add_gravity_)
+    //     for(int i=0;i<r_;++i)
+    //         forces[i] -= gravity_force_[i];
     counter2.StopCounter();
     // std::cout<<"integrator compute internal force:"<<counter2.GetElapsedTime()<<"\n";
 }
