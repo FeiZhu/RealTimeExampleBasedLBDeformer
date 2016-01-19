@@ -97,8 +97,10 @@ public:
     ModalMatrix* getModalmatrix() const{return modal_matrix_;}
     double* getq(){return q_;}
     double* getu(){return u_;}
-    RigidBody_GeneralTensor* getRigid() const{return rigid_;}
+    double* getvel(){return vel_;}
     void setu(double *u);
+    void setvel(double *vel);
+    RigidBody_GeneralTensor* getRigid() const{return rigid_;}
     enum SimulationMode{
         FULLSPACE,
         REDUCEDSPACE
@@ -127,6 +129,7 @@ public:
     void setExternalForces(double *ext_forces);
     void setReducedExternalForces(double *ext_forces);
     void setGravity(bool add_gravity,double gravity);
+    void setConstrains(bool with_constrains){with_constrains_=with_constrains;}
     // void setReducedSimulationMesh(SceneObjectReduced *mesh){reduced_simulation_mesh_=mesh};
 
     //registration of eigenfunctions
@@ -167,7 +170,8 @@ private:
 
 
     void fullspaceSimulation();
-    void reducedspaceSimulation();
+    void reducedspaceSimulationWithConstrains();
+    void reducedspaceSimulationWithoutConstrains();
     Mat3d computeDs(const double *reduced_dis) const;
     Mat3d computeDmInv(const int &ele) const;
     Mat3d computeF(const int &cubica_idx,const Vec3d *reduced_dis) const;
@@ -280,6 +284,7 @@ private:
     bool isload_cubica_ = false;
     bool isload_LB_cubica_ = false;
     bool isload_reduced_basis_ = false;
+    bool with_constrains_ = true;
     // double **LB_object_eigenfunctions_ = NULL;
     double ***cubica_LB_tetsubBasis_ = NULL;
     //material
@@ -335,7 +340,7 @@ private:
     double *local_detail_vector_=NULL;
     double *target_reconstruction_=NULL;
     // Vec3d *temp_eigencoefs_=NULL;
-    // double *examples_deformation0_=NULL;//temp
+    double *examples_deformation0_=NULL;//temp
     // Vec3d *temp_eigencoefs0_=NULL;
     std::map<int,int> vert_vertex1,vert_vertex2;
 

@@ -32,12 +32,13 @@ public:
     void testEnergyGradients();
     void testObjectiveGradients();
     void computeReducedInternalForce(const double *q,double *forces) const;
-    void computeReducedElasticInternalForce(const double *q,double *forces,const double *u) const;
+    //compute elastic pos for given reference_configration, q is reduced displacement of (current-reference)
+    void computeReducedElasticInternalForce(const double *dis,double *forces,const double *reference_pos) const;
 protected:
     void InitGravity(double *U); //aux function
     // Matrix<double> vertexSubBasis(const int &vert_idx) const;//3*r
     Matrix<double> tetSubBasis(const int &ele) const;//12*r
-    Mat3d computeDs(const double *reduced_dis) const;
+    Mat3d computeDs(const double *reduced_pos) const;
     Mat3d computeDmInv(const int &ele) const;
     Mat3d computeF(const int &cubica_idx,const double *q) const;
     Mat3d firstPiolaKirchhoff(Mat3d &F) const;
@@ -47,9 +48,10 @@ protected:
     void computeReducedStiffnessMatrix(const double *q,double *reduced_K/*Matrix<double> &reduced_K*/) const;
 
     //used for example-based elastic energy
-    Mat3d computeElasticDmInv(const int &ele,const double *u) const;
-    Mat3d computeReducedElasticF(const int &cubica_idx,const double *q,const double *u) const;
-    Mat3d firstPiolaKirchhoffElastic(Mat3d &F) const;
+    Mat3d computeElasticDs(const double *ele_deformed_pos) const;
+    Mat3d computeElasticDmInv(const double *ele_reference_pos) const;
+    Mat3d computeReducedElasticF(const double *ele_dis,const double *ele_reference_pos) const;
+    void computeReducedElasticEnergy(const double *dis,double &energy,const double *reference_pos) const;
     void FindOrthonormalVector(Vec3d & v, Vec3d & result) const;
     int ModifiedSVD(Mat3d & F, Mat3d & U, Vec3d & Fhat, Mat3d & V) const;
 

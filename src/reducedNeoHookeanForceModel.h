@@ -39,7 +39,7 @@ protected:
     void InitGravity(double *U); //aux function
     // Matrix<double> vertexSubBasis(const int &vert_idx) const;//3*r
     Matrix<double> tetSubBasis(const int &ele) const;//12*r
-    Mat3d computeDs(const double *reduced_dis) const;
+    Mat3d computeDs(const double *reduced_pos) const;
     Mat3d computeDmInv(const int &ele) const;
     Mat3d computeF(const int &cubica_idx,const double *q) const;
     Mat3d firstPiolaKirchhoff(Mat3d &F) const;

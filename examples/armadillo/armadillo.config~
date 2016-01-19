@@ -1,3 +1,6 @@
+*withConstrains
+true
+
 *simulationType
 #fullspace
 reducedspace
@@ -12,8 +15,8 @@ reducedImplicitNewmark
 #InvertibleFEM
 
 *invertibleMaterial
-#reducedNeoHookean
-reducedStVK
+reducedNeoHookean
+#reducedStVK
 
 #for InvertibleFEM
 *principalStretchThreshold
@@ -112,9 +115,9 @@ armadillo.lighting
 false
 
 *gravity
-0.2
+3.0
 *dampingMassCoef
-0.001
+0.01
 
 *dampingStiffnessCoef
 0.015
@@ -122,7 +125,7 @@ false
 *exampleStiffnessScale
 0.01
 *timestep
-0.01
+0.005
 *framerate
 30
 *totalFrame
@@ -131,7 +134,7 @@ false
 1.0e-6
 
 *deformableObjectCompliance
-3.0
+3000.0
 
 #*maxIterations
 
@@ -154,7 +157,7 @@ true
 0.0
 
 *focusPositionY
-0.0
+-20.0
 
 *focusPositionZ
 0.0

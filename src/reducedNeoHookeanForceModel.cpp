@@ -182,14 +182,14 @@ Matrix<double> ReducedNeoHookeanForceModel::tetSubBasis(const int &cubica_idx) c
 	// delete[] global_idx;
 	return tet_subBasis;
 }
-Mat3d ReducedNeoHookeanForceModel::computeDs(const double *reduced_dis) const
+Mat3d ReducedNeoHookeanForceModel::computeDs(const double *reduced_pos) const
 {//reduced dis is 12*1 for each element
 	Mat3d Ds(0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0);
 	for(int i=0;i<3;++i)
 	{
-		Ds[0][i]=reduced_dis[3*i]-reduced_dis[9];
-		Ds[1][i]=reduced_dis[3*i+1]-reduced_dis[10];
-		Ds[2][i]=reduced_dis[3*i+2]-reduced_dis[11];
+		Ds[0][i]=reduced_pos[3*i]-reduced_pos[9];
+		Ds[1][i]=reduced_pos[3*i+1]-reduced_pos[10];
+		Ds[2][i]=reduced_pos[3*i+2]-reduced_pos[11];
 	}
 	return Ds;
 }
@@ -362,9 +362,9 @@ void ReducedNeoHookeanForceModel::computeReducedInternalForce(const double *q,do
 		for(int i=0;i<r_;++i)
 			forces[i] += cubica_weights_[cubica_idx]*gf_[i];
 	}
-    // if(add_gravity_)
-    //     for(int i=0;i<r_;++i)
-    //         forces[i] -= gravity_force_[i];
+    if(add_gravity_)
+        for(int i=0;i<r_;++i)
+            forces[i] -= gravity_force_[i];
     counter2.StopCounter();
     // std::cout<<"integrator compute internal force:"<<counter2.GetElapsedTime()<<"\n";
 }

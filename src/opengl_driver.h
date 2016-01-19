@@ -180,6 +180,8 @@ private:
 
     int pulled_vertex_=-1; //the index of vertex pulled by user
     double *u_=NULL;
+    double *collide_u_=NULL;
+    double *collide_vel_=NULL;
     // double *vel_=NULL;
     // double *u_initial_=NULL;
     // double *vel_initial_=NULL;
@@ -238,6 +240,7 @@ private:
     bool isload_object_eigen_ = false;
     bool isload_correspondence_data_ = false;
     bool isload_cubica_ = false;
+    bool with_constrains_ = true;
     bool isload_LB_cubica_ = false;
     bool isload_example_cubica_ = false;
     bool enable_example_simulation_ = false;
