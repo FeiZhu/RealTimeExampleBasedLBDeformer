@@ -154,30 +154,20 @@ void Planes::resolveContact(const ObjMesh *mesh/*,double *forces*/,const double 
 			{
 				vert_vel[i]=vel[3*vert_index+i];
 			}
-			if((dot(vert_vel,unit_plane_normal)<0)&&(dist_vec<threshold))
+			double vel_dot = dot(vert_vel,unit_plane_normal); 
+			if((vel_dot<0)&&(dist_vec<threshold))
 			{
-				//dot(vel,unit_plane_normal)=0;
-                for(int i=0;i<3;++i)
-				    vel_new[i]=vel[i]*unit_plane_normal[i];
-				vel_new[3*vert_index+1]=0;
-                std::cout<<"....\n";
+				//v_new = v - dot(v,n)n
+                                for(int i=0;i<3;++i)
+				    vel_new[3*vert_index+i]=vert_vel[i]- vel_dot*unit_plane_normal[i];
+                                std::cout<<"....\n";
 			}
 			//change x to handle penetrated
 			if(dist_vec<0)
 			{
-				u_new[3*vert_index]=u_new[3*vert_index+2]=0;
-				u_new[3*vert_index+1]=-rel_vec[1];
+				for(unsigned int i = 0; i < 3; ++i)
+				    u_new[3*vert_index+i]=-dist_vec*unit_plane_normal[i];
 			}
-			//Vec3d rel_vec=mesh->getPosition(vert_index)-plane_center[plane_index];
-			//
-			//if(dist_vec<threshold)//close than a threshold or penetrated
-			//{
-			//	if(dist_vec<0)
-			//		dist_vec=-dist_vec;
-			//	forces[3*vert_index+0]+=plane_bounce[plane_index]*dist_vec*unit_plane_normal[0];
-			//	forces[3*vert_index+1]+=plane_bounce[plane_index]*dist_vec*unit_plane_normal[1];
-			//	forces[3*vert_index+2]+=plane_bounce[plane_index]*dist_vec*unit_plane_normal[2];
-			//}
 
 		}
     }
