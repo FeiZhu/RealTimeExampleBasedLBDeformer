@@ -181,12 +181,9 @@ void Planes::resolveContact(const ObjMesh *mesh/*,double *forces*/,const double 
 			{
 				for(unsigned int i = 0; i < 3; ++i)
 				    u_new[3*vert_index+i]=-dist_vec*unit_plane_normal[i];
-                // std::cout<<"....\n";
 			}
-
 		}
     }
-    std::cout<<"collision num is:"<<num[0]<<"...............................\n";
 }
 
 void Planes::setEnableStatus(bool status,int plane_idx)
