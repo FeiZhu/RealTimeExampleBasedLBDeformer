@@ -582,19 +582,19 @@ Mat3d ReducedStVKCubatureForceModel::computeReducedElasticF(const double *ele_di
     // std::cout<<"ds:"<<computeElasticDs(deformed)<<"\n";
     // std::cout<<"DmInv:"<<computeElasticDmInv(ele_reference_pos)<<"\n";
     //temp handle invert F_
-	// Mat3d U,V;
-    // Vec3d Fhat;
-    // ModifiedSVD(F,U,Fhat,V);
-    // //clamphat if below the principle stretch threshold
-    // double principle_threshold = 0.6;
-    // for(unsigned int i = 0; i < 3 ; ++i)
-    //     if(Fhat[i] < principle_threshold)
-    //         Fhat[i] = principle_threshold;
-    // Mat3d Fhat_mat;
-    // for(unsigned int i = 0; i < 3; ++i)
-    //     for(unsigned int j = 0; j < 3; ++j)
-    //         Fhat_mat[i][j] = (i==j)?Fhat[i]:0;
-    // F = U*Fhat_mat*trans(V);
+	Mat3d U,V;
+    Vec3d Fhat;
+    ModifiedSVD(F,U,Fhat,V);
+    //clamphat if below the principle stretch threshold
+    double principle_threshold = 0.6;
+    for(unsigned int i = 0; i < 3 ; ++i)
+        if(Fhat[i] < principle_threshold)
+            Fhat[i] = principle_threshold;
+    Mat3d Fhat_mat;
+    for(unsigned int i = 0; i < 3; ++i)
+        for(unsigned int j = 0; j < 3; ++j)
+            Fhat_mat[i][j] = (i==j)?Fhat[i]:0;
+    F = U*Fhat_mat*trans(V);
     // delete[] temp;
     // std::cout<<F<<"\n";
 	delete[] deformed;
@@ -605,10 +605,10 @@ void ReducedStVKCubatureForceModel::computeReducedElasticEnergy(const double *di
 {
 	energy=0.0;
 	//computeF(reduced_dis);//compute F for all cubica elements
-	for(int cubica_idx=0;cubica_idx<cubica_num_;++cubica_idx)
-    // for(int ele=0;ele<volumetric_mesh_->getNumElements();++ele)
+	// for(int cubica_idx=0;cubica_idx<cubica_num_;++cubica_idx)
+    for(int ele=0;ele<volumetric_mesh_->getNumElements();++ele)
 	{
-        int ele=cubica_elements_[cubica_idx];
+        // int ele=cubica_elements_[cubica_idx];
         double *ele_pos=new double[12];
         double *ele_dis=new double[12];
         for(int i=0;i<4;++i)
@@ -632,7 +632,7 @@ void ReducedStVKCubatureForceModel::computeReducedElasticEnergy(const double *di
             for(int j=0;j<3;++j)
                 doubleE+=E[i][j]*E[i][j];
         double element_energy=0.5*lamda_*trace_E*trace_E+mu_*doubleE;
-		energy += cubica_weights_[cubica_idx]*element_energy;
+		energy += element_energy;
 	}
 }
 void ReducedStVKCubatureForceModel::computeReducedElasticInternalForce(const double *dis,double *forces,const double *reference_pos) const
@@ -656,9 +656,9 @@ void ReducedStVKCubatureForceModel::computeReducedElasticInternalForce(const dou
 
     for(int cubica_idx=0;cubica_idx<cubica_num_;++cubica_idx)
 	{
+		int ele=cubica_elements_[cubica_idx];
     // for(int ele=0;ele<volumetric_mesh_->getNumElements();++ele)
     // {
-		int ele=cubica_elements_[cubica_idx];
         // std::cout<<"ele:"<<ele<<"\n";
         double *ele_pos=new double[12];
         double *ele_dis=new double[12];
@@ -683,7 +683,7 @@ void ReducedStVKCubatureForceModel::computeReducedElasticInternalForce(const dou
         memset(ele_force,0.0,sizeof(double)*12);
 		for(int i=0;i<4;++i)
 		{
-            int vertID=volumetric_mesh_->getVertexIndex(ele,i);
+            // int vertID=volumetric_mesh_->getVertexIndex(ele,i);
 			for(int j=0;j<3;++j)
 			{
 				if(i==3)
@@ -707,6 +707,7 @@ void ReducedStVKCubatureForceModel::computeReducedElasticInternalForce(const dou
         for(int i=0;i<r_;++i)
             for(int j=0;j<12;++j)
                 g[i]+=cubica_subBasis_[cubica_idx][j][i]*ele_force[j];
+
 		for(int i=0;i<r_;++i)
         {
             forces[i] += cubica_weights_[cubica_idx]*g[i];
@@ -718,75 +719,34 @@ void ReducedStVKCubatureForceModel::computeReducedElasticInternalForce(const dou
 	}
     // modal_matrix_->ProjectVector(global_forces,forces);
     // std::cout<<"----end\n";
-    // delete[] global_dis;
+    // delete[] global_forces;
 }
 void ReducedStVKCubatureForceModel::testEnergyGradients()
 {
-    double *x=new double[r_];
-    double *dx=new double[r_];
-    double *grad = new double[r_];
-    srand((unsigned)time(0));
-    int lowest=1,highest=10;
-	int range=(highest-lowest)+1;
-	for(int i=0;i<r_;++i)
-	{
-		x[i]=(lowest+rand()%range)/10.0;
-		std::cout<<x[i]<<",";
-	}
-    computeReducedInternalForce(x,grad);
-	for(int i=0;i<r_;++i)
-	{
-		dx[i]=(lowest+rand()%range)/1.0e7;
-		x[i]+=dx[i];
-	}
-    double f_plus,f_min;
-    computeReducedEnergy(x,f_plus);
-    for(int i=0;i<r_;++i)
-    {
-        x[i]-=2*dx[i];
-    }
-    computeReducedEnergy(x,f_min);
-    double f_grad_times_dx=0.0;
-    for(int i=0;i<r_;++i)
-        f_grad_times_dx+=grad[i]*2*dx[i];
-        std::cout<<f_plus<<"...\n";
-    std::cout<<"Objective, df, analytic: "<<std::setprecision(15)<<f_grad_times_dx<<", numerial: "<<std::setprecision(15)<<f_plus-f_min;
-    std::cout<<"f_plus:"<<f_plus<<",f_min:"<<f_min<<", absolute_error= "<<f_plus-f_min-f_grad_times_dx;
-    std::cout<<", rel_error= "<<(f_plus-f_min-f_grad_times_dx)/(fabs(f_grad_times_dx)>1e-20?fabs(f_grad_times_dx):1e-20)<<"\n";
-    delete[] x;
-    delete[] dx;
-    delete[] grad;
-    // double *x=new double[3*volumetric_mesh_->getNumVertices()];
-    // double *dx=new double[3*volumetric_mesh_->getNumVertices()];
-    // double *y=new double[3*volumetric_mesh_->getNumVertices()];
+    // double *x=new double[r_];
+    // double *dx=new double[r_];
     // double *grad = new double[r_];
     // srand((unsigned)time(0));
     // int lowest=1,highest=10;
 	// int range=(highest-lowest)+1;
 	// for(int i=0;i<r_;++i)
 	// {
-	// 	y[i]=(lowest+rand()%range);
-	// 	// std::cout<<x[i]<<",";
-	// }
-    // modal_matrix_->AssembleVector(x,qx);
-	// for(int i=0;i<r_;++i)
-	// {
 	// 	x[i]=(lowest+rand()%range)/10.0;
-	// 	// std::cout<<x[i]<<",";
+	// 	std::cout<<x[i]<<",";
 	// }
-    // computeReducedElasticInternalForce(x,grad,y);
+    // computeReducedInternalForce(x,grad);
 	// for(int i=0;i<r_;++i)
 	// {
 	// 	dx[i]=(lowest+rand()%range)/1.0e7;
 	// 	x[i]+=dx[i];
 	// }
     // double f_plus,f_min;
-    // computeReducedElasticEnergy(x,f_plus,y);
+    // computeReducedEnergy(x,f_plus);
     // for(int i=0;i<r_;++i)
     // {
     //     x[i]-=2*dx[i];
     // }
-    // computeReducedElasticEnergy(x,f_min,y);
+    // computeReducedEnergy(x,f_min);
     // double f_grad_times_dx=0.0;
     // for(int i=0;i<r_;++i)
     //     f_grad_times_dx+=grad[i]*2*dx[i];
@@ -797,6 +757,47 @@ void ReducedStVKCubatureForceModel::testEnergyGradients()
     // delete[] x;
     // delete[] dx;
     // delete[] grad;
+    double *x=new double[3*volumetric_mesh_->getNumVertices()];
+    double *dx=new double[3*volumetric_mesh_->getNumVertices()];
+    double *y=new double[3*volumetric_mesh_->getNumVertices()];
+    double *grad = new double[3*volumetric_mesh_->getNumVertices()];
+    srand((unsigned)time(0));
+    int lowest=1,highest=10;
+	int range=(highest-lowest)+1;
+	for(int i=0;i<3*volumetric_mesh_->getNumVertices();++i)
+	{
+		y[i]=(lowest+rand()%range);
+		// std::cout<<x[i]<<",";
+	}
+    // modal_matrix_->AssembleVector(x,qx);
+	for(int i=0;i<3*volumetric_mesh_->getNumVertices();++i)
+	{
+		x[i]=(lowest+rand()%range)/10.0;
+		// std::cout<<x[i]<<",";
+	}
+    computeReducedElasticInternalForce(x,grad,y);
+	for(int i=0;i<3*volumetric_mesh_->getNumVertices();++i)
+	{
+		dx[i]=(lowest+rand()%range)/1.0e7;
+		x[i]+=dx[i];
+	}
+    double f_plus,f_min;
+    computeReducedElasticEnergy(x,f_plus,y);
+    for(int i=0;i<3*volumetric_mesh_->getNumVertices();++i)
+    {
+        x[i]-=2*dx[i];
+    }
+    computeReducedElasticEnergy(x,f_min,y);
+    double f_grad_times_dx=0.0;
+    for(int i=0;i<3*volumetric_mesh_->getNumVertices();++i)
+        f_grad_times_dx+=grad[i]*2*dx[i];
+        std::cout<<f_plus<<"...\n";
+    std::cout<<"Objective, df, analytic: "<<std::setprecision(15)<<f_grad_times_dx<<", numerial: "<<std::setprecision(15)<<f_plus-f_min;
+    std::cout<<"f_plus:"<<f_plus<<",f_min:"<<f_min<<", absolute_error= "<<f_plus-f_min-f_grad_times_dx;
+    std::cout<<", rel_error= "<<(f_plus-f_min-f_grad_times_dx)/(fabs(f_grad_times_dx)>1e-20?fabs(f_grad_times_dx):1e-20)<<"\n";
+    delete[] x;
+    delete[] dx;
+    delete[] grad;
 }
 void ReducedStVKCubatureForceModel::testObjectiveGradients()
 {

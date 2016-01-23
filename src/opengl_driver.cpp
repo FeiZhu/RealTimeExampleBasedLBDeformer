@@ -109,6 +109,7 @@ void OpenGLDriver::initConfigurations(const std::string &config_file_name)
     config_file_.addOptionOptional("enableEigenWeightControl",&enable_eigen_weight_control_,enable_eigen_weight_control_);
     config_file_.addOptionOptional("timestep",&time_step_,time_step_);
     config_file_.addOptionOptional("massMatrixFilename",mass_matrix_file_name_,"none");
+    config_file_.addOptionOptional("inertiaTensorFilename",inertia_tensor_file_name_,"none");
     config_file_.addOptionOptional("dampingMassCoef",&damping_mass_coef_,damping_mass_coef_);
     config_file_.addOptionOptional("dampingStiffnessCoef",&damping_stiffness_coef_,damping_stiffness_coef_);
     config_file_.addOptionOptional("dampingLaplacianCoef",&damping_laplacian_coef_,damping_laplacian_coef_);
@@ -393,7 +394,7 @@ void OpenGLDriver::initSimulation()
     memset(fqBase_,0.0,sizeof(double)*r_);
     fq_plane_=new double[r_];
     memset(fq_plane_,0.0,sizeof(double)*r_);
-
+    collide_vert_num_=new int[1];
     //load mass matrix
     if(strcmp(mass_matrix_file_name_,"none")==0)
     {
@@ -402,7 +403,7 @@ void OpenGLDriver::initSimulation()
     }
     std::cout<<"Loading the mass matrix from file "<<mass_matrix_file_name_<<".\n";
     loadMassmatrix(0);
-
+    loadInertiaTensor(0);
     // if((simulation_mode_==REDUCEDSPACE)&&(with_constrains_))
     // {
     //     // if(with_constrains_)
@@ -610,13 +611,13 @@ void OpenGLDriver::displayFunction()
         glPolygonOffset(1.0,1.0);
         //  active_instance->visual_mesh_->Render();
         // if(active_instance->simulation_mode_==FULLSPACE)
-        //     active_instance->visual_mesh_->Render();
+                active_instance->visual_mesh_->Render();
         // else
         // {
             // if(active_instance->with_constrains_)
             //     active_instance->render_reduced_surface_mesh_->Render();
             // else
-                active_instance->render_surface_mesh_->Render();
+                // active_instance->render_surface_mesh_->Render();
         // }
 
         if(active_instance->render_vertices_)
@@ -635,10 +636,10 @@ void OpenGLDriver::displayFunction()
             glDisable(GL_LIGHTING);
             glColor3f(0.0,0.0,0.0);
             // if(active_instance->simulation_mode_==FULLSPACE)
-                active_instance->visual_mesh_->RenderEdges();
+                // active_instance->visual_mesh_->RenderEdges();
             // else
             //     active_instance->render_reduced_surface_mesh_->RenderEdges();
-            // active_instance->render_surface_mesh_->RenderEdges();
+                active_instance->render_surface_mesh_->RenderEdges();
             glEnable(GL_LIGHTING);
         }
         glDisable(GL_BLEND);
@@ -792,27 +793,47 @@ void OpenGLDriver::displayFunction()
 
     //glStencilFunc(GL_ALWAYS,1,~(0u));
     //render vertex velocity
-    // if(active_instance->render_velocity_)
-    // {
-    //     glDisable(GL_LIGHTING);
-    //     for(int i=0;i<active_instance->simulation_vertices_num_;++i)
-    //     {
-    //         Vec3d vert_pos,vert_new_pos;
-    //         for(int j=0;j<3;++j)
-    //         {
-    //             vert_pos[j]=(*active_instance->simulation_mesh_->getVertex(i))[j]+active_instance->u_[3*i+j];
-    //             vert_new_pos[j]=vert_pos[j]+active_instance->integrator_base_->Getqvel()[3*i+j]*active_instance->render_velocity_scale_;
-    //         }
-    //         glColor3f(1.0,0.3,0.0);
-    //         glLineWidth(1.0);
-    //         glBegin(GL_LINES);
-    //         glVertex3f(vert_pos[0],vert_pos[1],vert_pos[2]);
-    //         glVertex3f(vert_new_pos[0],vert_new_pos[1],vert_new_pos[2]);
-    //         glEnd();
-    //     }
-    //     glEnable(GL_LIGHTING);
-    // }
-
+    if(active_instance->render_velocity_)
+    {
+        glDisable(GL_LIGHTING);
+        for(int i=0;i<active_instance->simulation_vertices_num_;++i)
+        {
+            Vec3d vert_pos,vert_new_pos;
+            for(int j=0;j<3;++j)
+            {
+                vert_pos[j]=(*active_instance->simulation_mesh_->getVertex(i))[j]+active_instance->u_[3*i+j];
+                vert_new_pos[j]=vert_pos[j]+active_instance->simulator_->getvel()[3*i+j]*active_instance->render_velocity_scale_;
+            }
+            glColor3f(1.0,0.3,0.0);
+            glLineWidth(1.0);
+            glBegin(GL_LINES);
+            glVertex3f(vert_pos[0],vert_pos[1],vert_pos[2]);
+            glVertex3f(vert_new_pos[0],vert_new_pos[1],vert_new_pos[2]);
+            glEnd();
+        }
+        glEnable(GL_LIGHTING);
+    }
+    //render plane collision force
+    if(active_instance->render_ext_force_)
+    {
+        glDisable(GL_LIGHTING);
+        for(int i=0;i<active_instance->simulation_vertices_num_;++i)
+        {
+            Vec3d vert_pos,vert_new_pos;
+            for(int j=0;j<3;++j)
+            {
+                vert_pos[j]=(*active_instance->simulation_mesh_->getVertex(i))[j]+active_instance->u_[3*i+j];
+                vert_new_pos[j]=vert_pos[j]+active_instance->simulator_->getExternalForce()[3*i+j]*0.001;
+            }
+            glColor3f(1.0,0.3,1.0);
+            glLineWidth(2.0);
+            glBegin(GL_LINES);
+            glVertex3f(vert_pos[0],vert_pos[1],vert_pos[2]);
+            glVertex3f(vert_new_pos[0],vert_new_pos[1],vert_new_pos[2]);
+            glEnd();
+        }
+        glEnable(GL_LIGHTING);
+    }
     //render vertex displacement
     // if(active_instance->render_dis_)
     // {
@@ -930,18 +951,18 @@ void OpenGLDriver::idleFunction()
                     std::cout<<"external_force:"<<external_force[0]<<","<<external_force[1]<<","<<external_force[2]<<std::endl;
                     if(!active_instance->with_constrains_)
                     {
-                        std::cout<<"a-!\n";
-                        active_instance->simulator_->getRigid()->SetExternalForce(external_force[0],external_force[1],external_force[2]);
+                        // std::cout<<"a-!\n";
+                        // active_instance->simulator_->getRigid()->SetExternalForce(external_force[0],external_force[1],external_force[2]);
                         double torquex,torquey,torquez;
                         Vec3d pos;
                         pos[0]=(*active_instance->simulation_mesh_->getVertex(active_instance->pulled_vertex_))[0];
                         pos[1]=(*active_instance->simulation_mesh_->getVertex(active_instance->pulled_vertex_))[1];
                         pos[2]=(*active_instance->simulation_mesh_->getVertex(active_instance->pulled_vertex_))[2];
-                        active_instance->simulator_->getRigid()->ComputeTorque(pos[0],pos[1],pos[2],external_force[0],external_force[1],
-                                                external_force[2],&torquex,&torquey,&torquez);
-                        active_instance->simulator_->getRigid()->SetExternalTorque(torquex,torquey,torquez);
+                        // active_instance->simulator_->getRigid()->ComputeTorque(pos[0],pos[1],pos[2],external_force[0],external_force[1],
+                        //                         external_force[2],&torquex,&torquey,&torquez);
+                        // active_instance->simulator_->getRigid()->SetExternalTorque(torquex,torquey,torquez);
                     }
-                    std::cout<<"b-!\n";
+                    // std::cout<<"b-!\n";
                     for(int i=0;i<3;++i)
                     {
                         external_force[i]*=active_instance->deformable_object_compliance_;
@@ -950,7 +971,7 @@ void OpenGLDriver::idleFunction()
                     active_instance->f_ext_[3*(active_instance->pulled_vertex_)+0]=external_force[0];
                     active_instance->f_ext_[3*(active_instance->pulled_vertex_)+1]=external_force[1];
                     active_instance->f_ext_[3*(active_instance->pulled_vertex_)+2]=external_force[2];
-                    std::cout<<"c-!\n";
+                    // std::cout<<"c-!\n";
                     //distributing force over the neighboring vertices
                     set<int> affected_vertices;
                     set<int> last_layer_vertices;
@@ -997,30 +1018,37 @@ void OpenGLDriver::idleFunction()
             //plane--
             // std::cout<<"plane:"<<active_instance->plane_num_<<"\n";
             // getchar();
-            if(active_instance->plane_num_>0)
-        	{
-        		active_instance->planes_->resolveContact(active_instance->render_surface_mesh_->GetMesh(),active_instance->f_col_);
-                for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
-                {
-                    active_instance->f_ext_[i]+=active_instance->f_col_[i];
+            if(!active_instance->with_constrains_)
+            {
+                if(active_instance->plane_num_>0)
+            	{
+            		active_instance->planes_->resolveContact(active_instance->render_surface_mesh_->GetMesh(),active_instance->f_col_);
+                    for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
+                    {
+                        active_instance->f_ext_[i]+=active_instance->f_col_[i];
+                        // if(active_instance->f_col_[i]>1.0e-6)
+                        //     std::cout<<active_instance->f_col_[i]<<",";
+                    }
+                    // std::cout<<"a\n";
+                    // active_instance->planes_->resolveContact(active_instance->render_surface_mesh_->GetMesh(),//active_instance->f_col_,
+                    //                                 active_instance->simulator_->getvel(),active_instance->collide_u_,
+                    //                                 active_instance->collide_vel_,active_instance->collide_vert_num_);
+                    // for(int i=0;i<3*active_instance->simulation_mesh_->getNumVertices();++i)
+                    // {
+                    //     active_instance->u_[i]+=active_instance->collide_u_[i];
+                    //     // active_instance->f_ext_[i]+=active_instance->f_col_[i];
+                    // }
+                    // active_instance->simulator_->setu(active_instance->u_);
+                    // active_instance->simulator_->setVelAfterCollision(active_instance->collide_vel_);
+                    // active_instance->simulator_->setCollisionNum(active_instance->collide_vert_num_[0]);
                 }
-                // std::cout<<"a\n";
-                // active_instance->planes_->resolveContact(active_instance->render_reduced_surface_mesh_->GetMesh(),active_instance->simulator_->getvel(),
-                //                             active_instance->collide_u_,active_instance->collide_vel_);
-                // active_instance->simulator_->setu(active_instance->collide_u_);
-                // active_instance->simulator_->setvel(active_instance->collide_vel_);
-                // std::cout<<"b\n";
-                // active_instance->simulator_->setRigidvel(active_instance->collide_vel_);
-                // for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
-                // {
-                //     active_instance->f_ext_[i]+=active_instance->f_col_[i];
-                // }
+                    // std::cout<<"collision num is:"<<active_instance->collide_vert_num_[0]<<"...............................\n";
             }
+
             // active_instance->simulator_->getModalmatrix()->ProjectVector(active_instance->f_ext_,active_instance->fq_);
             // for(int i=0;i<active_instance->r_;++i)
             //     active_instance->fq_[i]+=active_instance->fq_plane_[i];
             //apply force loads for reduced space from external file---not done yet
-
             active_instance->simulator_->setExternalForces(active_instance->f_ext_);
             // active_instance->simulator_->setReducedExternalForces(active_instance->fq_);
             // for(int i=0;i<active_instance->render_surface_mesh_->GetMesh()->getNumVertices();++i)
@@ -1216,6 +1244,9 @@ void OpenGLDriver::keyboardFunction(unsigned char key, int x, int y)
     case 'b': //render fixed vertices
         active_instance->render_fixed_vertices_ = !(active_instance->render_fixed_vertices_);
         break;
+    case 'f':
+        active_instance->render_ext_force_ = !(active_instance->render_ext_force_);
+        break;
     case 'g': //switch on/off gravity
         active_instance->add_gravity_=!(active_instance->add_gravity_);
         addGravitySwitch(active_instance->add_gravity_);
@@ -1228,6 +1259,10 @@ void OpenGLDriver::keyboardFunction(unsigned char key, int x, int y)
         active_instance->save_tet_mesh_ = !(active_instance->save_tet_mesh_ );
         active_instance->enable_save_objmesh_ = !(active_instance->enable_save_objmesh_);
         break;
+    // case 'c':
+    //     active_instance->save_reconstruct_mesh_ = !(active_instance->save_tet_mesh_ );
+    //     active_instance->enable_save_objmesh_ = !(active_instance->enable_save_objmesh_);
+    //     break;
     case 32: //space button, pause simulation
         active_instance->pause_simulation_ = !(active_instance->pause_simulation_);
         break;
@@ -1490,9 +1525,20 @@ void OpenGLDriver::loadMassmatrix(int code)
     if(!active_instance->simulator_->loadMassmatrix(active_instance->mass_matrix_file_name_))
     {
         std::cout<<"Error:load mass matrix files failed.\n";
-        return;
+        exit(0);
     }
     std::cout<<"Load object mass matrix succeed.\n";
+}
+void OpenGLDriver::loadInertiaTensor(int code)
+{
+    OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
+    assert(active_instance);
+    if(!active_instance->simulator_->loadInertiaTensor(active_instance->inertia_tensor_file_name_))
+    {
+        std::cout<<"Error:load inertia tensor files failed.\n";
+        exit(0);
+    }
+    std::cout<<"Load object inertia tensor succeed.\n";
 }
 void OpenGLDriver::loadObjectEigenfunctions(int code)
 {
@@ -1501,7 +1547,7 @@ void OpenGLDriver::loadObjectEigenfunctions(int code)
     if(!active_instance->simulator_->loadObjectEigenfunctions(active_instance->object_eigen_file_name_))
     {
         std::cout<<"Error: load object eigenfunctions failed.\n";
-        return;
+        exit(0);
     }
     std::cout<<"Load object eigenfunctions succeed!\n";
 
@@ -1529,7 +1575,7 @@ void OpenGLDriver::saveObjectEigenfunctions(int code)
     if(!active_instance->simulator_->saveObjectEigenfunctions(active_instance->output_object_eigen_file_name_))
     {
         std::cout<<"Error: load example eigenfunctions failed.\n";
-        return;
+        exit(0);
     }
 }
 
@@ -1540,7 +1586,7 @@ void OpenGLDriver::loadExampleEigenfunctions(int code)
     if(!active_instance->simulator_->loadExampleEigenFunctions(active_instance->example_eigen_file_name_prefix_))
     {
         std::cout<<"Error: load example eigenfunctions failed.\n";
-        return;
+        exit(0);
     }
 
     active_instance->glui_current_example_eigenfunctions_loaded_->set_name("Eigenfunctions for current example loaded:Yes");
@@ -1559,13 +1605,12 @@ void OpenGLDriver::loadExampleEigenfunctions(int code)
 
 void OpenGLDriver::saveExampleEigenfunctions(int code)
 {
-    //TO DO
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
-    if(!active_instance->simulator_->saveExampleEigenfunctions(active_instance->output_eigen_file_name_prefix_));
+    if(!active_instance->simulator_->saveExampleEigenfunctions(active_instance->output_eigen_file_name_prefix_))
     {
         std::cout<<"Error: failed to save example eigenfunctions.\n";
-        return;
+        exit(0);
     }
 
 }

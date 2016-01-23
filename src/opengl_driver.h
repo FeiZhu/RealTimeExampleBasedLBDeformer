@@ -65,6 +65,7 @@ private:
     static void changeSimulationMode(int code);
 //    static void enableReducedSimulation(int code);
     static void loadMassmatrix(int code);
+    static void loadInertiaTensor(int code);
     static void loadObjectEigenfunctions(int code);
     static void saveObjectEigenfunctions(int code);
     static void loadExampleEigenfunctions(int code);
@@ -114,6 +115,7 @@ private:
     char plane_file_name_[string_length];
     int plane_num_ = 0;
     char mass_matrix_file_name_[string_length];
+    char inertia_tensor_file_name_[string_length];
     char corresponding_file_name_[string_length];
     char deformable_model_[string_length];
     char invertible_material_[string_length];
@@ -197,6 +199,7 @@ private:
     int *object_interpolation_vertices_=NULL;
     double *object_interpolation_weights_=NULL;
     int extra_objects_num_=0;
+    int *collide_vert_num_;
     SceneObjectDeformable **extra_objects_=NULL;
     //window
     std::string window_name_ = std::string("Real-time example-based Simulator");
@@ -231,6 +234,7 @@ private:
     bool render_vertices_ = false;
     bool render_wireframe_ = true;
     bool render_fixed_vertices_ = true;
+    bool render_ext_force_ = false;
     bool render_velocity_ = false;
     bool render_dis_ = false;
     bool render_eigenfunction_ = false;
