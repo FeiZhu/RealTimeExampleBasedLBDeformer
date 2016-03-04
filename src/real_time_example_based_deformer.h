@@ -76,6 +76,7 @@ public:
     void setu(double *u);
     void setVelAfterCollision(double *vel);
     void setCollisionNum(int num){collide_vert_num_=num;}
+    void setRigidInitialVel(double x,double y,double z){initial_rigid_vel_[0]=x;initial_rigid_vel_[1]=y;initial_rigid_vel_[2]=z;};
 
     unsigned int reducedBasisNum() const{return r_;}
     double** reducedBasis(){return reduced_basis_;}
@@ -261,6 +262,8 @@ private:
     //shapes in LB shape space
     Vec3d *object_eigencoefs_ = NULL;
     Vec3d **example_eigencoefs_ = NULL;
+    Vec3d example_length_;
+    Vec3d **object_example_eigencoefs_=NULL;
     Vec3d *object_current_eigencoefs_ = NULL;
     Vec3d *target_eigencoefs_ = NULL;
     Vec3d *target_eigencoefs_diff_ = NULL;
@@ -320,7 +323,7 @@ private:
     double *u_initial_=NULL;
     double *vel_initial_=NULL;
     double *f_ext_=NULL;
-    double *f_col_=NULL;
+    double *example_f_=NULL;
     // double *full_drag_force_=NULL;
     //used for reduced cubica element Computation
     double **restpos_ = NULL;//compute rest position for cubica elements
@@ -360,6 +363,7 @@ private:
     Vec3d new_linear_velocity_;
     Vec3d new_angular_velocity_;
     Vec3d rigid_external_force_;
+    Vec3d initial_rigid_vel_;
     // Vec3d linear_acc_;
     // Vec3d angular_acc_;
     // double *f_cor_=NULL;

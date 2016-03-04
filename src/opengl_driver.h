@@ -68,8 +68,10 @@ private:
     static void loadInertiaTensor(int code);
     static void loadObjectEigenfunctions(int code);
     static void saveObjectEigenfunctions(int code);
+    static void saveObjectEigenfunctionsColor(int code);
     static void loadExampleEigenfunctions(int code);
     static void saveExampleEigenfunctions(int code);
+    static void saveExampleEigenfunctionsColor(int code);
     static void loadReducedBasis(int code);
     static void loadObjectCubicaData(int code);
     static void loadLBObjectCubicaData(int code);
@@ -139,6 +141,9 @@ private:
     double integrator_epsilon_=1.0E-6;//numerical accuracy used in integrator
     double deformable_object_compliance_=1.0;
     double example_stiffness_scale_=1.0;//the stiffness used to compute example force is scaled
+    double initial_rigidvel_x_=0.0;
+    double initial_rigidvel_y_=0.0;
+    double initial_rigidvel_z_=0.0;
     int max_iterations_=1;
     int force_neighbor_size_=3;//the influence range of the integration force
     //int solver_threads_num_=1;//number of threads used for integration solver

@@ -84,7 +84,9 @@ void OpenGLDriver::initConfigurations(const std::string &config_file_name)
     config_file_.addOptionOptional("objectRenderSurfaceMeshFilename",visual_mesh_file_name_,"none");
     config_file_.addOptionOptional("objectVolumetricSurfaceMeshFilename",volumetric_surface_mesh_file_name_,"none");
     config_file_.addOptionOptional("objectInterpolationFilename",object_interpolation_file_name_,"none");
-
+    config_file_.addOptionOptional("initialRigidVelX",&initial_rigidvel_x_,initial_rigidvel_x_);
+    config_file_.addOptionOptional("initialRigidVelY",&initial_rigidvel_y_,initial_rigidvel_y_);
+    config_file_.addOptionOptional("initialRigidVelZ",&initial_rigidvel_z_,initial_rigidvel_z_);
     //examples
     config_file_.addOptionOptional("exampleFilenameBase",example_file_name_prefix_,"none");
     //config_file_.addOptionOptional("exampleSurfaceMeshFilenameBase",example_surface_mesh_file_name_,"none");
@@ -167,6 +169,7 @@ void OpenGLDriver::initConfigurations(const std::string &config_file_name)
     }
     simulator_->setSimulationType(simulation_type_);
     simulator_->setMaterialType(invertible_material_type_);
+    simulator_->setRigidInitialVel(initial_rigidvel_x_,initial_rigidvel_y_,initial_rigidvel_z_);
     std::cout<<plane_num_<<"\n";
 }
 
@@ -287,8 +290,10 @@ void OpenGLDriver::initGLUI()
         saved_base_num_spinner->set_int_limits(1,(interpolate_eigenfunction_num_<interpolate_eigenfunction_num_?interpolate_eigenfunction_num_:interpolate_eigenfunction_num_));
         //glui_->add_button_to_panel(save_panel,"Save Eigenfunctions for Current Example",0,/*saveCurrentEigenfunctions*/saveExampleEigenfunctions);
         glui_->add_button_to_panel(save_panel,"Save Eigenfunctions for All Examples",0,saveExampleEigenfunctions);
+        glui_->add_button_to_panel(save_panel,"Save current color for current eigenfunction",0,saveExampleEigenfunctionsColor);
     }
     glui_->add_button_to_panel(save_panel,"Save Eigenfunctions for Simulation Object Surface",1,saveObjectEigenfunctions);
+    glui_->add_button_to_panel(save_panel,"Save object color for current eigenfunction",0,saveObjectEigenfunctionsColor);
 
     //simulation
     GLUI_Panel *sim_panel=glui_->add_panel("Simulation",GLUI_PANEL_EMBOSSED);
@@ -929,13 +934,13 @@ void OpenGLDriver::idleFunction()
         // getchar();
         // std::cout<<"-------------"<<active_instance->simulation_mode_<<"----------\n";
 
-        // memset(active_instance->f_ext_,0.0,sizeof(double)*3*active_instance->simulation_vertices_num_);
+        memset(active_instance->f_ext_,0.0,sizeof(double)*3*active_instance->simulation_vertices_num_);
     	PerformanceCounter counter1;
         counter1.StartCounter();
         if(active_instance->simulation_mode_==REDUCEDSPACE)
         {
-            for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
-                active_instance->f_ext_[i]=0.0;
+            // for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
+            //     active_instance->f_ext_[i]=0.0;
             // for(int i=0;i<active_instance->r_;++i)
             //     active_instance->fq_[i]=0.0;
             if(active_instance->left_button_down_)
@@ -949,19 +954,19 @@ void OpenGLDriver::idleFunction()
                     active_instance->camera_->CameraVector2WorldVector_OrientationOnly3D(force_x,force_y,0,external_force);
                     std::cout<<active_instance->pulled_vertex_<<" fx: "<<force_x<<",fy: "<<force_y<<" | "<<external_force[0]<<",";
                     std::cout<<"external_force:"<<external_force[0]<<","<<external_force[1]<<","<<external_force[2]<<std::endl;
-                    if(!active_instance->with_constrains_)
-                    {
-                        // std::cout<<"a-!\n";
-                        // active_instance->simulator_->getRigid()->SetExternalForce(external_force[0],external_force[1],external_force[2]);
-                        double torquex,torquey,torquez;
-                        Vec3d pos;
-                        pos[0]=(*active_instance->simulation_mesh_->getVertex(active_instance->pulled_vertex_))[0];
-                        pos[1]=(*active_instance->simulation_mesh_->getVertex(active_instance->pulled_vertex_))[1];
-                        pos[2]=(*active_instance->simulation_mesh_->getVertex(active_instance->pulled_vertex_))[2];
-                        // active_instance->simulator_->getRigid()->ComputeTorque(pos[0],pos[1],pos[2],external_force[0],external_force[1],
-                        //                         external_force[2],&torquex,&torquey,&torquez);
-                        // active_instance->simulator_->getRigid()->SetExternalTorque(torquex,torquey,torquez);
-                    }
+                    // if(!active_instance->with_constrains_)
+                    // {
+                    //     // std::cout<<"a-!\n";
+                    //     // active_instance->simulator_->getRigid()->SetExternalForce(external_force[0],external_force[1],external_force[2]);
+                    //     // double torquex,torquey,torquez;
+                    //     // Vec3d pos;
+                    //     // pos[0]=(*active_instance->simulation_mesh_->getVertex(active_instance->pulled_vertex_))[0];
+                    //     // pos[1]=(*active_instance->simulation_mesh_->getVertex(active_instance->pulled_vertex_))[1];
+                    //     // pos[2]=(*active_instance->simulation_mesh_->getVertex(active_instance->pulled_vertex_))[2];
+                    //     // active_instance->simulator_->getRigid()->ComputeTorque(pos[0],pos[1],pos[2],external_force[0],external_force[1],
+                    //     //                         external_force[2],&torquex,&torquey,&torquez);
+                    //     // active_instance->simulator_->getRigid()->SetExternalTorque(torquex,torquey,torquez);
+                    // }
                     // std::cout<<"b-!\n";
                     for(int i=0;i<3;++i)
                     {
@@ -1022,7 +1027,7 @@ void OpenGLDriver::idleFunction()
             {
                 if(active_instance->plane_num_>0)
             	{
-            		active_instance->planes_->resolveContact(active_instance->render_surface_mesh_->GetMesh(),active_instance->f_col_);
+            		active_instance->planes_->resolveContact(active_instance->render_surface_mesh_->GetMesh(),active_instance->f_col_,active_instance->collide_vert_num_);
                     for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
                     {
                         active_instance->f_ext_[i]+=active_instance->f_col_[i];
@@ -1040,7 +1045,7 @@ void OpenGLDriver::idleFunction()
                     // }
                     // active_instance->simulator_->setu(active_instance->u_);
                     // active_instance->simulator_->setVelAfterCollision(active_instance->collide_vel_);
-                    // active_instance->simulator_->setCollisionNum(active_instance->collide_vert_num_[0]);
+                    active_instance->simulator_->setCollisionNum(active_instance->collide_vert_num_[0]);
                 }
                     // std::cout<<"collision num is:"<<active_instance->collide_vert_num_[0]<<"...............................\n";
             }
@@ -1131,7 +1136,7 @@ void OpenGLDriver::idleFunction()
             //plane--
             if(active_instance->plane_num_>0)
         	{
-        		active_instance->planes_->resolveContact(active_instance->render_surface_mesh_->GetMesh(),active_instance->f_col_);
+        		active_instance->planes_->resolveContact(active_instance->render_surface_mesh_->GetMesh(),active_instance->f_col_,active_instance->collide_vert_num_);
                 for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
                 {
                     active_instance->f_ext_[i]+=active_instance->f_col_[i];
@@ -1579,6 +1584,20 @@ void OpenGLDriver::saveObjectEigenfunctions(int code)
     }
 }
 
+void OpenGLDriver::saveObjectEigenfunctionsColor(int code)
+{
+    OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
+    assert(active_instance);
+    if(!active_instance->simulator_->saveObjectEigenfunctions(active_instance->output_object_eigen_file_name_))
+    {
+        std::cout<<"Error: load example eigenfunctions failed.\n";
+        exit(0);
+    }
+    active_instance->render_volumetric_mesh_->SaveVertexColorMap(active_instance->simulation_mesh_,
+                    active_instance->simulator_->objectEigenFunctions()[active_instance->current_render_eigen_idx_-1],
+                    "armadillo_selected.bou","000.txt");
+}
+
 void OpenGLDriver::loadExampleEigenfunctions(int code)
 {
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
@@ -1613,6 +1632,17 @@ void OpenGLDriver::saveExampleEigenfunctions(int code)
         exit(0);
     }
 
+}
+
+void OpenGLDriver::saveExampleEigenfunctionsColor(int code)
+{
+    OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
+    assert(active_instance);
+    // if(!active_instance->simulator_->saveExampleEigenfunctionsColor(active_instance->output_eigen_file_name_prefix_))
+    // {
+    //     std::cout<<"Error: failed to save example eigenfunctions.\n";
+    //     exit(0);
+    // }
 }
 void OpenGLDriver::saveCurrentObjmesh(int code)
 {

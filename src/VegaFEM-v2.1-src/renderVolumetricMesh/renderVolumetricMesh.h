@@ -40,6 +40,7 @@ public:
   RenderVolumetricMesh();
 
   void RenderVertexColorMap(VolumetricMesh *volumetricMesh, double *f, double *u = NULL); //Fei Zhu
+  void SaveVertexColorMap(VolumetricMesh *volumetricMesh, double *f,const char * inputfilename,const char * filename);//Mirror
   void Render(VolumetricMesh * volumetricMesh, int wireframe=0, double * u = NULL);
   void RenderWireframe(VolumetricMesh * volumetricMesh);
   void RenderSolidAndWireframe(VolumetricMesh * volumetricMesh);

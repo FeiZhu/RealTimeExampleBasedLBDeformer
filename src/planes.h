@@ -51,7 +51,7 @@ public:
 
     //resolve contact between the enabled planes and given mesh
     //return penalty forces, the memory for forces has be allocated outside the function
-    void resolveContact(ObjMesh *mesh,double *forces);
+    void resolveContact(ObjMesh *mesh,double *forces,int *num);
     void resolveContact(const ObjMesh *mesh/*,double *forces*/,const double *vel,double *u_new,double *vel_new,int *num);
 
     //set the enable status of the plane with given index (start with 1)

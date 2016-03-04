@@ -28,6 +28,10 @@
  *************************************************************************/
 #include <float.h>
 
+#include <iostream>
+#include <fstream>
+#include <algorithm>
+#include <vector>
 #ifdef WIN32
   #include <windows.h>
 #endif
@@ -248,7 +252,124 @@ void RenderVolumetricMesh::JetColorMap(double x, double color[3])
     return;
   }
 }
+//Mirror
+void RenderVolumetricMesh::SaveVertexColorMap(VolumetricMesh *volumetricMesh, double *f,const char * inputfilename,const char * filename)
+{
+    std::fstream inputfile(inputfilename);
+    if(!inputfile)
+    {
+        std::cout<<"Error: failed to open"<<inputfilename<<std::endl;
+        // exit(0);
+    }
+    std::vector<unsigned int> selected_vertices;
+    while((!inputfile.eof())&&(inputfile.peek()!=std::ifstream::traits_type::eof()))
+	{
+		double temp_value;
+		inputfile>>temp_value;
+		selected_vertices.push_back(temp_value);
+	}
+    inputfile.close();
+    std::ofstream outputfile(filename);
+    if(!outputfile)
+    {
+        std::cout<<"Error: failed to open "<<filename<<".\n";
+        exit(0);
+    }
+    outputfile<<"mesh2{\n";
+    int meshType = 0;
+    if (volumetricMesh->getElementType() == CubicMesh::elementType())
+    meshType = 1;
+    if (volumetricMesh->getElementType() == TetMesh::elementType())
+    meshType = 2;
+    double min_f = (std::numeric_limits<double>::max)();
+    double max_f = (-1.0)*((std::numeric_limits<double>::max)());
+    for(unsigned int vert_idx = 0; vert_idx < volumetricMesh->getNumVertices(); ++vert_idx)
+    {
+        min_f = min_f > f[vert_idx] ? f[vert_idx] : min_f;
+        max_f = max_f > f[vert_idx] ? max_f : f[vert_idx];
+    }
+    std::cout<<volumetricMesh->getNumVertices()<<"-----------------\n";
+    outputfile<<"vertex_vectors{"<<volumetricMesh->getNumVertices()<<",\n";
+    int select_count=0;
+    for(unsigned int vert_idx = 0; vert_idx < volumetricMesh->getNumVertices(); ++vert_idx)
+    {
+        Vec3d pos = *(volumetricMesh->getVertex(vert_idx));
+        // if(find(selected_vertices.begin(),selected_vertices.end(),vert_idx+1)!=selected_vertices.end())
+        // {
+            if(vert_idx==volumetricMesh->getNumVertices()-1)
+                outputfile<<"<"<<pos[0]<<","<<pos[1]<<","<<pos[2]<<">\n";
+            else
+                outputfile<<"<"<<pos[0]<<","<<pos[1]<<","<<pos[2]<<">,\n";
+            if(find(selected_vertices.begin(),selected_vertices.end(),vert_idx+1)!=selected_vertices.end())
+            {
+            select_count++;
+            }
 
+    }
+    outputfile<<"}\n";
+    double vert_color[volumetricMesh->getNumVertices()][3];
+    outputfile<<"texture_list{"<<volumetricMesh->getNumVertices()<<",\n";
+    for(unsigned int vert_idx = 0; vert_idx < volumetricMesh->getNumVertices(); ++vert_idx)
+    {
+        double normalized_f = (max_f - min_f) > 1.0e-6 ? (f[vert_idx] - min_f)/(max_f - min_f) : 0;
+        JetColorMap(normalized_f,vert_color[vert_idx]);
+        outputfile<<"texture{pigment{rgbf<";
+        outputfile<<vert_color[vert_idx][0]<<","<<vert_color[vert_idx][1]<<","<<vert_color[vert_idx][2]<<",trans>}}\n";
+    }
+    outputfile<<"}\n";
+    int count=0;
+    outputfile<<"face_indices{"<<4*volumetricMesh->getNumElements()<<",\n";
+    for(unsigned int ele=0;ele<volumetricMesh->getNumElements();++ele)
+    {
+        double global[volumetricMesh->getNumElements()];
+        for(unsigned int local_idx=0;local_idx<volumetricMesh->getNumElementVertices();++local_idx)
+        {
+            global[local_idx]=volumetricMesh->getVertexIndex(ele,local_idx);
+        }
+        // if((find(selected_vertices.begin(),selected_vertices.end(),global[0]+1)!=selected_vertices.end())&&
+        //     (find(selected_vertices.begin(),selected_vertices.end(),global[1]+1)!=selected_vertices.end())&&
+        //     (find(selected_vertices.begin(),selected_vertices.end(),global[2]+1)!=selected_vertices.end())&&
+        //     (find(selected_vertices.begin(),selected_vertices.end(),global[3]+1)!=selected_vertices.end()))
+        // {
+            outputfile<<"<"<<global[0]<<","<<global[1]<<","<<global[2]<<">,"<<global[0]<<","<<global[1]<<","<<global[2]<<",\n";
+            outputfile<<"<"<<global[0]<<","<<global[1]<<","<<global[3]<<">,"<<global[0]<<","<<global[1]<<","<<global[3]<<",\n";
+            outputfile<<"<"<<global[0]<<","<<global[2]<<","<<global[3]<<">,"<<global[0]<<","<<global[2]<<","<<global[3]<<",\n";
+            outputfile<<"<"<<global[1]<<","<<global[2]<<","<<global[3]<<">,"<<global[1]<<","<<global[2]<<","<<global[3]<<",\n";
+
+            count=count+4;
+        // }
+        // if((find(selected_vertices.begin(),selected_vertices.end(),global[0]+1)!=selected_vertices.end())&&
+        //     (find(selected_vertices.begin(),selected_vertices.end(),global[1]+1)!=selected_vertices.end())&&
+        //     (find(selected_vertices.begin(),selected_vertices.end(),global[3]+1)!=selected_vertices.end()))
+        // {
+        //     outputfile<<"<"<<global[0]<<","<<global[1]<<","<<global[3]<<">,"<<global[0]<<","<<global[1]<<","<<global[3]<<",\n";
+        //     count++;
+        // }
+        // if((find(selected_vertices.begin(),selected_vertices.end(),global[0]+1)!=selected_vertices.end())&&
+        //     (find(selected_vertices.begin(),selected_vertices.end(),global[2]+1)!=selected_vertices.end())&&
+        //     (find(selected_vertices.begin(),selected_vertices.end(),global[3]+1)!=selected_vertices.end()))
+        // {
+        //     outputfile<<"<"<<global[0]<<","<<global[2]<<","<<global[3]<<">,"<<global[0]<<","<<global[2]<<","<<global[3]<<",\n";
+        //     count++;
+        // }
+        // if((find(selected_vertices.begin(),selected_vertices.end(),global[1]+1)!=selected_vertices.end())&&
+        //     (find(selected_vertices.begin(),selected_vertices.end(),global[2]+1)!=selected_vertices.end())&&
+        //     (find(selected_vertices.begin(),selected_vertices.end(),global[3]+1)!=selected_vertices.end()))
+        // {
+        //     outputfile<<"<"<<global[1]<<","<<global[2]<<","<<global[3]<<">,"<<global[1]<<","<<global[2]<<","<<global[3]<<",\n";
+        //     count++;
+        // }
+        // if(ele==volumetricMesh->getNumElements()-1)
+        //     outputfile<<"<"<<global[1]<<","<<global[2]<<","<<global[3]<<">,"<<global[1]<<","<<global[2]<<","<<global[3]<<",\n";
+        // else
+        //     outputfile<<"<"<<global[1]<<","<<global[2]<<","<<global[3]<<">,"<<global[1]<<","<<global[2]<<","<<global[3]<<"\n";
+    }
+    std::cout<<"count=:"<<count<<"\n";
+    // std::cout<<"select_count=:"<<select_count-1<<"\n";
+    outputfile<<"}\n";
+    outputfile<<"}\n";
+    outputfile.close();
+}
 //Fei Zhu
 void RenderVolumetricMesh::RenderVertexColorMap(VolumetricMesh *volumetricMesh, double *f, double *u)
 {

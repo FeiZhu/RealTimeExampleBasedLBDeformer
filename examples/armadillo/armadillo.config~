@@ -1,5 +1,5 @@
 *withConstrains
-true
+false
 
 *simulationType
 #fullspace
@@ -83,8 +83,8 @@ nonlinear-65.cubature
 *isLoadLBCubica
 true
 *objectLBCubicaFilename
-#armadillo_LB8.cubature
-armadillo_LB100.cubature
+armadillo_LB8.cubature
+#armadillo_LB100.cubature
 
 *massMatrixFilename
 #armadillo_temp.mass
@@ -97,8 +97,8 @@ armadillo.inertia
 
 #*exampleAffectedVerticesFilenameBase
 
-#*fixedVerticesFilename
-#new-fixed.bou
+*fixedVerticesFilename
+new-fixed.bou
 
 *planeNumber
 1
@@ -127,9 +127,10 @@ true
 0.03
 
 *exampleStiffnessScale
-0.01
+300.0
+
 *timestep
-0.005
+0.01
 *framerate
 30
 *totalFrame
@@ -138,7 +139,7 @@ true
 1.0e-6
 
 *deformableObjectCompliance
-3000.0
+300.0
 
 #*maxIterations
 

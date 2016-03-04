@@ -96,12 +96,13 @@ void Planes::render()
     	}
     }
 }
-void Planes::resolveContact(ObjMesh *mesh,double *forces)
+void Planes::resolveContact(ObjMesh *mesh,double *forces,int *num)
 {
     // std::cout<<".............BEGIN.\n";
     int vert_num=mesh->getNumVertices();
     double threshold=1.0/*mesh->getDiameter()*/;//the threshold to start resolve contact
     memset(forces,0.0,sizeof(double)*3*vert_num);
+    num[0]=0;
     for(int plane_index=0;plane_index<plane_number;++plane_index)
     {
     	if(!plane_enabled[plane_index])
@@ -125,6 +126,7 @@ void Planes::resolveContact(ObjMesh *mesh,double *forces)
         		forces[3*vert_index+0]+=plane_bounce[plane_index]*dist_vec*unit_plane_normal[0];
         		forces[3*vert_index+1]+=plane_bounce[plane_index]*dist_vec*unit_plane_normal[1];
         		forces[3*vert_index+2]+=plane_bounce[plane_index]*dist_vec*unit_plane_normal[2];
+                num[0]++;
             // std::cout<<forces[3*vert_index+1]<<"\n";
     	    }
     	}
