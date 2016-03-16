@@ -146,8 +146,8 @@ ObjMesh::ObjMesh(int numVertices, double * vertices, int numFaces, int* faceVert
 
 
 ObjMesh::ObjMesh(const ObjMesh & objMesh_)
-{ 
-  // copy materials 
+{
+  // copy materials
   unsigned int numObjMaterials = objMesh_.getNumMaterials();
   for (unsigned int materialIndex=0; materialIndex < numObjMaterials; materialIndex++)
   {
@@ -204,7 +204,7 @@ ObjMesh::ObjMesh(const ObjMesh & objMesh_)
       groups[groupIndex].addFace(currentFace);
     }
   }  // for groupIndex
-  
+
   // copy filename
   filename = objMesh_.filename;
 
@@ -250,7 +250,7 @@ int ObjMesh::loadFromAscii(const string & filename, int verbose)
     {
       // if ending in '\\', the next line should be concatenated to the current line
       int lastCharPos = (int)strlen(line)-1;
-      while(line[lastCharPos] == '\\') 
+      while(line[lastCharPos] == '\\')
       {
         line[lastCharPos] = ' ';  // first turn '\' to ' '
         char nextline[maxline];
@@ -391,7 +391,7 @@ int ObjMesh::loadFromAscii(const string & filename, int verbose)
         std::pair< bool, unsigned int > normal;
 
         // now, parse curPos
-        if (strstr(curPos,"//") != NULL) 
+        if (strstr(curPos,"//") != NULL)
         {
           // v//n
           if (sscanf(curPos, "%u//%u", &pos, &nor) < 2)
@@ -401,7 +401,7 @@ int ObjMesh::loadFromAscii(const string & filename, int verbose)
           texPos = make_pair(false, 0);
           normal = make_pair(true, nor);
         }
-        else 
+        else
         {
           if (sscanf(curPos, "%u/%u/%u", &pos, &tex, &nor) != 3)
           {
@@ -469,7 +469,7 @@ int ObjMesh::loadFromAscii(const string & filename, int verbose)
         if (whiteSpace)
         {
           *tokenEnd = ' ';
-          curPos = tokenEnd + 1; 
+          curPos = tokenEnd + 1;
         }
         else
           curPos = tokenEnd;
@@ -480,7 +480,7 @@ int ObjMesh::loadFromAscii(const string & filename, int verbose)
       numGroupFaces++;
     }
     else if ((strncmp(line, "#", 1) == 0 ) || (strncmp(line, "\0", 1) == 0))
-    { 
+    {
       // ignore comment lines and empty lines
     }
     else if (strncmp(line, "usemtl", 6) == 0)
@@ -713,7 +713,7 @@ void ObjMesh::triangulate()
       {
         printf("Warning: encountered a face with fewer than 3 vertices.\n");
       }
-  
+
       unsigned int faceDegree = face->getNumVertices();
 
       if (faceDegree > 3)
@@ -724,7 +724,7 @@ void ObjMesh::triangulate()
         vector<Vertex> vertices;
         for(unsigned int k=0; k<face->getNumVertices(); k++)
           vertices.push_back(face->getVertex(k));
-        
+
         Face newFace;
         newFace.addVertex(vertices[0]);
         newFace.addVertex(vertices[1]);
@@ -753,7 +753,7 @@ void ObjMesh::computeBoundingBox()
 
   for(unsigned int i=0; i < vertexPositions.size(); i++) // over all vertices
   {
-    Vec3d p = vertexPositions[i]; 
+    Vec3d p = vertexPositions[i];
 
     if (p[0] < bmin[0])
       bmin[0] = p[0];
@@ -870,7 +870,7 @@ int ObjMesh::saveToBinary(const std::string & filename_, int outputMaterials, in
 int ObjMesh::saveToBinary(FILE * binaryOutputStream, int outputMaterials, unsigned int * bytesWritten, bool countBytesOnly, int verbose) const
 {
   // first pass: count the total number of bytes to be written to the file
-  // second pass: do the actual writing 
+  // second pass: do the actual writing
   enum {COUNT_BYTES, WRITE_TO_DISK, NUM_PASSES};
   int totalPasses = NUM_PASSES;
   if (countBytesOnly)
@@ -1091,7 +1091,7 @@ int ObjMesh::saveToBinary(FILE * binaryOutputStream, int outputMaterials, unsign
     // save groups and faces
     for(unsigned int groupIndex=0; groupIndex < groups.size(); groupIndex++)
     {
-      // save group name 
+      // save group name
       std::string groupNameString = groups[groupIndex].getName();
       char * groupNameStr = (char *)(groupNameString.c_str());
       unsigned int strLength = strlen(groupNameStr);
@@ -1216,7 +1216,7 @@ int ObjMesh::saveToBinary(FILE * binaryOutputStream, int outputMaterials, unsign
       printf("Warning in ObjMesh::saveToBinary: 'bytesWritten' is set to NULL while 'countBytesOnly' is set true.\n");
       return 2;
     }
-  
+
   return 0;
 }
 
@@ -1227,7 +1227,7 @@ void ObjMesh::save(const string & filename, int outputMaterials, fileFormatType 
     case ASCII:
       saveToAscii(filename, outputMaterials, verbose);
       break;
-    
+
     case BINARY:
         saveToBinary(filename, outputMaterials, verbose);
       break;
@@ -1297,21 +1297,21 @@ void ObjMesh::saveToAscii(const string & filename, int outputMaterials, int verb
   for (unsigned int i=0; i < vertexPositions.size(); i++)
   {
     Vec3d pos = getPosition(i);
-    fout << "v " << pos[0] << " " << pos[1] << " " << pos[2] << endl; 
+    fout << "v " << pos[0] << " " << pos[1] << " " << pos[2] << endl;
   }
 
   // texture coordinates...
   for (unsigned int i=0; i < textureCoordinates.size(); i++)
   {
     Vec3d texCoord_ = getTextureCoordinate(i);
-    fout << "vt " << texCoord_[0] << " " << texCoord_[1] << endl; 
+    fout << "vt " << texCoord_[0] << " " << texCoord_[1] << endl;
   }
 
   // normals...
   for (unsigned int i=0; i < normals.size(); i++)
   {
     Vec3d normal_ = getNormal(i);
-    fout << "vn " << normal_[0] << " " << normal_[1] << " " << normal_[2] << endl; 
+    fout << "vn " << normal_[0] << " " << normal_[1] << " " << normal_[2] << endl;
   }
 
   // groups and faces...
@@ -1325,7 +1325,7 @@ void ObjMesh::saveToAscii(const string & filename, int outputMaterials, int verb
     {
       Face face = groups[i].getFace(iFace); // get face whose number is iFace
 
-      fout << "f";   
+      fout << "f";
 
       if (face.getNumVertices() < 3)
         cout << "Warning: encountered a face (group=" << i << ",face=" << iFace << ") with fewer than 3 vertices." << endl;
@@ -1341,11 +1341,11 @@ void ObjMesh::saveToAscii(const string & filename, int outputMaterials, int verb
 
           if (vertex.hasTextureCoordinateIndex())
             fout << int(vertex.getTextureCoordinateIndex() + 1);
-    
+
           if (vertex.hasNormalIndex())
           {
             fout << "/";
-    
+
             if (vertex.hasNormalIndex())
               fout << int(vertex.getNormalIndex() + 1);
           }
@@ -1356,7 +1356,7 @@ void ObjMesh::saveToAscii(const string & filename, int outputMaterials, int verb
     }
   }
 
-  fout.close(); 
+  fout.close();
 
   if (outputMaterials)
   {
@@ -1402,7 +1402,7 @@ void ObjMesh::saveToAbq(const string & filename) const
   {
     cout << "Error: mesh has faces with more than 4 vertices." << endl;
     return;
-  } 
+  }
 
   vector<double> surfaceAreas ;
   computeSurfaceAreaPerGroup(surfaceAreas);
@@ -1436,7 +1436,7 @@ void ObjMesh::saveToAbq(const string & filename) const
   for(unsigned int i = 0; i < groups.size(); i++ )
   {
     printf("Num faces in group %d: %d\n",i+1,(int)(groups[i].getNumFaces()));
- 
+
     if (groups[i].getNumFaces() == 0)
       continue;
 
@@ -1468,14 +1468,14 @@ void ObjMesh::saveToAbq(const string & filename) const
           Vertex vertex = face.getVertex(iVertex);
           fprintf(fout,",%d",vertex.getPositionIndex() + 1);
         }
-                                                                                                                                                             
+
         fprintf(fout,"\n");
       }
     }
 
     endIndex.push_back(faceCount);
   }
-  
+
   for(unsigned int i=0; i<startIndex.size(); i++)
   {
     fprintf(fout,"*ELSET,ELSET=%s,GENERATE\n",groupNames[i].c_str());
@@ -1653,7 +1653,7 @@ ObjMesh * ObjMesh::splitIntoConnectedComponents(int withinGroupsOnly, int verbos
       if (verbose)
       {
         if (j % 100 == 1)
-          printf("Processing group %d / %d, face %d / %d.\n", i, (int)groups.size(), j, (int)groups[i].getNumFaces()); 
+          printf("Processing group %d / %d, face %d / %d.\n", i, (int)groups.size(), j, (int)groups[i].getNumFaces());
       }
       const Face * face = groups[i].getFaceHandle(j);
       int faceDegree = (int)face->getNumVertices();
@@ -1701,7 +1701,7 @@ ObjMesh * ObjMesh::splitIntoConnectedComponents(int withinGroupsOnly, int verbos
       if (verbose)
       {
         if (j % 100 == 1)
-          printf("Processing group %d / %d, face %d / %d.\n", i, (int)groups.size(), j, (int)groups[i].getNumFaces()); 
+          printf("Processing group %d / %d, face %d / %d.\n", i, (int)groups.size(), j, (int)groups[i].getNumFaces());
       }
       const Face * face = groups[i].getFaceHandle(j);
       int rep = dset[i]->FindSet(face->getVertex(0).getPositionIndex());
@@ -1965,7 +1965,7 @@ ObjMesh * ObjMesh::extractGroup(unsigned int groupID, int keepOnlyUsedNormals, i
       newVertex.setPositionIndex(newVertexIndex);
 
       if (newVertex.hasNormalIndex() && keepOnlyUsedNormals)
-      { 
+      {
         int oldNormalIndex = face->getVertex(vtx).getNormalIndex();
         int newNormalIndex = oldToNewNormals[oldNormalIndex];
         newVertex.setNormalIndex(newNormalIndex);
@@ -1978,7 +1978,7 @@ ObjMesh * ObjMesh::extractGroup(unsigned int groupID, int keepOnlyUsedNormals, i
         newVertex.setTextureCoordinateIndex(newTextureCoordinateIndex);
       }
 
-      newFace.addVertex(newVertex);      
+      newFace.addVertex(newVertex);
     }
     output->addFaceToGroup(newFace, 0);
   }
@@ -1996,7 +1996,7 @@ void ObjMesh::computeCentroids(std::vector<Vec3d> & centroids) const
 {
   interpolateToCentroids(vertexPositions, centroids);
 }
-                                                                                                                                                             
+
 void ObjMesh::interpolateToCentroids(const std::vector<double> & nodalData, std::vector<double> & centroidData) const
 {
   int faceIndex = 0;
@@ -2102,7 +2102,7 @@ void ObjMesh::deform(double * u)
 {
   for (unsigned int i=0; i < vertexPositions.size(); i++) // over all vertices
     vertexPositions[i] += Vec3d(&u[3*i]);
-  
+
   computeBoundingBox();
 }
 
@@ -2131,9 +2131,9 @@ double ObjMesh::computeVolume() const
       }
     }
   }
-  
+
   volume /= 6.0;
-  
+
   return volume;
 }
 
@@ -2161,7 +2161,7 @@ Vec3d ObjMesh::computeCenterOfMass_Triangles(const vector<double> & groupDensiti
       double area = computeFaceSurfaceArea(face);
       double mass = density * area;
       totalMass += mass;
-      Vec3d centroid = computeFaceCentroid(face);       
+      Vec3d centroid = computeFaceCentroid(face);
       centerOfMass += mass * centroid;
     }
   }
@@ -2210,7 +2210,7 @@ double ObjMesh::computeMass(const vector<double> & groupDensities) const
       totalMass += mass;
     }
   }
-  
+
   return totalMass;
 }
 
@@ -2237,10 +2237,10 @@ void ObjMesh::computeInertiaTensor_Triangles(const vector<double> & groupDensiti
       double area = computeFaceSurfaceArea(face);
       double mass = density * area;
       totalMass += mass;
-      Vec3d centroid = computeFaceCentroid(face);       
+      Vec3d centroid = computeFaceCentroid(face);
       centerOfMass += mass * centroid;
 
-      Vec3d v0 = getPosition(face.getVertex(0)); 
+      Vec3d v0 = getPosition(face.getVertex(0));
       for (unsigned int iVertex = 1; iVertex < face.getNumVertices()-1; iVertex++ )
       {
         Vec3d v1 = getPosition(face.getVertex(iVertex));
@@ -2254,20 +2254,20 @@ void ObjMesh::computeInertiaTensor_Triangles(const vector<double> & groupDensiti
       }
     }
   }
-  
+
   centerOfMass /= totalMass;
 
-  // IT is now the center around the origin  
+  // IT is now the center around the origin
   // transfer tensor to the center of mass
   double a = centerOfMass[0];
   double b = centerOfMass[1];
   double c = centerOfMass[2];
 
-  double correction[6] = 
+  double correction[6] =
        { b*b + c*c, -a*b, -a*c,
                a*a + c*c, -b*c,
                      a*a + b*b };
-                                                                                                                                                             
+
   for(int i=0; i<6; i++)
     IT[i] -= totalMass * correction[i];
 
@@ -2287,13 +2287,13 @@ Vec3d ObjMesh::computeCenterOfMass_Triangles() const
 
       double area = computeFaceSurfaceArea(face);
       totalArea += area;
-      Vec3d centroid = computeFaceCentroid(face);       
+      Vec3d centroid = computeFaceCentroid(face);
       centerOfMass += area * centroid;
     }
   }
-  
+
   centerOfMass /= totalArea;
-  
+
   return centerOfMass;
 }
 
@@ -2326,7 +2326,7 @@ double ObjMesh::computeSurfaceArea() const
       area += computeFaceSurfaceArea(face);
     }
   }
-  
+
   return area;
 }
 
@@ -2487,7 +2487,7 @@ void ObjMesh::setNormalsToAverageFaceNormals()
   // register new normals with the objMesh data structure
   normals.clear();
   for (unsigned int i=0; i < getNumVertices(); i++)
-    addVertexNormal(normalBuffer[i]);     
+    addVertexNormal(normalBuffer[i]);
 
   for(unsigned int i = 0; i < groups.size(); i++ )
   {
@@ -2520,7 +2520,7 @@ unsigned int ObjMesh::getClosestVertex(const Vec3d & queryPos, double * distance
     {
       closestDist2 = candidateDist2;
       indexClosest = i;
-    } 
+    }
   }
 
   if (distance != NULL)
@@ -2555,7 +2555,7 @@ double ObjMesh::computeMinEdgeLength() const
       }
     }
   }
-  
+
   return minLength;
 
 }
@@ -2585,7 +2585,7 @@ double ObjMesh::computeAverageEdgeLength() const
       }
     }
   }
-  
+
   return totalLength/numEdges;
 }
 
@@ -2612,7 +2612,7 @@ double ObjMesh::computeMedianEdgeLength() const
       }
     }
   }
-  
+
   sort(lengths.begin(), lengths.end());
 
   return lengths[lengths.size() / 2];
@@ -2642,7 +2642,7 @@ double ObjMesh::computeMaxEdgeLength() const
       }
     }
   }
-  
+
   return maxLength;
 }
 
@@ -2673,13 +2673,13 @@ double ObjMesh::computeMinEdgeLength(int * vtxa, int * vtxb) const
           minLength = length;
         else if (length < minLength)
           minLength = length;
-        
+
         *vtxa = face.getVertex(k).getPositionIndex();
         *vtxb = face.getVertex((k+1) % face.getNumVertices()).getPositionIndex();
       }
     }
   }
-  
+
   return minLength;
 }
 
@@ -2713,7 +2713,7 @@ double ObjMesh::computeMaxEdgeLength(int * vtxa, int * vtxb) const
       }
     }
   }
-  
+
   return maxLength;
 }
 
@@ -2721,10 +2721,10 @@ unsigned int ObjMesh::getNumFaces() const
 {
   unsigned int counter = 0;
   for (unsigned int i=0; i < groups.size(); i++)
-    counter += groups[i].getNumFaces();    
+    counter += groups[i].getNumFaces();
 
   return counter;
-}  
+}
 
 void ObjMesh::setNormalsToPseudoNormals()
 {
@@ -2959,7 +2959,7 @@ void ObjMesh::computePseudoNormals()
             cout << "Warning (when computing vertex pseudonormals): encountered zero-length edge" << endl;
             cout << "  lenNext: " << lenNext << " lenPrev: " << lenPrev << " angle: " << angle << endl;
           }
-          else  
+          else
           {
             pseudoNormals[face.getVertex(k).getPositionIndex()] += angle * normal;
             vertexDegree[face.getVertex(k).getPositionIndex()]++;
@@ -2980,7 +2980,7 @@ void ObjMesh::computePseudoNormals()
         cout << "Error (when computing vertex pseudonormals): NaN encountered." << endl;
         cout << "Vertex: " << i << " pseudoNormal=" << pseudoNormals[i][0] << " " << pseudoNormals[i][1] << " " << pseudoNormals[i][2] << endl;
         cout << "  Pseudonormal before normalization=";
-        printf("%G %G %G\n", pseudoNormalRaw[0], pseudoNormalRaw[1], pseudoNormalRaw[2]); 
+        printf("%G %G %G\n", pseudoNormalRaw[0], pseudoNormalRaw[1], pseudoNormalRaw[2]);
         cout << "  Vertex degree=" << vertexDegree[i] << endl;
         pseudoNormals[i] = 0.0;
       }
@@ -3032,7 +3032,7 @@ void ObjMesh::computeEdgePseudoNormals()
         }
 
         map< pair<unsigned int, unsigned int>, Vec3d > :: iterator iter = edgePseudoNormals.find(edge);
-        
+
         if (iter == edgePseudoNormals.end())
         {
           edgePseudoNormals.insert(make_pair(edge,normal));
@@ -3096,7 +3096,7 @@ int ObjMesh::removeZeroAreaFaces()
 
 // returns 1 on success, 0 otherwise
 int ObjMesh::getEdgePseudoNormal(unsigned int i, unsigned int j, Vec3d * pseudoNormal) const
-{ 
+{
   pair<unsigned int,unsigned int> edge;
 
   if (i < j)
@@ -3122,12 +3122,12 @@ int ObjMesh::getEdgePseudoNormal(unsigned int i, unsigned int j, Vec3d * pseudoN
 }
 
 double ObjMesh::computeFaceSurfaceArea(const Face & face) const
-{ 
+{
   double faceSurfaceArea = 0;
 
   // base vertex
   Vec3d basePos = getPosition(face.getVertex(0));
-                                                                                                                                                             
+
   for ( unsigned int iVertex = 1; iVertex < face.getNumVertices()-1; iVertex++ )
   {
      Vec3d pos1 = getPosition(face.getVertex(iVertex));
@@ -3139,7 +3139,7 @@ double ObjMesh::computeFaceSurfaceArea(const Face & face) const
 }
 
 Vec3d ObjMesh::computeFaceCentroid(const Face & face) const
-{ 
+{
   Vec3d centroid = 0.0;
   for ( unsigned int iVertex = 0; iVertex < face.getNumVertices(); iVertex++ )
      centroid += getPosition(face.getVertex(iVertex));
@@ -3151,28 +3151,28 @@ Vec3d ObjMesh::computeFaceCentroid(const Face & face) const
 void ObjMesh::computeSpecificInertiaTensor(Vec3d & v0, Vec3d & v1, Vec3d & v2, double t[6]) const
 {
 
-  t[0] = (v0[1]*v0[1] + v0[2]*v0[2] + v1[1]*v1[1] + v1[2]*v1[2] + 
-    v1[1]*v2[1] + v2[1]*v2[1] + v0[1]*(v1[1] + v2[1]) + 
-    v1[2]*v2[2] + v2[2]*v2[2] + v0[2]*(v1[2] + v2[2]))/6; 
+  t[0] = (v0[1]*v0[1] + v0[2]*v0[2] + v1[1]*v1[1] + v1[2]*v1[2] +
+    v1[1]*v2[1] + v2[1]*v2[1] + v0[1]*(v1[1] + v2[1]) +
+    v1[2]*v2[2] + v2[2]*v2[2] + v0[2]*(v1[2] + v2[2]))/6;
 
   t[1] = (-2*v1[0]*v1[1] - v1[1]*v2[0] - v0[1]*(v1[0] + v2[0])
-     - v1[0]*v2[1] - 2*v2[0]*v2[1] - 
-     v0[0]*(2*v0[1] + v1[1] + v2[1]))/12; 
+     - v1[0]*v2[1] - 2*v2[0]*v2[1] -
+     v0[0]*(2*v0[1] + v1[1] + v2[1]))/12;
 
-  t[2] = (-2*v1[0]*v1[2] - v1[2]*v2[0] - v0[2]*(v1[0] + v2[0]) - 
-    v1[0]*v2[2] - 2*v2[0]*v2[2] - 
-    v0[0]*(2*v0[2] + v1[2] + v2[2]))/12; 
+  t[2] = (-2*v1[0]*v1[2] - v1[2]*v2[0] - v0[2]*(v1[0] + v2[0]) -
+    v1[0]*v2[2] - 2*v2[0]*v2[2] -
+    v0[0]*(2*v0[2] + v1[2] + v2[2]))/12;
 
-  t[3] =  (v0[0]*v0[0] + v0[2]*v0[2] + v1[0]*v1[0] + v1[2]*v1[2] + 
-    v1[0]*v2[0] + v2[0]*v2[0] + v0[0]*(v1[0] + v2[0]) + 
-    v1[2]*v2[2] + v2[2]*v2[2] + v0[2]*(v1[2] + v2[2]))/6; 
+  t[3] =  (v0[0]*v0[0] + v0[2]*v0[2] + v1[0]*v1[0] + v1[2]*v1[2] +
+    v1[0]*v2[0] + v2[0]*v2[0] + v0[0]*(v1[0] + v2[0]) +
+    v1[2]*v2[2] + v2[2]*v2[2] + v0[2]*(v1[2] + v2[2]))/6;
 
-  t[4] = (-2*v1[1]*v1[2] - v1[2]*v2[1] - 
-    v0[2]*(v1[1] + v2[1]) - v1[1]*v2[2] - 2*v2[1]*v2[2] - 
-    v0[1]*(2*v0[2] + v1[2] + v2[2]))/12; 
+  t[4] = (-2*v1[1]*v1[2] - v1[2]*v2[1] -
+    v0[2]*(v1[1] + v2[1]) - v1[1]*v2[2] - 2*v2[1]*v2[2] -
+    v0[1]*(2*v0[2] + v1[2] + v2[2]))/12;
 
-  t[5] = (v0[0]*v0[0] + v0[1]*v0[1] + v1[0]*v1[0] + v1[1]*v1[1] + 
-    v1[0]*v2[0] + v2[0]*v2[0] + v0[0]*(v1[0] + v2[0]) + 
+  t[5] = (v0[0]*v0[0] + v0[1]*v0[1] + v1[0]*v1[0] + v1[1]*v1[1] +
+    v1[0]*v2[0] + v2[0]*v2[0] + v0[0]*(v1[0] + v2[0]) +
     v1[1]*v2[1] + v2[1]*v2[1] + v0[1]*(v1[1] + v2[1]))/6;
 }
 
@@ -3212,7 +3212,7 @@ void ObjMesh::parseMaterials(const std::string & objMeshFilename, const std::str
   FILE * file;
   //char buf[128];
   //unsigned int numMaterials;
-  
+
   char objMeshFilenameCopy[4096];
   strcpy(objMeshFilenameCopy, objMeshFilename.c_str());
 
@@ -3224,7 +3224,7 @@ void ObjMesh::parseMaterials(const std::string & objMeshFilename, const std::str
   strcat(filename, materialFilename.c_str());
 
   file = fopen(filename, "r");
-  if (!file) 
+  if (!file)
   {
     fprintf(stderr, " parseMaterials() failed: can't open material file %s.\n", filename);
     std::string message = "Failed to open material file '";
@@ -3232,7 +3232,7 @@ void ObjMesh::parseMaterials(const std::string & objMeshFilename, const std::str
     message.append("'");
     throw ObjMeshException(message);
   }
-  
+
   double Ka[3];
   double Kd[3];
   double Ks[3];
@@ -3240,20 +3240,20 @@ void ObjMesh::parseMaterials(const std::string & objMeshFilename, const std::str
   string matName;
   string textureFile = string();
 
-  // now, read in the data 
+  // now, read in the data
   char buf[4096];
   unsigned int numMaterials = 0;
-  while(fscanf(file, "%s", buf) != EOF) 
+  while(fscanf(file, "%s", buf) != EOF)
   {
-    switch(buf[0]) 
+    switch(buf[0])
     {
       case '#':
-        // comment 
+        // comment
         // ignore the rest of line
         fgets_(buf, sizeof(buf), file);
       break;
 
-      case 'n':               
+      case 'n':
         // newmtl
         if (numMaterials >= 1) // flush previous material
           addMaterial(matName, Vec3d(Ka[0], Ka[1], Ka[2]), Vec3d(Kd[0], Kd[1], Kd[2]), Vec3d(Ks[0], Ks[1], Ks[2]), shininess, textureFile);
@@ -3276,7 +3276,7 @@ void ObjMesh::parseMaterials(const std::string & objMeshFilename, const std::str
         {
           if (fscanf(file, "%lf", &shininess) < 1)
             printf("Warning: incorect mtl file syntax. Unable to read shininess.\n");
-          // wavefront shininess is from [0, 1000], so scale for OpenGL 
+          // wavefront shininess is from [0, 1000], so scale for OpenGL
           shininess *= 128.0 / 1000.0;
         }
         else
@@ -3284,7 +3284,7 @@ void ObjMesh::parseMaterials(const std::string & objMeshFilename, const std::str
       break;
 
       case 'K':
-        switch(buf[1]) 
+        switch(buf[1])
         {
           case 'd':
             if (fscanf(file, "%lf %lf %lf", &Kd[0], &Kd[1], &Kd[2]) < 3)
@@ -3341,14 +3341,14 @@ void ObjMesh::initSurfaceSampling()
 
   double totalSurfaceArea = computeSurfaceArea();
   double area = 0;
-  
+
   // over all faces
   for(unsigned int i = 0; i < groups.size(); i++ )
   {
     for(unsigned int iFace = 0; iFace < groups[i].getNumFaces(); iFace++ )
     {
       surfaceSamplingAreas.push_back(make_pair(area, groups[i].getFaceHandle(iFace)));
-      ObjMesh::Face face = groups[i].getFace(iFace); 
+      ObjMesh::Face face = groups[i].getFace(iFace);
       area += computeFaceSurfaceArea(face) / totalSurfaceArea;
     }
   }
@@ -3360,7 +3360,7 @@ Vec3d ObjMesh::getSurfaceSamplePosition(double sample) const
   unsigned int facePosition;
   for(facePosition=0; facePosition< surfaceSamplingAreas.size()-1; facePosition++)
   {
-    if ((surfaceSamplingAreas[facePosition].first <= sample) && 
+    if ((surfaceSamplingAreas[facePosition].first <= sample) &&
         (surfaceSamplingAreas[facePosition+1].first > sample))
       break;
   }
@@ -3374,14 +3374,14 @@ Vec3d ObjMesh::getSurfaceSamplePosition(double sample) const
   {
     alpha = 1.0 * rand() / RAND_MAX;
     beta = 1.0 * rand() / RAND_MAX;
-  }  
+  }
   while (alpha + beta > 1);
 
   double gamma = 1 - alpha - beta;
 
-  Vec3d v0 = getPosition(face->getVertex(0)); 
-  Vec3d v1 = getPosition(face->getVertex(1)); 
-  Vec3d v2 = getPosition(face->getVertex(2)); 
+  Vec3d v0 = getPosition(face->getVertex(0));
+  Vec3d v1 = getPosition(face->getVertex(1));
+  Vec3d v2 = getPosition(face->getVertex(2));
 
   Vec3d sampledPos = alpha * v0 + beta * v1 + gamma * v2;
   return sampledPos;
@@ -3473,21 +3473,21 @@ bool ObjMesh::Material::operator==(const Material & mat2) const
 
   if (fabs(shininess - mat2.shininess) > 1e-7)
     return false;
-   
+
   return true;
 }
 
 int ObjMesh::removeDuplicatedMaterials()
 {
   unsigned int numMaterials = getNumMaterials();
-  vector<int> reNumberVector(numMaterials);  
+  vector<int> reNumberVector(numMaterials);
 
   vector<Material> newMaterials;
 
   // detected duplicated materials
   for(unsigned int i=0; i<numMaterials; i++)
   {
-    bool newMaterial = true; 
+    bool newMaterial = true;
     for(unsigned int j=0; j<newMaterials.size(); j++)
     {
       if (newMaterials[j] == materials[i])
@@ -3503,7 +3503,7 @@ int ObjMesh::removeDuplicatedMaterials()
       newMaterials.push_back(materials[i]);
       reNumberVector[i] = newMaterials.size() - 1;
     }
-  } 
+  }
 
   materials = newMaterials;
 
@@ -3545,7 +3545,7 @@ void ObjMesh::exportGeometry(int * numVertices, double ** vertices, int * numTri
     }
 
   *triangles = (int*) malloc (sizeof(int) * 3 * *numTriangles);
-  
+
   // ===
   // set triangle groups while setting triangle positions (easy addition)
   if (numGroups != NULL)
@@ -3580,16 +3580,16 @@ void ObjMesh::exportGeometry(int * numVertices, double ** vertices, int * numTri
       vector<Vertex> vertices;
       for(unsigned int k=0; k<face->getNumVertices(); k++)
         vertices.push_back(face->getVertex(k));
-      
+
       // set triangle vertex positions
       (*triangles)[3*tri+0] = vertices[0].getPositionIndex();
       (*triangles)[3*tri+1] = vertices[1].getPositionIndex();
       (*triangles)[3*tri+2] = vertices[2].getPositionIndex();
-      
+
       // set triangle group
       if (triangleGroups != NULL)
         (*triangleGroups)[tri] = i;
-      
+
       // increment triangle counter
       tri++;
 
@@ -3598,17 +3598,17 @@ void ObjMesh::exportGeometry(int * numVertices, double ** vertices, int * numTri
         (*triangles)[3*tri+0] = vertices[0].getPositionIndex();
         (*triangles)[3*tri+1] = vertices[k].getPositionIndex();
         (*triangles)[3*tri+2] = vertices[k+1].getPositionIndex();
-        
+
         // set triangle group
         if (triangleGroups != NULL)
           (*triangleGroups)[tri] = i;
-        
+
         // increment triangle counter
         tri++;
       }
     }
   }
-  
+
   //printf("Exported %d vertices and %d triangles.\n", *numVertices, *numTriangles);
 }
 
@@ -3664,7 +3664,7 @@ void ObjMesh::exportFaceGeometry(int * numVertices, double ** vertices, int * nu
 
       for(unsigned int k=0; k<face->getNumVertices(); k++)
         (*faces)[tc + k] = face->getVertex(k).getPositionIndex();
-        
+
       faceCounter++;
       tc += faceDegree;
     }
@@ -3734,7 +3734,7 @@ void ObjMesh::exportUVGeometry(int * numUVVertices, double ** UVvertices, int * 
 }
 
 // allows one to query the vertex indices of each triangle
-// order of triangles is same as in "exportGeometry": for every group, traverse all faces, and tesselate each face into triangles 
+// order of triangles is same as in "exportGeometry": for every group, traverse all faces, and tesselate each face into triangles
 void ObjMesh::initTriangleLookup()
 {
   int numVertices;
@@ -3776,9 +3776,9 @@ void ObjMesh::renumberVertices(const vector<int> & permutation)
   vector<Vec3d> vertexPositionsBuffer(numVertices);
   for(unsigned int i=0; i < numVertices; i++)
     vertexPositionsBuffer[permutation[i]] = vertexPositions[i];
-  
+
   vertexPositions = vertexPositionsBuffer;
- 
+
   // renumber faces
   for(unsigned int i=0; i < groups.size(); i++) // over all groups
     for (unsigned int j=0; j < groups[i].getNumFaces(); j++) // over all faces
@@ -3794,7 +3794,7 @@ void ObjMesh::renumberVertices(const vector<int> & permutation)
       {
         Vertex * vtx = (Vertex*) face->getVertexHandle(k);
         vtx->setPositionIndex(permutation[vtx->getPositionIndex()]);
-      }       
+      }
     }
 }
 
@@ -3866,7 +3866,7 @@ int ObjMesh::removeIsolatedVertices()
         vertex->setPositionIndex(oldToNew[oldPositionIndex]);
       }
     }
- 
+
   return numIsolatedVertices;
 }
 
@@ -3924,7 +3924,7 @@ int ObjMesh::removeIsolatedNormals()
         }
       }
     }
- 
+
   return numIsolatedNormals;
 }
 
@@ -3982,7 +3982,7 @@ int ObjMesh::removeIsolatedTextureCoordinates()
         }
       }
     }
- 
+
   return numIsolatedTextureCoordinates;
 }
 
@@ -3996,7 +3996,7 @@ void ObjMesh::mergeGroups(const vector<int> & groupIndicesIn)
   sort(groupIndices.begin(), groupIndices.end());
 
   // the groups will be copied into the group with the smallest index
-  Group * groupDest = (Group*) getGroupHandle(*(groupIndices.begin())); 
+  Group * groupDest = (Group*) getGroupHandle(*(groupIndices.begin()));
 
   int count = 0;
   for(vector<int> :: reverse_iterator iter = groupIndices.rbegin(); iter != groupIndices.rend(); iter++)
@@ -4034,7 +4034,7 @@ void ObjMesh::removeWhitespace(char * s)
   while (*p != 0)
   {
     // erase empty space
-    while (*p == ' ') 
+    while (*p == ' ')
     {
       char * q = p;
       while (*q != 0) // move characters to the left, by one character
@@ -4054,7 +4054,7 @@ void ObjMesh::convertWhitespaceToSingleBlanks(char * s)
   while (*p != 0)
   {
     // erase consecutive empty space characters, or end-of-string spaces
-    while ((*p == ' ') && ((*(p+1) == 0) || (*(p+1) == ' '))) 
+    while ((*p == ' ') && ((*(p+1) == 0) || (*(p+1) == ' ')))
     {
       char * q = p;
       while (*q != 0) // move characters to the left, by one character
@@ -4120,7 +4120,7 @@ void ObjMesh::removeGroup(const int groupIndex)
   groups.pop_back();
   computeBoundingBox();
 }
- 
+
 void ObjMesh::removeGroup(const std::string name)
 {
   int groupIndex = getGroupIndex(name);
@@ -4325,7 +4325,7 @@ int ObjMesh::loadFromBinary(void * binaryInputStream_, streamType stream, int ve
 
   void * binaryInputBuffer = &(objMeshBuffer);
 
-  // read whether the mesh has materials or not 
+  // read whether the mesh has materials or not
   int hasMaterials = 0;
   readFromMemory(&hasMaterials, sizeof(int), 1, binaryInputBuffer);
   if (!hasMaterials)
@@ -4519,18 +4519,18 @@ int ObjMesh::loadFromBinary(void * binaryInputStream_, streamType stream, int ve
         if (texCoordinateArray[vertexCount] == 0)  // no texture coordinate index
         {
           texPos.first = false;
-          texPos.second = 0;  
+          texPos.second = 0;
         }
         else
         {
           texPos.first = true;
-          texPos.second = texCoordinateArray[vertexCount] - 1; 
+          texPos.second = texCoordinateArray[vertexCount] - 1;
         }
 
         if (normalArray[vertexCount] == 0)  // no normal index
         {
           normal.first = false;
-          normal.second = 0;  
+          normal.second = 0;
         }
         else
         {
@@ -4573,4 +4573,3 @@ unsigned int ObjMesh::readFromFile(void * buf, unsigned int elementSize, unsigne
 {
   return fread(buf, elementSize, numElements, (FILE*)fin);
 }
-

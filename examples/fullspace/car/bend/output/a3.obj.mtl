@@ -1,0 +1,78 @@
+newmtl CHROME_LAKE
+illum 4
+Ka 0 0 0
+Kd 0 0 0
+Ks 0.87451 0.941176 1
+Ns 128
+map_Kd  
+
+
+newmtl BLACK_MATTE
+illum 4
+Ka 0.219608 0.164706 0.0431373
+Kd 0 0 0
+Ks 0.768627 0.768627 0.768627
+Ns 3.73213
+map_Kd  
+
+
+newmtl WHITE_LEATHER
+illum 4
+Ka 0.882353 0.721569 0.788235
+Kd 0.952941 0.92549 0.929412
+Ks 1 1 1
+Ns 5.27803
+map_Kd LEATHER1.TGA
+
+newmtl RED_SHINY_PAINT
+illum 4
+Ka 0.701961 0 0
+Kd 0.698039 0 0
+Ks 1 1 1
+Ns 27.8576
+map_Kd  
+
+
+newmtl GLASS_FRONT_LT
+illum 4
+Ka 0.678431 0.678431 0.678431
+Kd 0.690196 0.690196 0.690196
+Ks 1 1 1
+Ns 48.5029
+map_Kd  
+
+
+newmtl GLASS
+illum 4
+Ka 0 0.407843 0.552941
+Kd 0.368627 0.423529 0.458824
+Ks 1 1 1
+Ns 48.5029
+map_Kd  
+
+
+newmtl RED_NEON
+illum 4
+Ka 1 0 0
+Kd 1 0 0
+Ks 1 0.517647 0.517647
+Ns 73.5167
+map_Kd  
+
+
+newmtl Explorer_Default
+illum 4
+Ka 0.117647 0.117647 0.117647
+Kd 0.752941 0.752941 0.752941
+Ks 0.752941 0.752941 0.752941
+Ns 8
+map_Kd  
+
+
+newmtl default
+illum 4
+Ka 0.2 0.2 0.2
+Kd 0.6 0.6 0.6
+Ks 0 0 0
+Ns 507.812
+

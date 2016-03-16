@@ -105,6 +105,7 @@ private:
     char output_object_eigen_file_name_[string_length];
     char output_eigen_file_name_prefix_[string_length];
     char output_objmesh_file_name_base_[string_length];
+    bool enable_save_surfacemtl_=false;
     char object_interpolation_file_name_[string_length];
     char example_cubica_file_name_prefix_[string_length];
     char object_cubica_file_name_[string_length];
@@ -191,7 +192,7 @@ private:
     double *collide_vel_=NULL;
     // double *vel_=NULL;
     // double *u_initial_=NULL;
-    // double *vel_initial_=NULL;
+    double *vel_initial_=NULL;
     double *f_ext_=NULL;
     double *f_col_=NULL;
     int fixed_vertices_num_=0;

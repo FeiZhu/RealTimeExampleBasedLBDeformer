@@ -76,7 +76,14 @@ public:
     void setu(double *u);
     void setVelAfterCollision(double *vel);
     void setCollisionNum(int num){collide_vert_num_=num;}
-    void setRigidInitialVel(double x,double y,double z){initial_rigid_vel_[0]=x;initial_rigid_vel_[1]=y;initial_rigid_vel_[2]=z;};
+    void setRigidInitialVel(double x,double y,double z){initial_rigid_vel_[0]=x;initial_rigid_vel_[1]=y;initial_rigid_vel_[2]=z;}
+    void setInitialForceFilename(const std::string &file_name){force_loads_file_name_=file_name;}
+    void setInitialVelFilename(const std::string &file_name){initial_velocity_file_name_=file_name;}
+    void setInitialPosFilename(const std::string &file_name){initial_position_file_name_=file_name;}
+    // void setInitialVel(double *vel);
+    // void setInitialDis(double *pos);
+    // void setInitialForceLoad(double *force);
+    // void setInitialForceLoadNum(int num){num_force_loads_=num;}
 
     unsigned int reducedBasisNum() const{return r_;}
     double** reducedBasis(){return reduced_basis_;}
@@ -120,15 +127,17 @@ public:
         REDUCEDIMPLICITBACKWARDEULER,
         UNKNOWN
     };
-    SolverType solver_type_ = UNKNOWN;
+    SolverType solver_type_=IMPLICITNEWMARK;
     enum MaterialMode{
         REDUCED_NEOHOOKEAN,
-        REDUCED_STVK
+        REDUCED_STVK,
+        INV_STVK,
+        INV_NEOHOOKEAN
     };
     MaterialMode material_mode_ = REDUCED_STVK;
     void setSimulationType(const std::string &simulation_type);
     void setMaterialType(const std::string &material_type);
-    void setSolverType(std::string solver){solver_method_=solver;}
+    void setSolverType(const std::string &solver);
     void setEnableEigenWeightControl(bool enable_value){enable_eigen_weight_control_=enable_value;}
     void setExternalForces(double *ext_forces);
     void setReducedExternalForces(double *ext_forces);
@@ -146,7 +155,7 @@ public:
                                 Vec3d *eigencoefs);
     void reconstructFromEigenCoefs(Vec3d *target_eigencoefs,double *vert_pos);//full space
     void reconstructFromEigenCoefs(Vec3d *target_eigencoefs,int flag=0);//reduced_space
-    void saveReconstructMesh(/*double *vert_pos*/);
+    void saveReconstructMesh(double *vert_pos);
 private:
     void preAllocateLocalFrameCorrespondingVertices();
     void rigidBodyPreComputation();
@@ -239,6 +248,11 @@ private:
     int fixed_dofs_num_=0;
     int *fixed_dofs_=NULL;
     bool enable_example_simulation_=false;
+    std::string force_loads_file_name_="none";
+    std::string initial_velocity_file_name_="none";
+    std::string initial_position_file_name_="none";
+    int num_force_loads_=0;
+    double *force_loads_=NULL;
 
     //reduced simulation data
     unsigned int r_ = 0;

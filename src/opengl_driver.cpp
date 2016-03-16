@@ -101,6 +101,7 @@ void OpenGLDriver::initConfigurations(const std::string &config_file_name)
     config_file_.addOptionOptional("savedExampleEigenFunctionFilenameBase",output_eigen_file_name_prefix_,"none");
     config_file_.addOptionOptional("savedObjectEigenFunctionFilename",output_object_eigen_file_name_,"none");
     config_file_.addOptionOptional("saveObjMeshFilenameBase",output_objmesh_file_name_base_,"none");
+    config_file_.addOptionOptional("enableSaveSurfaceMtl",&enable_save_surfacemtl_,enable_save_surfacemtl_);
     config_file_.addOptionOptional("correspondingFunctionFilename",corresponding_file_name_,"none");
     config_file_.addOptionOptional("reducedBasisFilename",reduced_basis_file_name_,"none");
     //output
@@ -152,6 +153,8 @@ void OpenGLDriver::initConfigurations(const std::string &config_file_name)
     simulator_->enableGravity(add_gravity_);
     simulator_->setGravity(gravity_);
     simulator_->setSolverType(solver_method_);
+    // std::cout<<solver_method_<<".........?\n";
+    // getchar();
     simulator_->setConstrains(with_constrains_);
     //set simulation mode
     if(strcmp(simulation_type_,"fullspace")==0)
@@ -167,6 +170,12 @@ void OpenGLDriver::initConfigurations(const std::string &config_file_name)
         std::cout<<"Error:unknown simulation mode specified."<<std::endl;
         exit(0);
     }
+    // if(strcmp(force_loads_file_name_,"none")!=0)
+    //     simulator_->setInitialForceFilename(force_loads_file_name_);
+    // if(strcmp(initial_velocity_file_name_,"none")!=0)
+    //     simulator_->setInitialVelFilename(initial_velocity_file_name_);
+    // if(strcmp(initial_position_file_name_,"none")!=0)
+    //     simulator_->setInitialPosFilename(initial_position_file_name_);
     simulator_->setSimulationType(simulation_type_);
     simulator_->setMaterialType(invertible_material_type_);
     simulator_->setRigidInitialVel(initial_rigidvel_x_,initial_rigidvel_y_,initial_rigidvel_z_);
@@ -290,10 +299,10 @@ void OpenGLDriver::initGLUI()
         saved_base_num_spinner->set_int_limits(1,(interpolate_eigenfunction_num_<interpolate_eigenfunction_num_?interpolate_eigenfunction_num_:interpolate_eigenfunction_num_));
         //glui_->add_button_to_panel(save_panel,"Save Eigenfunctions for Current Example",0,/*saveCurrentEigenfunctions*/saveExampleEigenfunctions);
         glui_->add_button_to_panel(save_panel,"Save Eigenfunctions for All Examples",0,saveExampleEigenfunctions);
-        glui_->add_button_to_panel(save_panel,"Save current color for current eigenfunction",0,saveExampleEigenfunctionsColor);
+        glui_->add_button_to_panel(save_panel,"Save color for all example eigenfunctions",0,saveExampleEigenfunctionsColor);
     }
     glui_->add_button_to_panel(save_panel,"Save Eigenfunctions for Simulation Object Surface",1,saveObjectEigenfunctions);
-    glui_->add_button_to_panel(save_panel,"Save object color for current eigenfunction",0,saveObjectEigenfunctionsColor);
+    glui_->add_button_to_panel(save_panel,"Save object color for all eigenfunctions",0,saveObjectEigenfunctionsColor);
 
     //simulation
     GLUI_Panel *sim_panel=glui_->add_panel("Simulation",GLUI_PANEL_EMBOSSED);
@@ -380,6 +389,8 @@ void OpenGLDriver::initSimulation()
     isrender_surface_mesh_=true;
     visual_mesh_=visual_mesh_;
 
+    vel_initial_=new double[3*simulation_vertices_num_];
+    memset(vel_initial_,0.0,sizeof(double)*3*simulation_vertices_num_);
     u_=new double[3*simulation_vertices_num_];
     memset(u_,0.0,sizeof(double)*3*simulation_vertices_num_);
     collide_u_=new double[3*simulation_vertices_num_];
@@ -408,7 +419,8 @@ void OpenGLDriver::initSimulation()
     }
     std::cout<<"Loading the mass matrix from file "<<mass_matrix_file_name_<<".\n";
     loadMassmatrix(0);
-    loadInertiaTensor(0);
+    if((simulation_mode_==REDUCEDSPACE)&&(!with_constrains_))
+        loadInertiaTensor(0);
     // if((simulation_mode_==REDUCEDSPACE)&&(with_constrains_))
     // {
     //     // if(with_constrains_)
@@ -446,8 +458,6 @@ void OpenGLDriver::initSimulation()
         std::cout<<"Error: unable to open file "<<object_interpolation_file_name_<<".\n";
         exit(1);
     }
-
-            // std::cout<<".....c..\n";
     std::cout<<"Num interpolation element vertices: "<<object_interpolation_element_vertices_num_<<".\n";
     VolumetricMesh::loadInterpolationWeights(object_interpolation_file_name_,visual_mesh_->Getn(),object_interpolation_element_vertices_num_,
                                             &object_interpolation_vertices_,&object_interpolation_weights_);
@@ -467,6 +477,22 @@ void OpenGLDriver::initSimulation()
                 std::cout<<"load fixed vertices succeed.\n";
             }
         }
+        //load initial force
+		if(strcmp(force_loads_file_name_,"none")!=0)
+		{
+            simulator_->setInitialForceFilename(force_loads_file_name_);
+		}
+		//load initial vel
+		if(strcmp(initial_velocity_file_name_,"none")!=0)
+		{
+            simulator_->setInitialVelFilename(initial_velocity_file_name_);
+		}
+		//load initial velocity
+		if(strcmp(initial_position_file_name_,"none")!=0)
+		{
+            simulator_->setInitialPosFilename(initial_position_file_name_);
+		}
+
     }
     //load example volumetric meshes
     if(example_num_>0)
@@ -1261,8 +1287,9 @@ void OpenGLDriver::keyboardFunction(unsigned char key, int x, int y)
         active_instance->camera_->Reset();
         break;
     case 's':
-        active_instance->save_tet_mesh_ = !(active_instance->save_tet_mesh_ );
+        // active_instance->save_tet_mesh_ = !(active_instance->save_tet_mesh_ );
         active_instance->enable_save_objmesh_ = !(active_instance->enable_save_objmesh_);
+        active_instance->saveCurrentObjmesh(0);
         break;
     // case 'c':
     //     active_instance->save_reconstruct_mesh_ = !(active_instance->save_tet_mesh_ );
@@ -1588,14 +1615,25 @@ void OpenGLDriver::saveObjectEigenfunctionsColor(int code)
 {
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
-    if(!active_instance->simulator_->saveObjectEigenfunctions(active_instance->output_object_eigen_file_name_))
+    if(!active_instance->simulator_->saveObjectEigenfunctions(active_instance->object_eigen_file_name_))
     {
         std::cout<<"Error: load example eigenfunctions failed.\n";
         exit(0);
     }
-    active_instance->render_volumetric_mesh_->SaveVertexColorMap(active_instance->simulation_mesh_,
-                    active_instance->simulator_->objectEigenFunctions()[active_instance->current_render_eigen_idx_-1],
-                    "armadillo_selected.bou","000.txt");
+    std::string output_file_name;
+    std::stringstream adaptor;
+    std::string eigen_idx_str;
+    for(int i=0;i<active_instance->interpolate_eigenfunction_num_;++i)
+    {
+        adaptor.str("");
+        adaptor.clear();
+        adaptor<<i+1;
+        adaptor>>eigen_idx_str;
+        output_file_name=eigen_idx_str+".txt";
+        active_instance->render_volumetric_mesh_->SaveVertexColorMap(active_instance->simulation_mesh_,
+                        active_instance->simulator_->objectEigenFunctions()[i],
+                        "armadillo_selected.bou",output_file_name.c_str());
+    }
 }
 
 void OpenGLDriver::loadExampleEigenfunctions(int code)
@@ -1638,11 +1676,35 @@ void OpenGLDriver::saveExampleEigenfunctionsColor(int code)
 {
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
-    // if(!active_instance->simulator_->saveExampleEigenfunctionsColor(active_instance->output_eigen_file_name_prefix_))
-    // {
-    //     std::cout<<"Error: failed to save example eigenfunctions.\n";
-    //     exit(0);
-    // }
+    if(!active_instance->simulator_->loadExampleEigenFunctions(active_instance->example_eigen_file_name_prefix_))
+    {
+        std::cout<<"Error: load example eigenfunctions failed.\n";
+        exit(0);
+    }
+
+    std::string output_file_name;
+    std::stringstream adaptor;
+    std::string eigen_idx_str;
+    std::stringstream adaptor1;
+    std::string example_idx_str;
+    for(int i=0;i<active_instance->interpolate_eigenfunction_num_;++i)
+    {
+        adaptor.str("");
+        adaptor.clear();
+        adaptor<<i+1;
+        adaptor>>eigen_idx_str;
+        for(int j=0;j<active_instance->example_num_;++j)
+        {
+            adaptor1.str("");
+            adaptor1.clear();
+            adaptor1<<j;
+            adaptor1>>example_idx_str;
+            output_file_name="ex"+example_idx_str+"-"+eigen_idx_str+".txt";
+            active_instance->render_volumetric_mesh_->SaveVertexColorMap(active_instance->example_mesh_[j],
+                            active_instance->simulator_->exampleEigenFunctions()[j][i],
+                            "armadillo_selected.bou",output_file_name.c_str());
+        }
+    }
 }
 void OpenGLDriver::saveCurrentObjmesh(int code)
 {
@@ -1651,30 +1713,36 @@ void OpenGLDriver::saveCurrentObjmesh(int code)
     std::stringstream adaptor;
     std::string output_object_file_name,output_file_index_str;
     std::string output_file_name_base(active_instance->output_objmesh_file_name_base_);
-    if(((active_instance->time_step_counter_+1)%(int)(1.0/(active_instance->frame_rate_*active_instance->time_step_))==0)&&(active_instance->time_step_counter_>0))
-    {
-        cout<<"frame "<<(active_instance->time_step_counter_+1)%(int)(1.0/(active_instance->frame_rate_*active_instance->time_step_))<<" begins \n";
+    // if(((active_instance->time_step_counter_+1)%(int)(1.0/(active_instance->frame_rate_*active_instance->time_step_))==0)&&(active_instance->time_step_counter_>0))
+    // {
+    //     cout<<"frame "<<(active_instance->time_step_counter_+1)%(int)(1.0/(active_instance->frame_rate_*active_instance->time_step_))<<" begins \n";
         adaptor<<active_instance->output_file_index_++;
         adaptor>>output_file_index_str;
         output_object_file_name=output_file_name_base+output_file_index_str+".obj";
         if(active_instance->simulation_mode_==FULLSPACE)
         {
             ObjMesh *mesh=active_instance->visual_mesh_->GetMesh();
-            mesh->save(output_object_file_name,0);
-            delete[] mesh;
+            if(active_instance->enable_save_surfacemtl_)
+                mesh->save(output_object_file_name,1);
+            else
+                mesh->save(output_object_file_name,0);
+            // std::cout<<"aaaa\n";
+            // delete[] mesh;
         }
         else
         {
             // ObjMesh *mesh=active_instance->render_reduced_surface_mesh_->GetMesh();
             ObjMesh *mesh=active_instance->render_surface_mesh_->GetMesh();
-            mesh->save(output_object_file_name,0);
+            if(active_instance->enable_save_surfacemtl_)
+                mesh->save(output_object_file_name,1);
+            else
+                mesh->save(output_object_file_name,0);
             delete[] mesh;
         }
 
-
         std::cout<<output_object_file_name<<" saved.\n";
-    }
-    active_instance->time_step_counter_++;
+    // }
+    // active_instance->time_step_counter_++;
     // if(!active_instance->simulator_->saveCurrentObjmesh(active_instance->output_file_name_,active_instance->currentMesh));
     // {
     //     std::cout<<"Error:failed to save current objemesh.\n";
