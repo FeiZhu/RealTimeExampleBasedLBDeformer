@@ -477,11 +477,6 @@ void OpenGLDriver::initSimulation()
                 std::cout<<"load fixed vertices succeed.\n";
             }
         }
-        //load initial force
-		if(strcmp(force_loads_file_name_,"none")!=0)
-		{
-            simulator_->setInitialForceFilename(force_loads_file_name_);
-		}
 		//load initial vel
 		if(strcmp(initial_velocity_file_name_,"none")!=0)
 		{
@@ -493,6 +488,11 @@ void OpenGLDriver::initSimulation()
             simulator_->setInitialPosFilename(initial_position_file_name_);
 		}
 
+    }
+    //load initial force
+    if(strcmp(force_loads_file_name_,"none")!=0)
+    {
+        simulator_->setInitialForceFilename(force_loads_file_name_);
     }
     //load example volumetric meshes
     if(example_num_>0)
@@ -1528,8 +1528,8 @@ void OpenGLDriver::changeSimulationMode(int code)
         active_instance->enable_example_simulation_=false;
         return;
     }
-    active_instance->simulator_->setEnableExampleBasedSimulation(active_instance->enable_example_simulation_);
     active_instance->enable_example_simulation_=!(active_instance->enable_example_simulation_);
+    active_instance->simulator_->setEnableExampleBasedSimulation(active_instance->enable_example_simulation_);
     if(active_instance->enable_example_simulation_)
         active_instance->change_simulation_mode_button_->set_name("Disable example-based simulation");
     else

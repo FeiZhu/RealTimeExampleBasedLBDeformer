@@ -251,7 +251,7 @@ private:
     std::string force_loads_file_name_="none";
     std::string initial_velocity_file_name_="none";
     std::string initial_position_file_name_="none";
-    int num_force_loads_=0;
+    int force_loads_num_=0;
     double *force_loads_=NULL;
 
     //reduced simulation data
