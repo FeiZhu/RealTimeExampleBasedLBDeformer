@@ -72,6 +72,7 @@ public:
     void setDampingMassCoef(double value){damping_mass_coef_ = value;}
     void setDampingStiffnessCoef(double value){damping_stiffness_coef_ = value;}
     void setExampleStiffnessScale(double value){example_stiffness_scale_ = value;}
+    void setDampingExampleStiffness(double value){damping_example_stiffness_ = value;}
     void setPrincipalStretchThreshold(double value){principal_stretch_threshold_ = value;}
     void setu(double *u);
     void setVelAfterCollision(double *vel);
@@ -237,6 +238,7 @@ private:
     float damping_stiffness_coef_=0.0;
     float damping_laplacian_coef_=0.0;
     double example_stiffness_scale_=1.0;//the stiffness used to compute example force is scaled
+    double damping_example_stiffness_=0.0;//damping stiffness force coefficients
     bool add_gravity_ = true;
     double gravity_=9.8;
     int max_iterations_=1;
@@ -394,6 +396,7 @@ private:
     double *Uqvel_=NULL;
     double *Uqaccel_=NULL;
     int collide_vert_num_=1;
+    double total_target_time_=0.0;
 
 };
 

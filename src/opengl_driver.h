@@ -142,6 +142,7 @@ private:
     double integrator_epsilon_=1.0E-6;//numerical accuracy used in integrator
     double deformable_object_compliance_=1.0;
     double example_stiffness_scale_=1.0;//the stiffness used to compute example force is scaled
+    double damping_example_stiffness_=0.0;
     double initial_rigidvel_x_=0.0;
     double initial_rigidvel_y_=0.0;
     double initial_rigidvel_z_=0.0;
@@ -308,6 +309,13 @@ private:
     double *fq_plane_ = NULL;
     bool reduced_simulation_ = false;
     // double *reduced_force_loads_ = NULL;
+
+    //time_counter
+    //PerformanceCounter each_frame_counter_;
+    double total_simulation_time_=0.0;
+    double total_write_file_time_=0.0;
+    double total_display_time_=0.0;
+
 };
 
 }  //namespace RTLB

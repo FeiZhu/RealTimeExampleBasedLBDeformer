@@ -228,7 +228,7 @@ void RealTimeExampleBasedDeformer::setupSimulation()
 		std::cout<<"simulation mesh is null.\n";
 		exit(0);
 	}
-
+	total_steps_=(int)((1.0/time_step_)/frame_rate_)*total_frames_;
     mesh_graph_=GenerateMeshGraph::Generate(simulation_mesh_);
     int scale_rows=1;
     mesh_graph_->GetLaplacian(&laplacian_matrix_,scale_rows);
@@ -654,12 +654,12 @@ void RealTimeExampleBasedDeformer::fullspaceSimulation()
 	//set forces to the integrator
 	integrator_base_sparse_->SetExternalForces(f_ext_);
 	//time step the dynamics
-	// if(time_step_counter_ < total_steps_)
-	// {
+	if(time_step_counter_ < total_steps_)
+	{
 		int code=integrator_base_->DoTimestep();
 		std::cout<<".";fflush(NULL);
 		++time_step_counter_;
-	// }
+	}
 	memcpy(u_,integrator_base_->Getq(),sizeof(double)*3*(simulation_vertices_num_));
 
 }
@@ -672,16 +672,16 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulationWithConstrains()
 	{
 		projectOnEigenFunctions(simulation_mesh_,u_,object_vertex_volume_,object_eigenfunctions_,object_eigenvalues_,
 								interpolate_eigenfunction_num_,object_current_eigencoefs_);
-		// if(count==1)
-		// {
-		// 	for(int i=0;i<interpolate_eigenfunction_num_;++i)
-		// 		for(int j=0;j<3;++j)
-		// 		{
-		// 			object_eigencoefs_[i][j]=example_eigencoefs_[0][i][j];
-		// 			// object_current_eigencoefs_[i][j]=example_eigencoefs_[0][i][j];
-		// 		}
-		// 	count++;
-		// }
+		if(count==1)
+		{
+			for(int i=0;i<interpolate_eigenfunction_num_;++i)
+				for(int j=0;j<3;++j)
+				{
+					object_eigencoefs_[i][j]=example_eigencoefs_[0][i][j];
+					// object_current_eigencoefs_[i][j]=example_eigencoefs_[0][i][j];
+				}
+			count++;
+		}
 		for(int i=0;i<interpolate_eigenfunction_num_;++i)
 			object_current_eigencoefs_[i]=object_current_eigencoefs_[i]-object_eigencoefs_[i]+example_eigencoefs_[0][i];
 		projectOnExampleManifold(object_current_eigencoefs_,target_eigencoefs_);
@@ -725,12 +725,12 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulationWithConstrains()
 	//linear-force
 	modal_matrix_->ProjectVector(f_ext_,fq_);
 	integrator_base_dense_->SetExternalForces(fq_);
-	// if(time_step_counter_ < active_instance->total_steps_)
-	// {
+	if(time_step_counter_ < total_steps_)
+	{
 		int code=integrator_base_dense_->DoTimestep();
 		std::cout<<"."<<code;fflush(NULL);
-		// ++time_step_counter_;
-	// }
+		++time_step_counter_;
+	}
 	memcpy(q_,integrator_base_->Getq(),sizeof(double)*r_);
 	modal_matrix_->AssembleVector(q_,u_);
 }
@@ -740,18 +740,16 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulationWithoutConstrains()
 	rigid_->ResetWrenches();
 	rigid_external_force_[0]=rigid_external_force_[1]=rigid_external_force_[2]=0.0;
 	// memset(example_f_,0.0,sizeof(double)*3*simulation_mesh_->getNumVertices());
-	memset(f_ext_,0.0,sizeof(double)*3*simulation_mesh_->getNumVertices());
+	// memset(f_ext_,0.0,sizeof(double)*3*simulation_mesh_->getNumVertices());
 
-    static int count_num=1;
-	// if(time_step_counter_<force_loads_num_)
-	std::cout<<"count_num:"<<count_num<<"\n";
-	std::cout<<"force_loads_num_:"<<force_loads_num_<<"\n";
-	if(count_num<force_loads_num_)
+    // static int count_num=1;
+	if(time_step_counter_<force_loads_num_)
 	{
 		// std::cout<<"External forces read from the text input file.\n";
 		for(int i=0;i<3*simulation_vertices_num_;++i)
-			f_ext_[i]=force_loads_[ELT(3*simulation_vertices_num_,i,time_step_counter_)];
-		count_num++;
+			f_ext_[i]+=force_loads_[ELT(3*simulation_vertices_num_,i,time_step_counter_)];
+			std::cout<<time_step_counter_<<"....\n";
+
 	}
 	if(enable_example_simulation_)
 	{
@@ -772,44 +770,20 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulationWithoutConstrains()
 			object_current_eigencoefs_[i]=object_current_eigencoefs_[i]-object_eigencoefs_[i]+example_eigencoefs_[0][i];
 			// object_current_eigencoefs_[i]=example_eigencoefs_[1][i];
 		memcpy(target_eigencoefs_,object_current_eigencoefs_,sizeof(Vec3d)*interpolate_eigenfunction_num_);
-
+		PerformanceCounter target_counter;
+		target_counter.StartCounter();
 		projectOnExampleManifold(object_current_eigencoefs_,target_eigencoefs_);
-
+		target_counter.StopCounter();
+		total_target_time_+=target_counter.GetElapsedTime();
 		// for(int i=0;i<interpolate_eigenfunction_num_;++i)
 		// 	target_eigencoefs_[i]=target_eigencoefs_[i]-object_eigencoefs_[i];
 		// reconstructFromEigenCoefs(target_eigencoefs_,example_guided_deformation_);
 		reconstructFromEigenCoefs(target_eigencoefs_,2);//reference+target_deformation=target configuration
-		// rigid_->GetRotation(R_);
-		// Mat3d R_matrix(R_);
-		// Mat3d invR=inv(R_matrix);
-		// rigid_->GetPosition(&t_[0],&t_[1],&t_[2]);
-		// // rigid_center_[0]=rigid_center_[1]=rigid_center_[2]=0.0;
-		// for(int i=0;i<simulation_mesh_->getNumVertices();++i)
-		// {
-		// 	Vec3d global_x;
-		// 	global_x[0]=target_deformation_[3*i+0];
-		// 	global_x[1]=target_deformation_[3*i+1];
-		// 	global_x[2]=target_deformation_[3*i+2];
-		// 	Vec3d local_x=invR*(global_x-t_);
-		// 	example_guided_deformation_[3*i+0]=local_x[0]-local_u_[3*i+0]-local_reference_[3*i+0];
-		// 	example_guided_deformation_[3*i+1]=local_x[1]-local_u_[3*i+1]-local_reference_[3*i+1];
-		// 	example_guided_deformation_[3*i+2]=local_x[2]-local_u_[3*i+2]-local_reference_[3*i+2];
-		// }
 		for(int i=0;i<simulation_mesh_->getNumVertices();++i)
 		{
-			// example_guided_deformation_[3*i+0]=local_u_[3*i+0]-target_deformation_[3*i+0];
-			// example_guided_deformation_[3*i+1]=local_u_[3*i+1]-target_deformation_[3*i+1];
-			// example_guided_deformation_[3*i+2]=local_u_[3*i+2]-target_deformation_[3*i+2];
 			example_guided_deformation_[3*i+0]=(*simulation_mesh_->getVertex(i))[0]+u_[3*i+0]-target_reconstruction_[3*i+0];
 			example_guided_deformation_[3*i+1]=(*simulation_mesh_->getVertex(i))[1]+u_[3*i+1]-target_reconstruction_[3*i+1];
 			example_guided_deformation_[3*i+2]=(*simulation_mesh_->getVertex(i))[2]+u_[3*i+2]-target_reconstruction_[3*i+2];
-			// target_deformation_[3*i+0]=target_reconstruction_[3*i+0]-(*simulation_mesh_->getVertex(i))[0];//-u_[3*i+0]+global_u_[3*i+0];
-			// target_deformation_[3*i+1]=target_reconstruction_[3*i+1]-(*simulation_mesh_->getVertex(i))[1];//-u_[3*i+0]+global_u_[3*i+0];
-			// target_deformation_[3*i+2]=target_reconstruction_[3*i+2]-(*simulation_mesh_->getVertex(i))[2];//-u_[3*i+0]+global_u_[3*i+0];
-			// example_guided_deformation_[3*i+0]=local_reference_[3*i+0]+local_u_[3*i+0]-target_reconstruction_
-			// example_guided_deformation_[3*i+0]=local_reference_[3*i+0]+local_u_[3*i+0]-target_reconstruction_[3*i+0];
-			// example_guided_deformation_[3*i+1]=local_reference_[3*i+1]+local_u_[3*i+1]-target_reconstruction_[3*i+1];
-			// example_guided_deformation_[3*i+2]=local_reference_[3*i+2]+local_u_[3*i+2]-target_reconstruction_[3*i+2];
 		}
 		//reduced elastic force
 		// modal_matrix_->ProjectVector(example_guided_deformation_,example_based_q_);
@@ -827,16 +801,13 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulationWithoutConstrains()
 	}
 	else
 	{
-		double damping_example_stiffness=0.8;
 		for(int i=0;i<3*simulation_vertices_num_;++i)
-			example_f_[i]*=damping_example_stiffness;
-		// std::cout<<example_f_[0]<<",\n";
-		// getchar();
+			example_f_[i]*=damping_example_stiffness_;
 	}
 	// memcpy(fq_,example_f_,sizeof(double)*r_);
 	memcpy(qaccel_,integrator_base_->Getqaccel(),sizeof(double)*r_);
 	modal_matrix_->AssembleVector(qaccel_,Uqaccel_);
-	//compute non-inertial force	//
+	//compute non-inertial force
 	double total_torquex,total_torquey,total_torquez;
 	double alpha=1.0;
 	for(int i=0;i<simulation_vertices_num_;++i)
@@ -856,7 +827,6 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulationWithoutConstrains()
 		// 						example_f_[3*i+2],&torquex,&torquey,&torquez);
 		rigid_->ComputeTorque(pos[0],pos[1],pos[2],f_ext_[3*i+0],f_ext_[3*i+1],
 								f_ext_[3*i+2],&torquex,&torquey,&torquez);
-
 		total_torquex+=torquex*alpha;
 		total_torquey+=torquey*alpha;
 		total_torquez+=torquez*alpha;
@@ -872,22 +842,13 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulationWithoutConstrains()
 			total_torquez=total_torquez*rigid_col_num/collide_vert_num_;
 		}
 	}
-	// std::cout<<"total_torque:"<<total_torquex<<","<<total_torquey<<","<<total_torquez<<"\n";
-	// std::cout<<"total_force:"<<rigid_external_force_[0]<<","<<rigid_external_force_[1]<<","<<rigid_external_force_[2]<<"\n";
 	// rigid_->GetVelocity(&new_linear_velocity_[0],&new_linear_velocity_[1],&new_linear_velocity_[2]);
-	// std::cout<<"bef:vel:"<<new_linear_velocity_[0]<<","<<new_linear_velocity_[1]<<","<<new_linear_velocity_[2];
 	rigid_->SetExternalForce(rigid_external_force_[0],rigid_external_force_[1],rigid_external_force_[2]);
 	// rigid_->SetExternalTorque(total_torquex,total_torquey,total_torquez);
 	// static int count_force=1;
 	if(add_gravity_)
 		rigid_->AddExternalForce(0.0,-total_mass_*gravity_,0.0);
-	// if(count_force<200)
-	// 	rigid_->AddExternalForce(0.0,-100.0,0.0);
-	// count_force++;
-	// if(collide_vert_num_==0)
 	rigid_->EulerStep(time_step_);
-
-
 	rigid_->GetAngularVelocity(&new_angular_velocity_[0],&new_angular_velocity_[1],&new_angular_velocity_[2]);
 	rigid_->GetVelocity(&new_linear_velocity_[0],&new_linear_velocity_[1],&new_linear_velocity_[2]);
 	rigid_->GetRotation(R_);
@@ -896,25 +857,17 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulationWithoutConstrains()
 	rigid_->GetPosition(&t_[0],&t_[1],&t_[2]);
 	Vec3d linear_vel_grad=(new_linear_velocity_-linear_velocity_)/time_step_;
 	Vec3d angular_vel_grad=(new_angular_velocity_-angular_velocity_)/time_step_;
-	// std::cout<<"transform:"<<t_[0]<<","<<t_[1]<<","<<t_[2]<<"\n";
-	// std::cout<<"after:vel:"<<new_linear_velocity_[0]<<","<<new_linear_velocity_[1]<<","<<new_linear_velocity_[2]<<"\n";
-	// std::cout<<"after:omega:"<<new_angular_velocity_[0]<<","<<new_angular_velocity_[1]<<","<<new_angular_velocity_[2]<<"\n";
-	// std::cout<<"vel_grad:"<<linear_vel_grad<<"\n";
-	// std::cout<<"angular_vel_grad:"<<angular_vel_grad<<"\n";
 	angular_velocity_=new_angular_velocity_;
 	linear_velocity_=new_linear_velocity_;
 	memcpy(qvel_,integrator_base_->Getqvel(),sizeof(double)*r_);
 	modal_matrix_->AssembleVector(qvel_,Uqvel_);
-	// if(add_gravity_)
-	// {
-	// 	std::cout<<"~\n";
+	if(add_gravity_)
+	{
 		for(int i=0;i<simulation_mesh_->getNumVertices();++i)
 		{
 			f_ext_[3*i+1]+=(-1.0)*vert_mass_[i]*gravity_;
 		}
-		// std::cout<<"gravity:"<<vert_mass_[i]*gravity_<<"\n";
-		// getchar();
-	// }
+	}
 	static int count=1;
 	for(int i=0;i<simulation_mesh_->getNumVertices();++i)
 	{
@@ -933,8 +886,6 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulationWithoutConstrains()
 		// gv[0]+=f_ext_[3*i+0]-vert_mass_[i]*Uqaccel_[3*i+0];
 		// gv[1]+=f_ext_[3*i+1]-vert_mass_[i]*Uqaccel_[3*i+1];
 		// gv[2]+=f_ext_[3*i+2]-vert_mass_[i]*Uqaccel_[3*i+2];
-		// if(i==430)
-		// std::cout<<"vert_f:"<<vert_f<<"\n";
 		vert_local_pos=new_R_matrix*(vert_global_pos-t_);
 		vert_local_u=new_invR*vert_global_u;
 		for(int j=0;j<3;++j)
@@ -963,21 +914,20 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulationWithoutConstrains()
 		// Uqvel_[3*i+0]=collide_vel_[3*i+0]-linear_velocity_[0]-wxq[0];
 		// Uqvel_[3*i+1]=collide_vel_[3*i+1]-linear_velocity_[1]-wxq[1];
 		// Uqvel_[3*i+2]=collide_vel_[3*i+2]-linear_velocity_[2]-wxq[2];
-	// if(i==0)out<<"vel_:"<<Uqvel_[3*i+1]<<"\n";
 	}
 	modal_matrix_->ProjectVector(f_ext_,fq_);
 	integrator_base_dense_->SetExternalForces(fq_);
 	// int a=integrator_base_dense_->SetState(q_,qvel_);
-	// if(time_step_counter_ < active_instance->total_steps_)
-	// {
-	// PerformanceCounter counter2;
-	// counter2.StartCounter();
-	int code=integrator_base_dense_->DoTimestep();
-		std::cout<<".";fflush(NULL);
-	// counter2.StopCounter();
-	// std::cout<<"integrator DoTimestep:"<<counter2.GetElapsedTime()<<"\n";
-		// ++time_step_counter_;
-	// }
+	if(time_step_counter_ < total_steps_)
+	{
+		// PerformanceCounter counter2;
+		// counter2.StartCounter();
+		int code=integrator_base_dense_->DoTimestep();
+			std::cout<<".";fflush(NULL);
+		// counter2.StopCounter();
+		// std::cout<<"integrator DoTimestep:"<<counter2.GetElapsedTime()<<"\n";
+		++time_step_counter_;
+	}
 	//local q_n+1 in non-inertial frame, project it in inertial frame
 	memcpy(q_,integrator_base_dense_->Getq(),sizeof(double)*r_);
 	modal_matrix_->AssembleVector(q_,local_u_);
@@ -995,11 +945,9 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulationWithoutConstrains()
 	for(int i=0;i<simulation_mesh_->getNumVertices();++i)
 	{
 		Vec3d local_x(0.0);
-
 		local_x[0]=local_u_[3*i]+local_reference_[3*i];
 		local_x[1]=local_u_[3*i+1]+local_reference_[3*i+1];
 		local_x[2]=local_u_[3*i+2]+local_reference_[3*i+2];
-
 		Vec3d global_x=new_R_matrix*local_x+t_;//R_n
 		// //u_ used for rendering,generated by inertia force and non-inertial force
 		u_[3*i]=global_x[0]-(*simulation_mesh_->getVertex(i))[0];
@@ -1017,6 +965,10 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulationWithoutConstrains()
 	// rigid_->SetPosition(rigid_center_[0],rigid_center_[1],rigid_center_[2]);
 	// getchar();
 	// saveReconstructMesh();
+	if(time_step_counter_==(total_steps_-1))
+	{
+		std::cout<<"Total target configuration solver time: "<<total_target_time_<<" s.\n";
+	}
 }
 void RealTimeExampleBasedDeformer::preAllocateLocalFrameCorrespondingVertices()
 {
@@ -1529,6 +1481,10 @@ bool RealTimeExampleBasedDeformer::loadObjectEigenfunctions(const std::string &f
 	        }
 		}
 	}
+	std::cout<<"object_eigencoefs:\n";
+	for(int j=0;j<interpolate_eigenfunction_num_;++j)
+		std::cout<<object_eigencoefs_[j]<<",";
+
 	//temp
 	// temp_eigencoefs_=new Vec3d[reconstruct_eigenfunction_num_];
     // projectOnEigenFunctions(simulation_mesh_,examples_deformation_,object_vertex_volume_,object_eigenfunctions_,object_eigenvalues_,
@@ -1555,7 +1511,6 @@ bool RealTimeExampleBasedDeformer::loadExampleEigenFunctions(const std::string &
 	// for(int i=0;i<example_num_;++i)
 	// 	object_example_eigencoefs_[i]=new Vec3d[reconstruct_eigenfunction_num_];
 
-   	std::cout<<"1:\n";
 	for(unsigned int ex_num=0;ex_num<example_num_;++ex_num)
 	{
         std::string file_num_str,file_name;
@@ -1661,9 +1616,13 @@ bool RealTimeExampleBasedDeformer::loadExampleEigenFunctions(const std::string &
 		//object projectOnExampleEigunFunctions
 		// projectOnEigenFunctions(examples_[ex_num],dis,object_vertex_volume_,object_eigenfunctions_,object_eigenvalues_,
 		// 						reconstruct_eigenfunction_num_,object_example_eigencoefs_[ex_num]);
+
 		delete[] dis;
 	}
-	std::cout<<"2:\n";
+	std::cout<<"example_eigencoefs:\n";
+	for(int i=0;i<2;++i)
+		for(int j=0;j<interpolate_eigenfunction_num_;++j)
+			std::cout<<example_eigencoefs_[i][j]<<",";
 	//Presume system have 2 examples
 	// example_length_[0]=example_length_[1]=example_length_[2]=1.0;
 	// Vec3d *example_diff=new Vec3d[interpolate_eigenfunction_num_];
@@ -2315,10 +2274,8 @@ void RealTimeExampleBasedDeformer::setGravity(bool add_gravity,double gravity)
 {
 	if(simulation_mode_==FULLSPACE)
 	{
-		std::cout<<"g:"<<add_gravity<<"\n";
 		isotropic_hyperelastic_fem_->SetGravity(add_gravity);
 	}
-
 	else
 	{
 		if(!with_constrains_)
@@ -2342,7 +2299,6 @@ void RealTimeExampleBasedDeformer::setGravity(bool add_gravity,double gravity)
 	// 		reduced_neoHookean_force_model_->SetGravity(add_gravity,gravity,U_);
 	// 	if(material_mode_==REDUCED_STVK)
 	// 		reduced_stvk_cubature_force_model_->SetGravity(add_gravity,gravity,U_);
-
 	}
 
 
@@ -2678,7 +2634,7 @@ void RealTimeExampleBasedDeformer::projectOnExampleManifold(Vec3d *input_eigenco
 	// std::cout<<"....target_weights:"<<target_weights[0]<<"......"<<target_weights[1]<<"\n";
 	if(enable_eigen_weight_control_&&example_num_>1)
 	{
-		double bias_factor=0.85; //different biases are used for different simulationMesh
+		double bias_factor=0.8; //different biases are used for different simulationMesh
 		//example 1 is by default the rest pose
 		double other_weight_delta=(1-bias_factor)*target_weights[0]/(example_num_-1);
 		target_weights[0]*=bias_factor;

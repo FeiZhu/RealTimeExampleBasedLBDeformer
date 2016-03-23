@@ -100,7 +100,7 @@ void Planes::resolveContact(ObjMesh *mesh,double *forces,int *num)
 {
     // std::cout<<".............BEGIN.\n";
     int vert_num=mesh->getNumVertices();
-    double threshold=0.01*mesh->getDiameter();//the threshold to start resolve contact
+    double threshold=0.05*mesh->getDiameter();//the threshold to start resolve contact
     memset(forces,0.0,sizeof(double)*3*vert_num);
     num[0]=0;
     for(int plane_index=0;plane_index<plane_number;++plane_index)
