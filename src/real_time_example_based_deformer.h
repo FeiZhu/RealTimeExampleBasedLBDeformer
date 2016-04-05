@@ -81,6 +81,9 @@ public:
     void setInitialForceFilename(const std::string &file_name){force_loads_file_name_=file_name;}
     void setInitialVelFilename(const std::string &file_name){initial_velocity_file_name_=file_name;}
     void setInitialPosFilename(const std::string &file_name){initial_position_file_name_=file_name;}
+    void setInitialTetMeshFilename(const std::string &file_name){initial_tetmesh_file_name_=file_name;}
+    void setObjectAffectedVerticesFilename(const std::string &file_name){object_affected_vertices_file_name_=file_name;}
+    void setExampleAffectedVerticesFilebase(const std::string &file_name){example_affected_vertices_file_base_=file_name;}
     // void setInitialVel(double *vel);
     // void setInitialDis(double *pos);
     // void setInitialForceLoad(double *force);
@@ -153,7 +156,7 @@ public:
     void testObjectiveGradients();
     void projectOnEigenFunctions(VolumetricMesh *mesh, double *displacement, double *vertex_volume,
                                 double **eigenfunctions, double *eigenvalues, unsigned int eigenfunction_num,
-                                Vec3d *eigencoefs);
+                                Vec3d *eigencoefs,int affected_vertices_num=0,int *affected_vertices=NULL);
     void reconstructFromEigenCoefs(Vec3d *target_eigencoefs,double *vert_pos);//full space
     void reconstructFromEigenCoefs(Vec3d *target_eigencoefs,int flag=0);//reduced_space
     void saveReconstructMesh(double *vert_pos);
@@ -253,8 +256,16 @@ private:
     std::string force_loads_file_name_="none";
     std::string initial_velocity_file_name_="none";
     std::string initial_position_file_name_="none";
+    std::string initial_tetmesh_file_name_="none";
     int force_loads_num_=0;
     double *force_loads_=NULL;
+
+    std::string object_affected_vertices_file_name_="none";
+    std::string example_affected_vertices_file_base_="none";
+    int object_affected_vertices_num_=0;
+    int *example_affected_vertices_num_=NULL;
+    int *object_affected_vertices_=NULL;
+    int **example_affected_vertices_=NULL;
 
     //reduced simulation data
     unsigned int r_ = 0;
@@ -285,6 +296,7 @@ private:
     Vec3d *target_eigencoefs_diff_ = NULL;
     double *target_deformation_ = NULL;
     double *example_guided_deformation_ = NULL;
+    double *temp_example_guided_deformation_=NULL;
     double *example_based_LB_forces_ = NULL;
     double *example_based_forces_ = NULL;
     double *example_based_q_ = NULL;
@@ -362,9 +374,9 @@ private:
 	// double *initial_detail_vector_=NULL;
     double *local_detail_vector_=NULL;
     double *target_reconstruction_=NULL;
-    // Vec3d *temp_eigencoefs_=NULL;
+    Vec3d *temp_eigencoefs_=NULL;
     double *examples_deformation0_=NULL;//temp
-    // Vec3d *temp_eigencoefs0_=NULL;
+    Vec3d *temp_eigencoefs0_=NULL;
     std::map<int,int> vert_vertex1,vert_vertex2;
 
     //rigid body simulation

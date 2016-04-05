@@ -84,6 +84,7 @@ void OpenGLDriver::initConfigurations(const std::string &config_file_name)
     config_file_.addOptionOptional("objectRenderSurfaceMeshFilename",visual_mesh_file_name_,"none");
     config_file_.addOptionOptional("objectVolumetricSurfaceMeshFilename",volumetric_surface_mesh_file_name_,"none");
     config_file_.addOptionOptional("objectInterpolationFilename",object_interpolation_file_name_,"none");
+    config_file_.addOptionOptional("objectInitialTetMesh",initial_tetmesh_file_name_,"none");
     config_file_.addOptionOptional("initialRigidVelX",&initial_rigidvel_x_,initial_rigidvel_x_);
     config_file_.addOptionOptional("initialRigidVelY",&initial_rigidvel_y_,initial_rigidvel_y_);
     config_file_.addOptionOptional("initialRigidVelZ",&initial_rigidvel_z_,initial_rigidvel_z_);
@@ -134,7 +135,7 @@ void OpenGLDriver::initConfigurations(const std::string &config_file_name)
     config_file_.addOptionOptional("gravity",&gravity_,gravity_);
     //local Example-based
     config_file_.addOptionOptional("objectAffectedVerticesFilename",object_affected_vertices_file_name_,"none");
-    config_file_.addOptionOptional("exampleAffectedVerticesFilenameBase",example_affected_vertices_file_name_,"none");
+    config_file_.addOptionOptional("exampleAffectedVerticesFilenameBase",example_affected_vertices_file_base_,"none");
 
     //parse the configuration file
     if(config_file_.parseOptions((char*)config_file_name.c_str())!=0)
@@ -495,6 +496,25 @@ void OpenGLDriver::initSimulation()
     {
         simulator_->setInitialForceFilename(force_loads_file_name_);
     }
+    //load local example affected vertices file for object and examples
+    if(strcmp(object_affected_vertices_file_name_,"none")!=0)
+    {
+        simulator_->setObjectAffectedVerticesFilename(object_affected_vertices_file_name_);
+    }
+    //load inital mesh
+    if(strcmp(initial_tetmesh_file_name_,"none")!=0)
+    {
+        simulator_->setInitialTetMeshFilename(initial_tetmesh_file_name_);
+    }
+    if(example_num_>0)
+    {
+        //load local example affected vertices file for examples
+        if(strcmp(example_affected_vertices_file_base_,"none")!=0)
+        {
+            simulator_->setExampleAffectedVerticesFilebase(example_affected_vertices_file_base_);
+        }
+    }
+
     //load example volumetric meshes
     if(example_num_>0)
     {
@@ -525,6 +545,7 @@ void OpenGLDriver::initSimulation()
             loadLBObjectCubicaData(0);
         }
     }
+
     simulator_->setupSimulation();
     std::cout<<"init Simulation finish.\n";
 }
@@ -900,62 +921,16 @@ void OpenGLDriver::displayFunction()
 
     glutSwapBuffers();
 }
-void OpenGLDriver::saveTetMesh(int code)
-{
-    //std::cout<<"aaaaaaaaaaaaaaaa\n";
-    OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
-    assert(active_instance);
-    std::string file_name="3.veg";
-    std::ofstream output_file(file_name.c_str());
-	if(!output_file)
-	{
-		std::cout<<"Error: failed to open "<<file_name<<".\n";
-		return;
-	}
-	output_file<<"*VERTICES"<<std::endl;
-	output_file<<active_instance->simulation_mesh_->getNumVertices()<<" 3 0 0"<<std::endl;
-	for(unsigned int i=0;i<active_instance->simulation_mesh_->getNumVertices();++i)
-	{
-        Vec3d new_dis;
-        new_dis[0]=(*active_instance->simulation_mesh_->getVertex(i))[0]+active_instance->u_[3*i];
-        new_dis[1]=(*active_instance->simulation_mesh_->getVertex(i))[1]+active_instance->u_[3*i+1];
-        new_dis[2]=(*active_instance->simulation_mesh_->getVertex(i))[2]+active_instance->u_[3*i+2];
-		output_file<<i+1<<" "<<new_dis[0]<<" ";
-		output_file<<new_dis[1]<<" ";
-		output_file<<new_dis[2]<<std::endl;
-	}
-	output_file<<"*ELEMENTS"<<std::endl;
-	output_file<<"TET"<<std::endl;
-	output_file<<active_instance->simulation_mesh_->getNumElements()<<" 4 0"<<std::endl;
-	for(unsigned int i=0;i<active_instance->simulation_mesh_->getNumElements();++i)
-	{
-		output_file<<i+1;
-		for(unsigned int j=0;j<active_instance->simulation_mesh_->getNumElementVertices();++j)
-		{
-			unsigned int global_idx=active_instance->simulation_mesh_->getVertexIndex(i,j);
-			output_file<<" "<<global_idx+1;
-		}
-		output_file<<std::endl;
-	}
-	output_file.close();
-}
 void OpenGLDriver::idleFunction()
 {
-    // std::cout<<"idleFunction\n";
-    // getchar();
+    std::cout<<"idleFunction\n";
+    getchar();
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
     glutSetWindow(active_instance->window_id_);
+    static int count_step=0;
     if(active_instance->time_step_counter_<active_instance->total_steps_)
     {
-        //test:save deformed tet_mesh
-        // if(active_instance->save_tet_mesh_)
-        // {
-        //     active_instance->save_tet_mesh_=false;    //
-        //     active_instance->saveTetMesh(0);
-        // }
-        // std::cout<<active_instance->time_step_counter_<<"......,\n";
-        // getchar();
         PerformanceCounter each_frame_performance_counter;
         double each_frame_time=0.0;
         each_frame_performance_counter.StartCounter();
@@ -1074,8 +1049,8 @@ void OpenGLDriver::idleFunction()
             else
             {
                 //reset external forces
-                for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
-                    active_instance->f_ext_[i]=0.0;
+                // for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
+                //     active_instance->f_ext_[i]=0.0;
                 if(active_instance->left_button_down_)
                 {
                     std::cout<<"pulled_vertex_:"<<active_instance->pulled_vertex_<<"\n";
@@ -1135,12 +1110,12 @@ void OpenGLDriver::idleFunction()
                     }
                 }
                 //apply any scripted force loads
-                if(active_instance->time_step_counter_<active_instance->force_loads_num_)
-                {
-                    std::cout<<"External forces read from the text input file.\n";
-                    for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
-                        active_instance->f_ext_[i]+=active_instance->force_loads_[ELT(3*active_instance->simulation_vertices_num_,i,active_instance->time_step_counter_)];
-                }
+                // if(active_instance->time_step_counter_<active_instance->force_loads_num_)
+                // {
+                //     std::cout<<"External forces read from the text input file.\n";
+                //     for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
+                //         active_instance->f_ext_[i]+=active_instance->force_loads_[ELT(3*active_instance->simulation_vertices_num_,i,active_instance->time_step_counter_)];
+                // }
                 //plane--
                 if(active_instance->plane_num_>0)
             	{
@@ -1204,10 +1179,19 @@ void OpenGLDriver::idleFunction()
         // if((!active_instance->pause_simulation_)&&(active_instance->enable_save_objmesh_)&&(active_instance->time_step_counter_))
         if(!active_instance->pause_simulation_)
             active_instance->time_step_counter_++;
-        if(((active_instance->time_step_counter_+1)%(int)(1.0/(active_instance->frame_rate_*active_instance->time_step_))==0)&&(active_instance->time_step_counter_>0)&&(active_instance->enable_save_objmesh_)&&(!active_instance->pause_simulation_))
+        // if(((active_instance->time_step_counter_+1)%(int)(1.0/(active_instance->frame_rate_*active_instance->time_step_))==0)&&(active_instance->time_step_counter_>0)&&(active_instance->enable_save_objmesh_)&&(!active_instance->pause_simulation_))
+        if((count_step%4==0)&&(active_instance->time_step_counter_>0)&&(active_instance->enable_save_objmesh_)&&(!active_instance->pause_simulation_))
         {
             active_instance->saveCurrentObjmesh(0);
+
         }
+        if((count_step%4==0)&&(active_instance->time_step_counter_>0)&&(active_instance->save_tet_mesh_)&&(!active_instance->pause_simulation_))
+        {
+            active_instance->saveCurrentTetmesh(0);
+        }
+
+        count_step++;
+        // std::cout<<":"<<count_step<<",";
         glutPostRedisplay();
     }
 
@@ -1262,7 +1246,11 @@ void OpenGLDriver::keyboardFunction(unsigned char key, int x, int y)
     case 's':
         // active_instance->save_tet_mesh_ = !(active_instance->save_tet_mesh_ );
         active_instance->enable_save_objmesh_ = !(active_instance->enable_save_objmesh_);
+        // active_instance->save_tet_mesh_ = !(active_instance->save_tet_mesh_ );
         // active_instance->saveCurrentObjmesh(0);
+        break;
+    case 't':
+        active_instance->save_tet_mesh_ = !(active_instance->save_tet_mesh_ );
         break;
     // case 'c':
     //     active_instance->save_reconstruct_mesh_ = !(active_instance->save_tet_mesh_ );
@@ -1723,6 +1711,52 @@ void OpenGLDriver::saveCurrentObjmesh(int code)
     // {
     //     std::cout<<"Total write file time: "<<active_instance->total_write_file_time_<<" s.\n";
     // }
+}
+
+void OpenGLDriver::saveCurrentTetmesh(int code)
+{
+    //std::cout<<"aaaaaaaaaaaaaaaa\n";
+    OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
+    assert(active_instance);
+    std::stringstream adaptor;
+    std::string output_tet_file_name,output_file_index_str;
+    std::string output_file_name_base(active_instance->output_objmesh_file_name_base_);
+    cout<<"frame "<<(active_instance->time_step_counter_+1)/(int)(1.0/(active_instance->frame_rate_*active_instance->time_step_))<<" begins \n";
+    adaptor<<active_instance->output_file_index_++;
+    adaptor>>output_file_index_str;
+    output_tet_file_name=output_file_name_base+output_file_index_str+".smesh";
+    std::ofstream output_file(output_tet_file_name.c_str());
+	if(!output_file)
+	{
+		std::cout<<"Error: failed to open "<<output_tet_file_name<<".\n";
+		return;
+	}
+	output_file<<"*VERTICES"<<std::endl;
+	output_file<<active_instance->simulation_mesh_->getNumVertices()<<" 3 0 0"<<std::endl;
+	for(unsigned int i=0;i<active_instance->simulation_mesh_->getNumVertices();++i)
+	{
+        Vec3d new_dis;
+        new_dis[0]=(*active_instance->simulation_mesh_->getVertex(i))[0]+active_instance->u_[3*i];
+        new_dis[1]=(*active_instance->simulation_mesh_->getVertex(i))[1]+active_instance->u_[3*i+1];
+        new_dis[2]=(*active_instance->simulation_mesh_->getVertex(i))[2]+active_instance->u_[3*i+2];
+		output_file<<i+1<<" "<<new_dis[0]<<" ";
+		output_file<<new_dis[1]<<" ";
+		output_file<<new_dis[2]<<std::endl;
+	}
+	output_file<<"*ELEMENTS"<<std::endl;
+	output_file<<"TET"<<std::endl;
+	output_file<<active_instance->simulation_mesh_->getNumElements()<<" 4 0"<<std::endl;
+	for(unsigned int i=0;i<active_instance->simulation_mesh_->getNumElements();++i)
+	{
+		output_file<<i+1;
+		for(unsigned int j=0;j<active_instance->simulation_mesh_->getNumElementVertices();++j)
+		{
+			unsigned int global_idx=active_instance->simulation_mesh_->getVertexIndex(i,j);
+			output_file<<" "<<global_idx+1;
+		}
+		output_file<<std::endl;
+	}
+	output_file.close();
 }
 void OpenGLDriver::loadReducedBasis(int code)
 {

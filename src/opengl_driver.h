@@ -80,8 +80,8 @@ private:
     static void registerEigenfunctions(int code);
     static void resetDeformation(int code);
 
-    static void saveTetMesh(int code);
     static void saveCurrentObjmesh(int code);
+    static void saveCurrentTetmesh(int code);
     //misc
     void drawAxis(double axis_length) const;
     void drawIndexColorTable() const;
@@ -107,6 +107,7 @@ private:
     char output_objmesh_file_name_base_[string_length];
     bool enable_save_surfacemtl_=false;
     char object_interpolation_file_name_[string_length];
+    char initial_tetmesh_file_name_[string_length];
     char example_cubica_file_name_prefix_[string_length];
     char object_cubica_file_name_[string_length];
     char object_LB_cubica_file_name_[string_length];
@@ -124,8 +125,12 @@ private:
     char invertible_material_[string_length];
     //char objectEigen
     char object_affected_vertices_file_name_[string_length];
-    char example_affected_vertices_file_name_[string_length];
+    char example_affected_vertices_file_base_[string_length];
     char extra_objects_file_name_base_[string_length];
+    int object_affected_vertices_num_=0;
+    int *example_affected_vertices_num_=NULL;
+    int *object_affected_vertices_=NULL;
+    int **example_affected_vertices_=NULL;
 
     bool add_gravity_=false;
     double gravity_ = 9.8;
