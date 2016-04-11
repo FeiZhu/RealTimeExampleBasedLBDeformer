@@ -100,7 +100,7 @@ void Planes::resolveContact(ObjMesh *mesh,double *forces,int *num)
 {
     // std::cout<<".............BEGIN.\n";
     int vert_num=mesh->getNumVertices();
-    double threshold=0.05*mesh->getDiameter();//the threshold to start resolve contact
+    double threshold=0.01*mesh->getDiameter();//the threshold to start resolve contact
     memset(forces,0.0,sizeof(double)*3*vert_num);
     num[0]=0;
     for(int plane_index=0;plane_index<plane_number;++plane_index)
@@ -111,27 +111,18 @@ void Planes::resolveContact(ObjMesh *mesh,double *forces,int *num)
         for(int vert_index=0;vert_index<vert_num;++vert_index)
     	{
     	    Vec3d rel_vec=mesh->getPosition(vert_index)-plane_center[plane_index];
-        //     if(vert_index==0)
-        // std::cout<<"mesh->getPosition(vert_index):"<<mesh->getPosition(vert_index)<<","<<plane_center[plane_index]<<","<<rel_vec[1]<<"\n";
-        // getchar();
     	    double dist_vec=dot(rel_vec,unit_plane_normal);
-            // std::cout<<dist_vec<<",";
-        // std::cout<<dist_vec<<"\n";
     	    if(dist_vec<threshold)//close than a threshold or penetrated
     	    {
-                // std::cout<<"kkkkkkkkkkk\n";
         		if(dist_vec<0)
         		    dist_vec=-dist_vec;
-                // std::cout<<dist_vec<<"\n";
         		forces[3*vert_index+0]+=plane_bounce[plane_index]*dist_vec*unit_plane_normal[0];
         		forces[3*vert_index+1]+=plane_bounce[plane_index]*dist_vec*unit_plane_normal[1];
         		forces[3*vert_index+2]+=plane_bounce[plane_index]*dist_vec*unit_plane_normal[2];
                 num[0]++;
-            // std::cout<<forces[3*vert_index+1]<<"\n";
     	    }
     	}
     }
-    // std::cout<<".............END.\n";
 }
 void Planes::resolveContact(const ObjMesh *mesh/*,double *forces*/,const double *vel,double *u_new,double *vel_new,int *num)
 {

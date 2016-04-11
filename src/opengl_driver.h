@@ -316,11 +316,14 @@ private:
     // double *reduced_force_loads_ = NULL;
 
     //time_counter
-    //PerformanceCounter each_frame_counter_;
+    // PerformanceCounter step_counter_;
+    double step_simulation_time_=0.0;
     double total_simulation_time_=0.0;
     double total_write_file_time_=0.0;
     double total_display_time_=0.0;
+    int timer_sample_interval_=100;
 
+    //bool enable_example_simulation_=false;
 };
 
 }  //namespace RTLB

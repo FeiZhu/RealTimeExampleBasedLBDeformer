@@ -56,7 +56,7 @@ new-plane.eigen
 *saveObjMeshFilenameBase
 output/a
 *enableSaveSurfaceMtl
-false
+true
 
 #*reducedBasisFilename
 #nonlinear-65.basis

@@ -117,12 +117,12 @@ true
 0.02
 
 *dampingStiffnessCoef
-0.03
+0.01
 
 *exampleStiffnessScale
-20.0
+40.0
 *timestep
-0.01
+0.005
 *framerate
 30
 *totalFrame
@@ -142,16 +142,16 @@ true
 2
 
 *cameraRadius
-10.0
+5.0
 
 *cameraLongitude
--80.0
+-90.0
 
 *cameraLattitude
 0.0
 
 *focusPositionX
-100.0
+0.0
 
 *focusPositionY
 0.0

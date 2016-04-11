@@ -99,8 +99,8 @@ plane.lighting
 
 #*initialPositionFilename
 
-*initialVelocityFilename
-initial.vel
+#*initialVelocityFilename
+#initial.vel
 
 *addGravity
 false
@@ -114,7 +114,7 @@ false
 0.03
 
 *exampleStiffnessScale
-3.0
+30.0
 *timestep
 0.005
 *framerate

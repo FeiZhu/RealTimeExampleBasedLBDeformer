@@ -923,8 +923,8 @@ void OpenGLDriver::displayFunction()
 }
 void OpenGLDriver::idleFunction()
 {
-    std::cout<<"idleFunction\n";
-    getchar();
+    // std::cout<<"idleFunction\n";
+    // getchar();
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
     glutSetWindow(active_instance->window_id_);
@@ -951,8 +951,8 @@ void OpenGLDriver::idleFunction()
             // std::cout<<"-------------"<<active_instance->simulation_mode_<<"----------\n";
 
             memset(active_instance->f_ext_,0.0,sizeof(double)*3*active_instance->simulation_vertices_num_);
-        	// PerformanceCounter counter1;
-            // counter1.StartCounter();
+        	PerformanceCounter step_counter;
+            step_counter.StartCounter();
             if(active_instance->simulation_mode_==REDUCEDSPACE)
             {
                 if(active_instance->left_button_down_)
@@ -1048,9 +1048,7 @@ void OpenGLDriver::idleFunction()
             }
             else
             {
-                //reset external forces
-                // for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
-                //     active_instance->f_ext_[i]=0.0;
+                //drag force
                 if(active_instance->left_button_down_)
                 {
                     std::cout<<"pulled_vertex_:"<<active_instance->pulled_vertex_<<"\n";
@@ -1129,25 +1127,19 @@ void OpenGLDriver::idleFunction()
 
             	}
                 active_instance->simulator_->setExternalForces(active_instance->f_ext_);
-                // for(int i=0;i<active_instance->simulation_mesh_->getNumVertices();++i)
-                //     for(int j=0;j<3;++j)
-                //     {
-                //         active_instance->u_[3*i+j]=(active_instance->render_surface_mesh_->GetMesh()->getPosition(i))[j]
-                //                                     -(*active_instance->simulation_mesh_->getVertex(i))[j];
-                //         if(active_instance->u_[3*i+j]>1.0e-6)
-                //         std::cout<<active_instance->u_[3*i+j]<<",";
-                //     }
-                //     for(int i=0;i<3*active_instance->simulation_mesh_->getNumVertices();++i)
-                //     if(active_instance->u_[i]>1.0e-6)
-                //     std::cout<<active_instance->u_[i]<<",";
-                //
-                // active_instance->simulator_->setu(active_instance->u_);
                 active_instance->simulator_->advanceStep();
             }
-
-            // counter1.StopCounter();
-            // std::cout<<"simulation time for each step"<<counter1.GetElapsedTime()<<"\n";
+            step_counter.StopCounter();
+            active_instance->step_simulation_time_+=step_counter.GetElapsedTime();
+            // getchar();
+            if((active_instance->time_step_counter_)%active_instance->timer_sample_interval_==0&&active_instance->time_step_counter_>=active_instance->timer_sample_interval_)
+            {
+                printf("Time in %d steps: %f, average step time: %f\n",active_instance->timer_sample_interval_,active_instance->step_simulation_time_,active_instance->step_simulation_time_/active_instance->timer_sample_interval_);
+                active_instance->step_simulation_time_ = 0.0;
+                getchar();
+            }
         }
+
         // PerformanceCounter counter3;
         // counter3.StartCounter();
         if(active_instance->render_mesh_type_==VISUAL_MESH)

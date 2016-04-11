@@ -62,6 +62,7 @@ public:
     unsigned int exampleNum() const{return example_num_;}
     void setExampleNum(int num) {example_num_=num;}
     void enableGravity(bool value){add_gravity_=value;}
+    bool getExampleSimulationState(){return enable_example_simulation_;}
     void setEnableExampleBasedSimulation(bool value){enable_example_simulation_ = value;}
     double gravity() const {return gravity_;}
     void setGravity(double gravity){ gravity_ = gravity;}
@@ -138,7 +139,7 @@ public:
         INV_STVK,
         INV_NEOHOOKEAN
     };
-    MaterialMode material_mode_ = REDUCED_STVK;
+    MaterialMode material_mode_ = INV_STVK;
     void setSimulationType(const std::string &simulation_type);
     void setMaterialType(const std::string &material_type);
     void setSolverType(const std::string &solver);
@@ -409,6 +410,7 @@ private:
     double *Uqaccel_=NULL;
     int collide_vert_num_=1;
     double total_target_time_=0.0;
+    int timer_sample_interval_=100;
 
 };
 
