@@ -928,9 +928,9 @@ void OpenGLDriver::idleFunction()
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
     glutSetWindow(active_instance->window_id_);
-    static int count_step=0;
     if(active_instance->time_step_counter_<active_instance->total_steps_)
     {
+        //time statistics by frame
         PerformanceCounter each_frame_performance_counter;
         double each_frame_time=0.0;
         each_frame_performance_counter.StartCounter();
@@ -951,6 +951,7 @@ void OpenGLDriver::idleFunction()
             // std::cout<<"-------------"<<active_instance->simulation_mode_<<"----------\n";
 
             memset(active_instance->f_ext_,0.0,sizeof(double)*3*active_instance->simulation_vertices_num_);
+            //time statistics by step, time_step_intervals is 100
         	PerformanceCounter step_counter;
             step_counter.StartCounter();
             if(active_instance->simulation_mode_==REDUCEDSPACE)
@@ -1010,13 +1011,7 @@ void OpenGLDriver::idleFunction()
                         }
                     }
                 }
-                //apply any scripted force loads
-                // if(active_instance->time_step_counter_<active_instance->force_loads_num_)
-                // {
-                //     std::cout<<"External forces read from the text input file.\n";
-                //     for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
-                //         active_instance->f_ext_[i]+=active_instance->force_loads_[ELT(3*active_instance->simulation_vertices_num_,i,active_instance->time_step_counter_)];
-                // }
+
                 //plane--
                 if(!active_instance->with_constrains_)
                 {
@@ -1041,7 +1036,6 @@ void OpenGLDriver::idleFunction()
                         // active_instance->simulator_->setVelAfterCollision(active_instance->collide_vel_);
                         active_instance->simulator_->setCollisionNum(active_instance->collide_vert_num_[0]);
                     }
-                        // std::cout<<"collision num is:"<<active_instance->collide_vert_num_[0]<<"...............................\n";
                 }
                 active_instance->simulator_->setExternalForces(active_instance->f_ext_);
                 active_instance->simulator_->advanceStep();
@@ -1107,13 +1101,7 @@ void OpenGLDriver::idleFunction()
                         }
                     }
                 }
-                //apply any scripted force loads
-                // if(active_instance->time_step_counter_<active_instance->force_loads_num_)
-                // {
-                //     std::cout<<"External forces read from the text input file.\n";
-                //     for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
-                //         active_instance->f_ext_[i]+=active_instance->force_loads_[ELT(3*active_instance->simulation_vertices_num_,i,active_instance->time_step_counter_)];
-                // }
+
                 //plane--
                 if(active_instance->plane_num_>0)
             	{
@@ -1121,27 +1109,20 @@ void OpenGLDriver::idleFunction()
                     for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
                     {
                         active_instance->f_ext_[i]+=active_instance->f_col_[i];
-                //        std::cout<<"force:-------------"<<active_instance->f_col_[i];
                     }
-
-
             	}
                 active_instance->simulator_->setExternalForces(active_instance->f_ext_);
                 active_instance->simulator_->advanceStep();
             }
-            step_counter.StopCounter();
-            active_instance->step_simulation_time_+=step_counter.GetElapsedTime();
-            // getchar();
-            if((active_instance->time_step_counter_)%active_instance->timer_sample_interval_==0&&active_instance->time_step_counter_>=active_instance->timer_sample_interval_)
-            {
-                printf("Time in %d steps: %f, average step time: %f\n",active_instance->timer_sample_interval_,active_instance->step_simulation_time_,active_instance->step_simulation_time_/active_instance->timer_sample_interval_);
-                active_instance->step_simulation_time_ = 0.0;
-                getchar();
-            }
+            // step_counter.StopCounter();
+            // active_instance->step_simulation_time_+=step_counter.GetElapsedTime();
+            // if((active_instance->time_step_counter_)%active_instance->timer_sample_interval_==0&&active_instance->time_step_counter_>=active_instance->timer_sample_interval_)
+            // {
+            //     printf("Time in %d steps: %f, average step time: %f\n",active_instance->timer_sample_interval_,active_instance->step_simulation_time_,active_instance->step_simulation_time_/active_instance->timer_sample_interval_);
+            //     active_instance->step_simulation_time_ = 0.0;
+            //     getchar();
+            // }
         }
-
-        // PerformanceCounter counter3;
-        // counter3.StartCounter();
         if(active_instance->render_mesh_type_==VISUAL_MESH)
         {
             memset(active_instance->u_render_surface_,0.0,sizeof(double)*3*(active_instance->visual_mesh_->Getn()));
@@ -1151,39 +1132,31 @@ void OpenGLDriver::idleFunction()
 
             active_instance->visual_mesh_->SetVertexDeformations(active_instance->u_render_surface_);
             active_instance->render_surface_mesh_->SetVertexDeformations(active_instance->u_);
-            // counter3.StopCounter();
         }
         each_frame_performance_counter.StopCounter();
         each_frame_time=each_frame_performance_counter.GetElapsedTime();
         active_instance->total_simulation_time_+=each_frame_time;
-        // std::cout<<
-        if(active_instance->time_step_counter_==(active_instance->total_steps_-1))
-        {
-            std::cout<<"Total simulation_time(write file time excluded) is "<<active_instance->total_simulation_time_<<" s;";
-            std::cout<<"Average: "<<(active_instance->total_simulation_time_)/(active_instance->total_frames_)<<" s/frame.\n";
-        }
+        // if(active_instance->time_step_counter_==(active_instance->total_steps_-1))
+        // {
+        //     std::cout<<"Total simulation_time(write file time excluded) is "<<active_instance->total_simulation_time_<<" s;";
+        //     std::cout<<"Average: "<<(active_instance->total_simulation_time_)/(active_instance->total_frames_)<<" s/frame.\n";
+        // }
         if(each_frame_time>0)
             active_instance->fps_=1.0/each_frame_time;
         else
             active_instance->fps_=0.0;
-        // std::cout<<"TTTTotal time:"<<each_frame_time<<"\n";
-        //save object surface mesh to files--not done yet
-        // if((!active_instance->pause_simulation_)&&(active_instance->enable_save_objmesh_)&&(active_instance->time_step_counter_))
         if(!active_instance->pause_simulation_)
             active_instance->time_step_counter_++;
-        // if(((active_instance->time_step_counter_+1)%(int)(1.0/(active_instance->frame_rate_*active_instance->time_step_))==0)&&(active_instance->time_step_counter_>0)&&(active_instance->enable_save_objmesh_)&&(!active_instance->pause_simulation_))
-        if((count_step%4==0)&&(active_instance->time_step_counter_>0)&&(active_instance->enable_save_objmesh_)&&(!active_instance->pause_simulation_))
+
+        //save files per 4 steps
+        if((active_instance->time_step_counter_%4==0)&&(active_instance->time_step_counter_>0)&&(active_instance->enable_save_objmesh_)&&(!active_instance->pause_simulation_))
         {
             active_instance->saveCurrentObjmesh(0);
-
         }
-        if((count_step%4==0)&&(active_instance->time_step_counter_>0)&&(active_instance->save_tet_mesh_)&&(!active_instance->pause_simulation_))
+        if((active_instance->time_step_counter_%4==0)&&(active_instance->time_step_counter_>0)&&(active_instance->save_tet_mesh_)&&(!active_instance->pause_simulation_))
         {
             active_instance->saveCurrentTetmesh(0);
         }
-
-        count_step++;
-        // std::cout<<":"<<count_step<<",";
         glutPostRedisplay();
     }
 
