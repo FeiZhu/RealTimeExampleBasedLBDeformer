@@ -176,12 +176,16 @@ private:
     void projectOnExampleManifold(Vec3d *object_eigencoefs, Vec3d *target_eigencoefs);
     static void evaluateObjectiveAndGradient1(const real_1d_array &x, double &func, real_1d_array &grad, void *ptr);
     static void evaluateObjectiveAndGradient2(const real_1d_array &x,double &func, real_1d_array &grad, void *ptr);
+    static void evaluateObjectiveAndGradient3(const real_1d_array &x,double &func, real_1d_array &grad, void *ptr);
     Mat3d computeDeformationGradient(const Mat3d &init_matrix,const Mat3d &deformed_matrix/*Vec3d *init_pos,Vec3d *deform_pos*/);
     //compute the deformed energy from source pos to deformed pos
     //we use optimizing cubature method to compute energy on reduced space
     //solving course need the initial displacement matrix Dm, and the deformed displacement matrix Ds
     // to consider solving time we compute the object and examples initial displacement Dm when we load volumetric meshes
     //the last two parameters is to identify the energy we solved is for example mesh deformation or object deformation
+
+    void computeEnergy(const Vec3d *reduced_dis,double &energy) const;
+    void computeEnergyGrad(const Vec3d *reduced_dis,double *forces) const;
     void computeReducedEnergy(const Vec3d *reduced_dis,double &energy) const;
     void computeReducedInternalForce(const Vec3d *reduced_dis,double *forces) const;
     void computeReducedStiffnessMatrix(const Vec3d *reduced_dis,Matrix<double> &reduced_K) const;
@@ -272,6 +276,7 @@ private:
     unsigned int r_ = 0;
     double **reduced_basis_ = NULL;
     double *reduced_basis_values_ = NULL;
+    double **eigen_reduced_basis_ = NULL;//dimension:rxm(r:reduced basis num,m:interpolate eigenfunction num)
     //cubica data for reduced simulation
     unsigned int object_cubica_ele_num_ = 0;
     unsigned int *object_cubica_elements_ = NULL;
@@ -295,6 +300,7 @@ private:
     Vec3d *object_current_eigencoefs_ = NULL;
     Vec3d *target_eigencoefs_ = NULL;
     Vec3d *target_eigencoefs_diff_ = NULL;
+    Vec3d *energy_grad_ = NULL;
     double *target_deformation_ = NULL;
     double *example_guided_deformation_ = NULL;
     double *temp_example_guided_deformation_=NULL;
@@ -359,6 +365,8 @@ private:
     double *deformed_ = NULL;
     double **LB_restpos_ = NULL;//compute rest position for LB_cubica elements
     double *q_=NULL;
+    double *temp_q_=NULL;
+    double *temp_grad_=NULL;
     double *qvel_=NULL;
     double *qaccel_=NULL;
     double *fq_=NULL;
@@ -411,6 +419,7 @@ private:
     int collide_vert_num_=1;
     double total_target_time_=0.0;
     int timer_sample_interval_=100;
+    // Matrix<double> elastic_tensor_(6,6,0.0);
 
 };
 

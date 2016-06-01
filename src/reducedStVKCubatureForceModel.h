@@ -31,6 +31,7 @@ public:
     void SetGravity(bool addGravity,double g,double *U) {this->add_gravity_ = addGravity;}
     void testEnergyGradients();
     void testObjectiveGradients();
+    void computeReducedEnergy(const double *q,double &energy) const;
     void computeReducedInternalForce(const double *q,double *forces) const;
     //compute elastic pos for given reference_configration, q is reduced displacement of (current-reference)
     void computeReducedElasticInternalForce(const double *dis,double *forces,const double *reference_pos) const;
@@ -44,7 +45,8 @@ protected:
     Mat3d firstPiolaKirchhoff(Mat3d &F) const;
     Mat3d computeF_gradient(const int &ele,const int &vert_idx,const int &vert_idx_dim) const;
     Mat3d computeP_gradient(const int &ele,const Mat3d &F,const int &vert_idx,const int &vert_idx_dim) const;
-    void computeReducedEnergy(const double *q,double &energy) const;
+    void computeReducedDis(const double *x, double *q) const;
+
     void computeReducedStiffnessMatrix(const double *q,double *reduced_K/*Matrix<double> &reduced_K*/) const;
 
     //used for example-based elastic energy

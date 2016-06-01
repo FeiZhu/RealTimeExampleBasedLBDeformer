@@ -355,7 +355,17 @@ Mat3d ReducedStVKCubatureForceModel::computeP_gradient(const int &ele,const Mat3
     Mat3d pPpF=temp3+temp4;
 	return pPpF;
 }
-
+void ReducedStVKCubatureForceModel::computeReducedDis(const double *x, double *q) const
+{
+	memset(q,0.0,sizeof(double)*r_);
+    for(unsigned int i=0;i<r_;++i)
+    {
+        for(unsigned int j=0;j<3*volumetric_mesh_->getNumVertices();++j)
+        {
+            q[i]+=x[j]*U_[j][i];
+        }
+    }
+}
 void ReducedStVKCubatureForceModel::computeReducedEnergy(const double *q,double &energy) const
 {
 	energy=0.0;
