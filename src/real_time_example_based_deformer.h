@@ -158,6 +158,8 @@ public:
     void projectOnEigenFunctions(VolumetricMesh *mesh, double *displacement, double *vertex_volume,
                                 double **eigenfunctions, double *eigenvalues, unsigned int eigenfunction_num,
                                 Vec3d *eigencoefs,int affected_vertices_num=0,int *affected_vertices=NULL);
+    void projectOnEigenFunctions1(double *displacement, double *vertex_volume,
+                                double **eigenfunctions, double *eigenvalues, unsigned int eigenfunction_num,Vec3d *eigencoefs);
     void reconstructFromEigenCoefs(Vec3d *target_eigencoefs,double *vert_pos);//full space
     void reconstructFromEigenCoefs(Vec3d *target_eigencoefs,int flag=0);//reduced_space
     void saveReconstructMesh(double *vert_pos);
@@ -276,7 +278,8 @@ private:
     unsigned int r_ = 0;
     double **reduced_basis_ = NULL;
     double *reduced_basis_values_ = NULL;
-    double **eigen_reduced_basis_ = NULL;//dimension:rxm(r:reduced basis num,m:interpolate eigenfunction num)
+    double **LB_to_reducespace_ = NULL;//dimension:rxm(r:reduced basis num,m:interpolate eigenfunction num)
+    double **reducespace_to_LB_ = NULL;//dimension:rxm(r:reduced basis num,m:interpolate eigenfunction num)
     //cubica data for reduced simulation
     unsigned int object_cubica_ele_num_ = 0;
     unsigned int *object_cubica_elements_ = NULL;
