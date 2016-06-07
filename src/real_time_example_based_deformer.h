@@ -194,8 +194,8 @@ private:
 
 
     void fullspaceSimulation();
-    void reducedspaceSimulationWithConstrains();
-    void reducedspaceSimulationWithoutConstrains();
+    void reducedspaceSimulationWithConstraints();
+    void reducedspaceSimulationWithoutConstraints();
     Mat3d computeDs(const double *reduced_dis) const;
     Mat3d computeDmInv(const int &ele) const;
     Mat3d computeF(const int &cubica_idx,const Vec3d *reduced_dis) const;
