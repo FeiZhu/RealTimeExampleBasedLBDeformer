@@ -568,7 +568,7 @@ void OpenGLDriver::initGraphics()
     // clear to white
     //glClearColor(256.0 / 256, 256.0 / 256, 256.0 / 256, 0.5);
     // clear to light blue
-//    glClearColor(233.0 / 256, 256.0 / 256, 256.0 / 256, 0.0);
+    //    glClearColor(233.0 / 256, 256.0 / 256, 256.0 / 256, 0.0);
     // clear to gray
     //glClearColor(196.0 / 256, 196.0 / 256, 196.0 / 256, 0.0);
     // clear to brown
@@ -1149,7 +1149,7 @@ void OpenGLDriver::idleFunction()
             active_instance->time_step_counter_++;
 
         //save files per 4 steps
-        if((active_instance->time_step_counter_%4==0)&&(active_instance->time_step_counter_>0)&&(active_instance->enable_save_objmesh_)&&(!active_instance->pause_simulation_))
+        if((active_instance->time_step_counter_%10==0)&&(active_instance->time_step_counter_>0)&&(active_instance->enable_save_objmesh_)&&(!active_instance->pause_simulation_))
         {
             active_instance->saveCurrentObjmesh(0);
         }
