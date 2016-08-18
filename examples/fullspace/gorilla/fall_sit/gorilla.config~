@@ -120,13 +120,13 @@ true
 0.03
 
 *exampleStiffnessScale
-500.0
+300.0
 *timestep
-0.01
+0.005
 *framerate
 30
 *totalFrame
-500
+5000
 *integratorEpsilon
 1.0e-6
 

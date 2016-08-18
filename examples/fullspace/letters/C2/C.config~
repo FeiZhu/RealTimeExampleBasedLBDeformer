@@ -50,9 +50,9 @@ ex
 *reconstructEigenfunctionNum
 100
 *exampleEigenFunctionFilenameBase
-ex
+new-ex
 *objectEigenFunctionFilename
-C.eigen
+new-C.eigen
 *correspondingFunctionFilename
 C.ini
 *savedExampleEigenFunctionFilenameBase

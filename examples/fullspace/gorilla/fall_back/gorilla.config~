@@ -112,7 +112,7 @@ gorilla.lighting
 true
 
 *gravity
-15
+9.8
 *dampingMassCoef
 0.02
 
@@ -126,7 +126,7 @@ true
 *framerate
 30
 *totalFrame
-500
+700
 *integratorEpsilon
 1.0e-6
 

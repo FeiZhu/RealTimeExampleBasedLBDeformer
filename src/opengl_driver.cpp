@@ -952,8 +952,8 @@ void OpenGLDriver::idleFunction()
 
             memset(active_instance->f_ext_,0.0,sizeof(double)*3*active_instance->simulation_vertices_num_);
             //time statistics by step, time_step_intervals is 100
-        	PerformanceCounter step_counter;
-            step_counter.StartCounter();
+        	// PerformanceCounter step_counter;
+            // step_counter.StartCounter();
             if(active_instance->simulation_mode_==REDUCEDSPACE)
             {
                 if(active_instance->left_button_down_)
@@ -1116,6 +1116,7 @@ void OpenGLDriver::idleFunction()
             }
             // step_counter.StopCounter();
             // active_instance->step_simulation_time_+=step_counter.GetElapsedTime();
+            //time computing
             // if((active_instance->time_step_counter_)%active_instance->timer_sample_interval_==0&&active_instance->time_step_counter_>=active_instance->timer_sample_interval_)
             // {
             //     printf("Time in %d steps: %f, average step time: %f\n",active_instance->timer_sample_interval_,active_instance->step_simulation_time_,active_instance->step_simulation_time_/active_instance->timer_sample_interval_);

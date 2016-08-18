@@ -404,6 +404,7 @@ private:
     Vec3d new_angular_velocity_;
     Vec3d rigid_external_force_;
     Vec3d initial_rigid_vel_;
+    Vec3d am_;
     // Vec3d linear_acc_;
     // Vec3d angular_acc_;
     // double *f_cor_=NULL;
@@ -420,7 +421,10 @@ private:
     double *Uqvel_=NULL;
     double *Uqaccel_=NULL;
     int collide_vert_num_=1;
+    double total_projection_time_=0.0;
     double total_target_time_=0.0;
+    double total_reconstruction_time_=0.0;
+    double total_time_=0.0;
     int timer_sample_interval_=100;
     // Matrix<double> elastic_tensor_(6,6,0.0);
 
