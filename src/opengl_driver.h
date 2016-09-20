@@ -148,6 +148,7 @@ private:
     double deformable_object_compliance_=1.0;
     double example_stiffness_scale_=1.0;//the stiffness used to compute example force is scaled
     double damping_example_stiffness_=0.0;
+    double example_bias_ = 0.8;
     double initial_rigidvel_x_=0.0;
     double initial_rigidvel_y_=0.0;
     double initial_rigidvel_z_=0.0;
@@ -303,6 +304,7 @@ private:
     unsigned int current_render_eigen_idx_=0;
     unsigned int save_eigenfunction_num_ = 0;
     unsigned int output_file_index_ = 0;
+    unsigned int output_tet_file_index_ = 0;
     ConfigFile config_file_;
     //reuced simulation
     SceneObjectReduced *render_reduced_surface_mesh_=NULL;

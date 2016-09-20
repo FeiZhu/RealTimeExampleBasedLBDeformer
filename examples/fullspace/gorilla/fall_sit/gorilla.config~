@@ -6,8 +6,8 @@ fullspace
 #reducedspace
 
 *solver
-#implicitBackwardEuler
-implicitNewmark
+implicitBackwardEuler
+#implicitNewmark
 #reducedImplicitNewmark
 #reducedImplicitBackwardEuler
 
@@ -112,17 +112,22 @@ gorilla.lighting
 true
 
 *gravity
-9.8
+#9.8
+70
 *dampingMassCoef
 0.02
 
 *dampingStiffnessCoef
 0.03
 
+*exampleBias
+0.5
 *exampleStiffnessScale
-300.0
+50.0
+*dampingExampleStiffness
+0.5
 *timestep
-0.005
+0.01
 *framerate
 30
 *totalFrame

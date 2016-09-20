@@ -89,8 +89,8 @@ G.mass
 
 #*exampleAffectedVerticesFilenameBase
 
-#*fixedVerticesFilename
-#fixed.bou
+*fixedVerticesFilename
+fixed.bou
 
 *planeNumber
 1
@@ -118,7 +118,8 @@ true
 
 *dampingStiffnessCoef
 0.03
-
+*exampleBias
+0.8
 *exampleStiffnessScale
 30.0
 *timestep

@@ -296,10 +296,32 @@ void RenderVolumetricMesh::SaveVertexColorMap(VolumetricMesh *volumetricMesh, do
         Vec3d pos = *(volumetricMesh->getVertex(vert_idx));
         // if(find(selected_vertices.begin(),selected_vertices.end(),vert_idx+1)!=selected_vertices.end())
         // {
+        //for spetial generation pov files---part of eigenfunctions for armadillo model--begin
             if(vert_idx==volumetricMesh->getNumVertices()-1)
-                outputfile<<"<"<<pos[0]<<","<<pos[1]<<","<<pos[2]<<">\n";
+            {
+                if(pos[0]<-0.01)
+                    outputfile<<"<"<<-0.01<<","<<pos[1]<<","<<pos[2]<<">\n";
+                else
+                    outputfile<<"<"<<pos[0]<<","<<pos[1]<<","<<pos[2]<<">\n";
+            }
             else
-                outputfile<<"<"<<pos[0]<<","<<pos[1]<<","<<pos[2]<<">,\n";
+            {
+                if(pos[0]<-0.01)
+                    outputfile<<"<"<<-0.01<<","<<pos[1]<<","<<pos[2]<<">,\n";
+                else
+                    outputfile<<"<"<<pos[0]<<","<<pos[1]<<","<<pos[2]<<">,\n";
+            }
+        //for spetial generation pov files---part of eigenfunctions for armadillo model--end
+            //generate pov files --for whole model
+            // if(vert_idx==volumetricMesh->getNumVertices()-1)
+            // {
+            //     outputfile<<"<"<<pos[0]<<","<<pos[1]<<","<<pos[2]<<">\n";
+            // }
+            // else
+            // {
+            //     outputfile<<"<"<<pos[0]<<","<<pos[1]<<","<<pos[2]<<">,\n";
+            // }
+            //end
             if(find(selected_vertices.begin(),selected_vertices.end(),vert_idx+1)!=selected_vertices.end())
             {
             select_count++;
@@ -326,46 +348,29 @@ void RenderVolumetricMesh::SaveVertexColorMap(VolumetricMesh *volumetricMesh, do
         {
             global[local_idx]=volumetricMesh->getVertexIndex(ele,local_idx);
         }
-        // if((find(selected_vertices.begin(),selected_vertices.end(),global[0]+1)!=selected_vertices.end())&&
-        //     (find(selected_vertices.begin(),selected_vertices.end(),global[1]+1)!=selected_vertices.end())&&
-        //     (find(selected_vertices.begin(),selected_vertices.end(),global[2]+1)!=selected_vertices.end())&&
-        //     (find(selected_vertices.begin(),selected_vertices.end(),global[3]+1)!=selected_vertices.end()))
-        // {
+        //for part of the model
+        if((find(selected_vertices.begin(),selected_vertices.end(),global[0]+1)!=selected_vertices.end())||
+            (find(selected_vertices.begin(),selected_vertices.end(),global[1]+1)!=selected_vertices.end())||
+            (find(selected_vertices.begin(),selected_vertices.end(),global[2]+1)!=selected_vertices.end())||
+            (find(selected_vertices.begin(),selected_vertices.end(),global[3]+1)!=selected_vertices.end()))
+        {
             outputfile<<"<"<<global[0]<<","<<global[1]<<","<<global[2]<<">,"<<global[0]<<","<<global[1]<<","<<global[2]<<",\n";
             outputfile<<"<"<<global[0]<<","<<global[1]<<","<<global[3]<<">,"<<global[0]<<","<<global[1]<<","<<global[3]<<",\n";
             outputfile<<"<"<<global[0]<<","<<global[2]<<","<<global[3]<<">,"<<global[0]<<","<<global[2]<<","<<global[3]<<",\n";
             outputfile<<"<"<<global[1]<<","<<global[2]<<","<<global[3]<<">,"<<global[1]<<","<<global[2]<<","<<global[3]<<",\n";
 
             count=count+4;
-        // }
-        // if((find(selected_vertices.begin(),selected_vertices.end(),global[0]+1)!=selected_vertices.end())&&
-        //     (find(selected_vertices.begin(),selected_vertices.end(),global[1]+1)!=selected_vertices.end())&&
-        //     (find(selected_vertices.begin(),selected_vertices.end(),global[3]+1)!=selected_vertices.end()))
-        // {
-        //     outputfile<<"<"<<global[0]<<","<<global[1]<<","<<global[3]<<">,"<<global[0]<<","<<global[1]<<","<<global[3]<<",\n";
-        //     count++;
-        // }
-        // if((find(selected_vertices.begin(),selected_vertices.end(),global[0]+1)!=selected_vertices.end())&&
-        //     (find(selected_vertices.begin(),selected_vertices.end(),global[2]+1)!=selected_vertices.end())&&
-        //     (find(selected_vertices.begin(),selected_vertices.end(),global[3]+1)!=selected_vertices.end()))
-        // {
-        //     outputfile<<"<"<<global[0]<<","<<global[2]<<","<<global[3]<<">,"<<global[0]<<","<<global[2]<<","<<global[3]<<",\n";
-        //     count++;
-        // }
-        // if((find(selected_vertices.begin(),selected_vertices.end(),global[1]+1)!=selected_vertices.end())&&
-        //     (find(selected_vertices.begin(),selected_vertices.end(),global[2]+1)!=selected_vertices.end())&&
-        //     (find(selected_vertices.begin(),selected_vertices.end(),global[3]+1)!=selected_vertices.end()))
-        // {
-        //     outputfile<<"<"<<global[1]<<","<<global[2]<<","<<global[3]<<">,"<<global[1]<<","<<global[2]<<","<<global[3]<<",\n";
-        //     count++;
-        // }
-        // if(ele==volumetricMesh->getNumElements()-1)
-        //     outputfile<<"<"<<global[1]<<","<<global[2]<<","<<global[3]<<">,"<<global[1]<<","<<global[2]<<","<<global[3]<<",\n";
-        // else
-        //     outputfile<<"<"<<global[1]<<","<<global[2]<<","<<global[3]<<">,"<<global[1]<<","<<global[2]<<","<<global[3]<<"\n";
+        }
+        //for all parameters
+        // outputfile<<"<"<<global[0]<<","<<global[1]<<","<<global[2]<<">,"<<global[0]<<","<<global[1]<<","<<global[2]<<",\n";
+        // outputfile<<"<"<<global[0]<<","<<global[1]<<","<<global[3]<<">,"<<global[0]<<","<<global[1]<<","<<global[3]<<",\n";
+        // outputfile<<"<"<<global[0]<<","<<global[2]<<","<<global[3]<<">,"<<global[0]<<","<<global[2]<<","<<global[3]<<",\n";
+        // outputfile<<"<"<<global[1]<<","<<global[2]<<","<<global[3]<<">,"<<global[1]<<","<<global[2]<<","<<global[3]<<",\n";
+        //
+        // count=count+4;
     }
     std::cout<<"count=:"<<count<<"\n";
-    // std::cout<<"select_count=:"<<select_count-1<<"\n";
+    std::cout<<"select_count=:"<<select_count-1<<"\n";
     outputfile<<"}\n";
     outputfile<<"}\n";
     outputfile.close();

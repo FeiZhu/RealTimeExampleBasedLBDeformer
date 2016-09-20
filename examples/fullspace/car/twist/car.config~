@@ -126,7 +126,7 @@ true
 *framerate
 30
 *totalFrame
-500
+1000
 *integratorEpsilon
 1.0e-6
 

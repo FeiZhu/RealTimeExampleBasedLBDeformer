@@ -121,6 +121,7 @@ void OpenGLDriver::initConfigurations(const std::string &config_file_name)
     config_file_.addOptionOptional("dampingLaplacianCoef",&damping_laplacian_coef_,damping_laplacian_coef_);
     config_file_.addOptionOptional("integratorEpsilon",&integrator_epsilon_,integrator_epsilon_);
     config_file_.addOptionOptional("deformableObjectCompliance",&deformable_object_compliance_,deformable_object_compliance_);
+    config_file_.addOptionOptional("exampleBias",&example_bias_,example_bias_);
     config_file_.addOptionOptional("exampleStiffnessScale",&example_stiffness_scale_,example_stiffness_scale_);
     config_file_.addOptionOptional("dampingExampleStiffness",&damping_example_stiffness_,damping_example_stiffness_);
     config_file_.addOptionOptional("maxIterations",&max_iterations_,max_iterations_);
@@ -152,6 +153,7 @@ void OpenGLDriver::initConfigurations(const std::string &config_file_name)
     simulator_->setDampingStiffnessCoef(damping_stiffness_coef_);
     simulator_->setExampleStiffnessScale(example_stiffness_scale_);
     simulator_->setDampingExampleStiffness(damping_example_stiffness_);
+    simulator_->setExampleBiasFactor(example_bias_);
     simulator_->setPrincipalStretchThreshold(principal_stretch_threshold_);
     //enable eigen weight control
     simulator_->setEnableEigenWeightControl(enable_eigen_weight_control_);
@@ -383,7 +385,9 @@ void OpenGLDriver::initSimulation()
             std::cout<<"Error: object cubica file unloaded.\n";
             exit(0);
         }
+        std::cout<<"load cubica:\n";
         loadObjectCubicaData(0);
+        std::cout<<"load cubica done\n";
     }
     loadReducedBasis(0);
     //init object render surface Mesh
@@ -924,17 +928,26 @@ void OpenGLDriver::displayFunction()
 void OpenGLDriver::idleFunction()
 {
     // std::cout<<"idleFunction\n";
-    // getchar();
     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
     assert(active_instance);
+    // memcpy(active_instance->u_,active_instance->simulator_->getu(),sizeof(double)*3*active_instance->simulation_vertices_num_);
+    // getchar();
+	// std::cout<<"6\n";
+    // getchar();
     glutSetWindow(active_instance->window_id_);
+	// std::cout<<"7\n";
+    // getchar();
     if(active_instance->time_step_counter_<active_instance->total_steps_)
     {
         //time statistics by frame
         PerformanceCounter each_frame_performance_counter;
         double each_frame_time=0.0;
         each_frame_performance_counter.StartCounter();
+    	// std::cout<<"8\n";
+        // getchar();
         memcpy(active_instance->u_,active_instance->simulator_->getu(),sizeof(double)*3*active_instance->simulation_vertices_num_);
+    	// std::cout<<"9\n";
+        // getchar();
         if(!active_instance->pause_simulation_)
         {
             // std::cout<<"reduced:testEnergyGradients:\n";
@@ -951,97 +964,108 @@ void OpenGLDriver::idleFunction()
             // std::cout<<"-------------"<<active_instance->simulation_mode_<<"----------\n";
 
             memset(active_instance->f_ext_,0.0,sizeof(double)*3*active_instance->simulation_vertices_num_);
+
+        	// std::cout<<"10\n";
+            // getchar();
             //time statistics by step, time_step_intervals is 100
         	// PerformanceCounter step_counter;
             // step_counter.StartCounter();
-            if(active_instance->simulation_mode_==REDUCEDSPACE)
-            {
-                if(active_instance->left_button_down_)
-                {
-                    std::cout<<"pulled_vertex_:"<<active_instance->pulled_vertex_<<"\n";
-                    if(active_instance->pulled_vertex_!=-1)
-                    {
-                        double force_x=active_instance->mouse_pos_[0]-active_instance->drag_start_x_;
-                        double force_y=(-1.0)*(active_instance->mouse_pos_[1]-active_instance->drag_start_y_);
-                        double external_force[3];
-                        active_instance->camera_->CameraVector2WorldVector_OrientationOnly3D(force_x,force_y,0,external_force);
-                        std::cout<<active_instance->pulled_vertex_<<" fx: "<<force_x<<",fy: "<<force_y<<" | "<<external_force[0]<<",";
-                        std::cout<<"external_force:"<<external_force[0]<<","<<external_force[1]<<","<<external_force[2]<<std::endl;
-                        for(int i=0;i<3;++i)
-                        {
-                            external_force[i]*=active_instance->deformable_object_compliance_;
-                        }
-                        //register force on the pulled vertex
-                        active_instance->f_ext_[3*(active_instance->pulled_vertex_)+0]=external_force[0];
-                        active_instance->f_ext_[3*(active_instance->pulled_vertex_)+1]=external_force[1];
-                        active_instance->f_ext_[3*(active_instance->pulled_vertex_)+2]=external_force[2];
-                        //distributing force over the neighboring vertices
-                        set<int> affected_vertices;
-                        set<int> last_layer_vertices;
-                        affected_vertices.insert(active_instance->pulled_vertex_);
-                        last_layer_vertices.insert(active_instance->pulled_vertex_);
-                        for(int j=1;j<active_instance->force_neighbor_size_;++j)
-                        {
-                            //linear kernel
-                            double force_magnitude=1.0*(active_instance->force_neighbor_size_-j)/active_instance->force_neighbor_size_;
-                            set<int> new_affected_vertices;
-                            for(set<int>::iterator iter=last_layer_vertices.begin();iter!=last_layer_vertices.end();++iter)
-                            {
-                                //traverse all neighbors and check if they were already previously inserted
-                                int vtx=*iter;
-                                int deg=active_instance->mesh_graph_->GetNumNeighbors(vtx);
-                                for(int k=0;k<deg;++k)
-                                {
-                                    int vtx_neighbor=active_instance->mesh_graph_->GetNeighbor(vtx,k);
-                                    if(affected_vertices.find(vtx_neighbor)==affected_vertices.end())
-                                        new_affected_vertices.insert(vtx_neighbor);
-                                }
-                            }
-                            last_layer_vertices.clear();
-                            for(set<int>::iterator iter=new_affected_vertices.begin();iter!=new_affected_vertices.end();iter++)
-                            {
-                                //apply forces
-                                active_instance->f_ext_[3*(*iter)+0]+=force_magnitude*external_force[0];
-                                active_instance->f_ext_[3*(*iter)+1]+=force_magnitude*external_force[1];
-                                active_instance->f_ext_[3*(*iter)+2]+=force_magnitude*external_force[2];
-                                //generate new layers
-                                last_layer_vertices.insert(*iter);
-                                affected_vertices.insert(*iter);
-                            }
-                        }
-                    }
-                }
-
-                //plane--
-                if(!active_instance->with_constrains_)
-                {
-                    if(active_instance->plane_num_>0)
-                	{
-                		active_instance->planes_->resolveContact(active_instance->render_surface_mesh_->GetMesh(),active_instance->f_col_,active_instance->collide_vert_num_);
-                        for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
-                        {
-                            active_instance->f_ext_[i]+=active_instance->f_col_[i];
-                            // if(active_instance->f_col_[i]>1.0e-6)
-                            //     std::cout<<active_instance->f_col_[i]<<",";
-                        }
-                        // active_instance->planes_->resolveContact(active_instance->render_surface_mesh_->GetMesh(),//active_instance->f_col_,
-                        //                                 active_instance->simulator_->getvel(),active_instance->collide_u_,
-                        //                                 active_instance->collide_vel_,active_instance->collide_vert_num_);
-                        // for(int i=0;i<3*active_instance->simulation_mesh_->getNumVertices();++i)
-                        // {
-                        //     active_instance->u_[i]+=active_instance->collide_u_[i];
-                        //     // active_instance->f_ext_[i]+=active_instance->f_col_[i];
-                        // }
-                        // active_instance->simulator_->setu(active_instance->u_);
-                        // active_instance->simulator_->setVelAfterCollision(active_instance->collide_vel_);
-                        active_instance->simulator_->setCollisionNum(active_instance->collide_vert_num_[0]);
-                    }
-                }
-                active_instance->simulator_->setExternalForces(active_instance->f_ext_);
-                active_instance->simulator_->advanceStep();
-            }
-            else
-            {
+            // if(active_instance->simulation_mode_==REDUCEDSPACE)
+            // {
+            //     if(active_instance->left_button_down_)
+            //     {
+            //         std::cout<<"pulled_vertex_:"<<active_instance->pulled_vertex_<<"\n";
+            //         if(active_instance->pulled_vertex_!=-1)
+            //         {
+            //             double force_x=active_instance->mouse_pos_[0]-active_instance->drag_start_x_;
+            //             double force_y=(-1.0)*(active_instance->mouse_pos_[1]-active_instance->drag_start_y_);
+            //             double external_force[3];
+            //             active_instance->camera_->CameraVector2WorldVector_OrientationOnly3D(force_x,force_y,0,external_force);
+            //             std::cout<<active_instance->pulled_vertex_<<" fx: "<<force_x<<",fy: "<<force_y<<" | "<<external_force[0]<<",";
+            //             std::cout<<"external_force:"<<external_force[0]<<","<<external_force[1]<<","<<external_force[2]<<std::endl;
+            //             for(int i=0;i<3;++i)
+            //             {
+            //                 external_force[i]*=active_instance->deformable_object_compliance_;
+            //             }
+            //             //register force on the pulled vertex
+            //             active_instance->f_ext_[3*(active_instance->pulled_vertex_)+0]=external_force[0];
+            //             active_instance->f_ext_[3*(active_instance->pulled_vertex_)+1]=external_force[1];
+            //             active_instance->f_ext_[3*(active_instance->pulled_vertex_)+2]=external_force[2];
+            //             //distributing force over the neighboring vertices
+            //             set<int> affected_vertices;
+            //             set<int> last_layer_vertices;
+            //             affected_vertices.insert(active_instance->pulled_vertex_);
+            //             last_layer_vertices.insert(active_instance->pulled_vertex_);
+            //             for(int j=1;j<active_instance->force_neighbor_size_;++j)
+            //             {
+            //                 //linear kernel
+            //                 double force_magnitude=1.0*(active_instance->force_neighbor_size_-j)/active_instance->force_neighbor_size_;
+            //                 set<int> new_affected_vertices;
+            //                 for(set<int>::iterator iter=last_layer_vertices.begin();iter!=last_layer_vertices.end();++iter)
+            //                 {
+            //                     //traverse all neighbors and check if they were already previously inserted
+            //                     int vtx=*iter;
+            //                     int deg=active_instance->mesh_graph_->GetNumNeighbors(vtx);
+            //                     for(int k=0;k<deg;++k)
+            //                     {
+            //                         int vtx_neighbor=active_instance->mesh_graph_->GetNeighbor(vtx,k);
+            //                         if(affected_vertices.find(vtx_neighbor)==affected_vertices.end())
+            //                             new_affected_vertices.insert(vtx_neighbor);
+            //                     }
+            //                 }
+            //                 last_layer_vertices.clear();
+            //                 for(set<int>::iterator iter=new_affected_vertices.begin();iter!=new_affected_vertices.end();iter++)
+            //                 {
+            //                     //apply forces
+            //                     active_instance->f_ext_[3*(*iter)+0]+=force_magnitude*external_force[0];
+            //                     active_instance->f_ext_[3*(*iter)+1]+=force_magnitude*external_force[1];
+            //                     active_instance->f_ext_[3*(*iter)+2]+=force_magnitude*external_force[2];
+            //                     //generate new layers
+            //                     last_layer_vertices.insert(*iter);
+            //                     affected_vertices.insert(*iter);
+            //                 }
+            //             }
+            //         }
+            //     }
+            //
+            //     //plane--
+            //
+            // 	// std::cout<<"11\n";
+            //     if(!active_instance->with_constrains_)
+            //     {
+            //         if(active_instance->plane_num_>0)
+            //     	{
+            //     		active_instance->planes_->resolveContact(active_instance->render_surface_mesh_->GetMesh(),active_instance->f_col_,active_instance->collide_vert_num_);
+            //             for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
+            //             {
+            //                 active_instance->f_ext_[i]+=active_instance->f_col_[i];
+            //                 // if(active_instance->f_col_[i]>1.0e-6)
+            //                 //     std::cout<<active_instance->f_col_[i]<<",";
+            //             }
+            //             // active_instance->planes_->resolveContact(active_instance->render_surface_mesh_->GetMesh(),//active_instance->f_col_,
+            //             //                                 active_instance->simulator_->getvel(),active_instance->collide_u_,
+            //             //                                 active_instance->collide_vel_,active_instance->collide_vert_num_);
+            //             // for(int i=0;i<3*active_instance->simulation_mesh_->getNumVertices();++i)
+            //             // {
+            //             //     active_instance->u_[i]+=active_instance->collide_u_[i];
+            //             //     // active_instance->f_ext_[i]+=active_instance->f_col_[i];
+            //             // }
+            //             // active_instance->simulator_->setu(active_instance->u_);
+            //             // active_instance->simulator_->setVelAfterCollision(active_instance->collide_vel_);
+            //             active_instance->simulator_->setCollisionNum(active_instance->collide_vert_num_[0]);
+            //         }
+            //     }
+            //
+            // 	// std::cout<<"12\n";
+            //     active_instance->simulator_->setExternalForces(active_instance->f_ext_);
+            // 	// std::cout<<"13\n";
+            //     active_instance->simulator_->advanceStep();
+            //
+            // 	// std::cout<<"14\n";
+            //     // getchar();
+            // }
+            // else
+            // {
                 //drag force
                 if(active_instance->left_button_down_)
                 {
@@ -1111,9 +1135,12 @@ void OpenGLDriver::idleFunction()
                         active_instance->f_ext_[i]+=active_instance->f_col_[i];
                     }
             	}
+                // std::cout<<"a\n";
                 active_instance->simulator_->setExternalForces(active_instance->f_ext_);
+                // std::cout<<"b\n";
                 active_instance->simulator_->advanceStep();
-            }
+                // std::cout<<"c\n";
+            // }
             // step_counter.StopCounter();
             // active_instance->step_simulation_time_+=step_counter.GetElapsedTime();
             //time computing
@@ -1124,6 +1151,10 @@ void OpenGLDriver::idleFunction()
             //     getchar();
             // }
         }
+        // std::cout<<"1\n";
+        // getchar();
+    	// std::cout<<"15\n";
+        // getchar();
         if(active_instance->render_mesh_type_==VISUAL_MESH)
         {
             memset(active_instance->u_render_surface_,0.0,sizeof(double)*3*(active_instance->visual_mesh_->Getn()));
@@ -1134,6 +1165,9 @@ void OpenGLDriver::idleFunction()
             active_instance->visual_mesh_->SetVertexDeformations(active_instance->u_render_surface_);
             active_instance->render_surface_mesh_->SetVertexDeformations(active_instance->u_);
         }
+        // active_instance->simulator_->setu(active_instance->u_);
+    	// std::cout<<"16\n";
+        // getchar();
         each_frame_performance_counter.StopCounter();
         each_frame_time=each_frame_performance_counter.GetElapsedTime();
         active_instance->total_simulation_time_+=each_frame_time;
@@ -1150,7 +1184,7 @@ void OpenGLDriver::idleFunction()
             active_instance->time_step_counter_++;
 
         //save files per 4 steps
-        if((active_instance->time_step_counter_%10==0)&&(active_instance->time_step_counter_>0)&&(active_instance->enable_save_objmesh_)&&(!active_instance->pause_simulation_))
+        if((active_instance->time_step_counter_%4==0)&&(active_instance->time_step_counter_>0)&&(active_instance->enable_save_objmesh_)&&(!active_instance->pause_simulation_))
         {
             active_instance->saveCurrentObjmesh(0);
         }
@@ -1158,6 +1192,7 @@ void OpenGLDriver::idleFunction()
         {
             active_instance->saveCurrentTetmesh(0);
         }
+        // active_instance->simulator_->setu(active_instance->u_);
         glutPostRedisplay();
     }
 
@@ -1212,7 +1247,7 @@ void OpenGLDriver::keyboardFunction(unsigned char key, int x, int y)
     case 's':
         // active_instance->save_tet_mesh_ = !(active_instance->save_tet_mesh_ );
         active_instance->enable_save_objmesh_ = !(active_instance->enable_save_objmesh_);
-        // active_instance->save_tet_mesh_ = !(active_instance->save_tet_mesh_ );
+        active_instance->save_tet_mesh_ = !(active_instance->save_tet_mesh_ );
         // active_instance->saveCurrentObjmesh(0);
         break;
     case 't':
@@ -1556,7 +1591,7 @@ void OpenGLDriver::saveObjectEigenfunctionsColor(int code)
         adaptor.clear();
         adaptor<<i+1;
         adaptor>>eigen_idx_str;
-        output_file_name=eigen_idx_str+".txt";
+        output_file_name=eigen_idx_str+".txt";//"new-armadillo-left.txt";
         active_instance->render_volumetric_mesh_->SaveVertexColorMap(active_instance->simulation_mesh_,
                         active_instance->simulator_->objectEigenFunctions()[i],
                         "armadillo_selected.bou",output_file_name.c_str());
@@ -1688,7 +1723,7 @@ void OpenGLDriver::saveCurrentTetmesh(int code)
     std::string output_tet_file_name,output_file_index_str;
     std::string output_file_name_base(active_instance->output_objmesh_file_name_base_);
     cout<<"frame "<<(active_instance->time_step_counter_+1)/(int)(1.0/(active_instance->frame_rate_*active_instance->time_step_))<<" begins \n";
-    adaptor<<active_instance->output_file_index_++;
+    adaptor<<active_instance->output_tet_file_index_++;
     adaptor>>output_file_index_str;
     output_tet_file_name=output_file_name_base+output_file_index_str+".smesh";
     std::ofstream output_file(output_tet_file_name.c_str());

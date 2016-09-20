@@ -119,6 +119,8 @@ true
 *dampingStiffnessCoef
 0.03
 
+*exampleBias
+0.8
 *exampleStiffnessScale
 1000.0
 *timestep
@@ -126,7 +128,7 @@ true
 *framerate
 30
 *totalFrame
-500
+800
 *integratorEpsilon
 1.0e-6
 

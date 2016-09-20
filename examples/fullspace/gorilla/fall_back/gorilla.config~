@@ -6,8 +6,8 @@ fullspace
 #reducedspace
 
 *solver
-#implicitBackwardEuler
-implicitNewmark
+implicitBackwardEuler
+#implicitNewmark
 #reducedImplicitNewmark
 #reducedImplicitBackwardEuler
 
@@ -82,8 +82,8 @@ gorilla_LB.cubature
 *massMatrixFilename
 gorilla.mass
 
-*inertiaTensorFilename
-gorilla.inertia
+#*inertiaTensorFilename
+#gorilla.inertia
 
 #*objectAffectedVerticesFilename
 
@@ -112,21 +112,26 @@ gorilla.lighting
 true
 
 *gravity
-9.8
+#9.8
+80
 *dampingMassCoef
 0.02
 
 *dampingStiffnessCoef
 0.03
 
+*exampleBias
+0.7
 *exampleStiffnessScale
-300.0
+130.0
+*dampingExampleStiffness
+0.5
 *timestep
 0.01
 *framerate
 30
 *totalFrame
-700
+5000
 *integratorEpsilon
 1.0e-6
 

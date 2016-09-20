@@ -118,7 +118,8 @@ true
 
 *dampingStiffnessCoef
 0.03
-
+*exampleBias
+0.8
 *exampleStiffnessScale
 20.0
 *timestep
@@ -151,7 +152,7 @@ true
 0.0
 
 *focusPositionX
-5.0
+3.0
 
 *focusPositionY
 0.0

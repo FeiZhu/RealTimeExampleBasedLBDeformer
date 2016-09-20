@@ -120,7 +120,7 @@ true
 0.03
 
 *exampleStiffnessScale
-20.0
+-20.0
 *timestep
 0.005
 *framerate

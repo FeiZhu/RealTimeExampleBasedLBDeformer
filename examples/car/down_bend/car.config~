@@ -1,5 +1,5 @@
 *withConstrains
-true
+false
 
 *simulationType
 #fullspace
@@ -120,6 +120,8 @@ true
 *dampingStiffnessCoef
 0.02
 
+*exampleBias
+0.6
 *exampleStiffnessScale
 800.0
 *dampingExampleStiffness
