@@ -149,6 +149,8 @@ private:
     double example_stiffness_scale_=1.0;//the stiffness used to compute example force is scaled
     double damping_example_stiffness_=0.0;
     double example_bias_ = 0.8;
+    double torque_coef_ = 1.0e-5;
+    int col_limited_num_=10;
     double initial_rigidvel_x_=0.0;
     double initial_rigidvel_y_=0.0;
     double initial_rigidvel_z_=0.0;

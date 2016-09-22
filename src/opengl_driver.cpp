@@ -125,6 +125,8 @@ void OpenGLDriver::initConfigurations(const std::string &config_file_name)
     config_file_.addOptionOptional("exampleStiffnessScale",&example_stiffness_scale_,example_stiffness_scale_);
     config_file_.addOptionOptional("dampingExampleStiffness",&damping_example_stiffness_,damping_example_stiffness_);
     config_file_.addOptionOptional("maxIterations",&max_iterations_,max_iterations_);
+    config_file_.addOptionOptional("torqueCoef",&torque_coef_,torque_coef_);
+    config_file_.addOptionOptional("collisionNumLimited",&col_limited_num_,col_limited_num_);
 
     //initial conditions
     config_file_.addOptionOptional("fixedVerticesFilename",fixed_vertex_file_name_,"none");
@@ -154,6 +156,9 @@ void OpenGLDriver::initConfigurations(const std::string &config_file_name)
     simulator_->setExampleStiffnessScale(example_stiffness_scale_);
     simulator_->setDampingExampleStiffness(damping_example_stiffness_);
     simulator_->setExampleBiasFactor(example_bias_);
+    std::cout<<"example_bias_:"<<example_bias_<<".........................\n";
+    simulator_->setTorqueCoef(torque_coef_);
+    simulator_->setCollisionNumLimited(col_limited_num_);
     simulator_->setPrincipalStretchThreshold(principal_stretch_threshold_);
     //enable eigen weight control
     simulator_->setEnableEigenWeightControl(enable_eigen_weight_control_);
@@ -1031,35 +1036,37 @@ void OpenGLDriver::idleFunction()
             //     //plane--
             //
             // 	// std::cout<<"11\n";
-            //     if(!active_instance->with_constrains_)
-            //     {
-            //         if(active_instance->plane_num_>0)
-            //     	{
-            //     		active_instance->planes_->resolveContact(active_instance->render_surface_mesh_->GetMesh(),active_instance->f_col_,active_instance->collide_vert_num_);
-            //             for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
-            //             {
-            //                 active_instance->f_ext_[i]+=active_instance->f_col_[i];
-            //                 // if(active_instance->f_col_[i]>1.0e-6)
-            //                 //     std::cout<<active_instance->f_col_[i]<<",";
-            //             }
-            //             // active_instance->planes_->resolveContact(active_instance->render_surface_mesh_->GetMesh(),//active_instance->f_col_,
-            //             //                                 active_instance->simulator_->getvel(),active_instance->collide_u_,
-            //             //                                 active_instance->collide_vel_,active_instance->collide_vert_num_);
-            //             // for(int i=0;i<3*active_instance->simulation_mesh_->getNumVertices();++i)
-            //             // {
-            //             //     active_instance->u_[i]+=active_instance->collide_u_[i];
-            //             //     // active_instance->f_ext_[i]+=active_instance->f_col_[i];
-            //             // }
-            //             // active_instance->simulator_->setu(active_instance->u_);
-            //             // active_instance->simulator_->setVelAfterCollision(active_instance->collide_vel_);
-            //             active_instance->simulator_->setCollisionNum(active_instance->collide_vert_num_[0]);
-            //         }
-            //     }
+                // if(!active_instance->with_constrains_)
+                // {
+                    if(active_instance->plane_num_>0)
+                	{
+                        //plane:collision-method 1
+                		active_instance->planes_->resolveContact(active_instance->render_surface_mesh_->GetMesh(),active_instance->f_col_,active_instance->collide_vert_num_);
+                        for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
+                        {
+                            active_instance->f_ext_[i]+=active_instance->f_col_[i];
+                            // if(active_instance->f_col_[i]>1.0e-6)
+                            //     std::cout<<active_instance->f_col_[i]<<",";
+                        }
+                        //plane:return new dis and new vel-method 2
+                        // active_instance->planes_->resolveContact(active_instance->render_surface_mesh_->GetMesh(),//active_instance->f_col_,
+                        //                                 active_instance->simulator_->getvel(),active_instance->collide_u_,
+                        //                                 active_instance->collide_vel_,active_instance->collide_vert_num_);
+                        // for(int i=0;i<3*active_instance->simulation_mesh_->getNumVertices();++i)
+                        // {
+                        //     // active_instance->u_[i]+=active_instance->collide_u_[i];
+                        //     active_instance->f_ext_[i]=(active_instance->collide_vel_[i]-active_instance->simulator_->getvel()[i])/active_instance->time_step_;
+                        // }
+                        // active_instance->simulator_->setu(active_instance->u_);
+                        // active_instance->simulator_->setVelAfterCollision(active_instance->collide_vel_);
+                        active_instance->simulator_->setCollisionNum(active_instance->collide_vert_num_[0]);
+                    }
+                // }
             //
             // 	// std::cout<<"12\n";
-            //     active_instance->simulator_->setExternalForces(active_instance->f_ext_);
+                // active_instance->simulator_->setExternalForces(active_instance->f_ext_);
             // 	// std::cout<<"13\n";
-            //     active_instance->simulator_->advanceStep();
+                // active_instance->simulator_->advanceStep();
             //
             // 	// std::cout<<"14\n";
             //     // getchar();
@@ -1127,14 +1134,14 @@ void OpenGLDriver::idleFunction()
                 }
 
                 //plane--
-                if(active_instance->plane_num_>0)
-            	{
-            		active_instance->planes_->resolveContact(active_instance->render_surface_mesh_->GetMesh(),active_instance->f_col_,active_instance->collide_vert_num_);
-                    for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
-                    {
-                        active_instance->f_ext_[i]+=active_instance->f_col_[i];
-                    }
-            	}
+                // if(active_instance->plane_num_>0)
+            	// {
+            	// 	active_instance->planes_->resolveContact(active_instance->render_surface_mesh_->GetMesh(),active_instance->f_col_,active_instance->collide_vert_num_);
+                //     for(int i=0;i<3*active_instance->simulation_vertices_num_;++i)
+                //     {
+                //         active_instance->f_ext_[i]+=active_instance->f_col_[i];
+                //     }
+            	// }
                 // std::cout<<"a\n";
                 active_instance->simulator_->setExternalForces(active_instance->f_ext_);
                 // std::cout<<"b\n";

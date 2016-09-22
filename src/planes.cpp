@@ -127,7 +127,7 @@ void Planes::resolveContact(ObjMesh *mesh,double *forces,int *num)
 void Planes::resolveContact(const ObjMesh *mesh/*,double *forces*/,const double *vel,double *u_new,double *vel_new,int *num)
 {
     int vert_num=mesh->getNumVertices();
-    double threshold=0.5;//03*mesh->getDiameter();//the threshold to start resolve contact
+    double threshold=0.01*mesh->getDiameter();//the threshold to start resolve contact
 
 	//memset(forces,0.0,sizeof(double)*3*vert_num);
 	memset(u_new,0.0,sizeof(double)*3*vert_num);

@@ -76,6 +76,7 @@ public:
     void setDampingExampleStiffness(double value){damping_example_stiffness_ = value;}
     void setExampleBiasFactor(double value){example_bias_ = value;}
     void setPrincipalStretchThreshold(double value){principal_stretch_threshold_ = value;}
+    void setCollisionNumLimited(int value){col_limited_num_=value;}
     void setu(double *u);
     void setVelAfterCollision(double *vel);
     void setCollisionNum(int num){collide_vert_num_=num;}
@@ -86,6 +87,7 @@ public:
     void setInitialTetMeshFilename(const std::string &file_name){initial_tetmesh_file_name_=file_name;}
     void setObjectAffectedVerticesFilename(const std::string &file_name){object_affected_vertices_file_name_=file_name;}
     void setExampleAffectedVerticesFilebase(const std::string &file_name){example_affected_vertices_file_base_=file_name;}
+    void setTorqueCoef(double value){torque_coef_=value;}
     // void setInitialVel(double *vel);
     // void setInitialDis(double *pos);
     // void setInitialForceLoad(double *force);
@@ -257,6 +259,8 @@ private:
     int solver_threads_num_=4;//number of threads used for integration solver
     int positive_definite_=0;
     int central_difference_tangential_damping_update_mode_=1;
+    double torque_coef_=1.0e-5;
+    int col_limited_num_=20;
     // Mat3d *object_init_element_dis_matrix_ = NULL;
     // Mat3d **example_init_element_dis_matrix_ = NULL;
     int fixed_dofs_num_=0;
