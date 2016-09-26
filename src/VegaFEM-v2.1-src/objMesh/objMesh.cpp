@@ -1297,7 +1297,8 @@ void ObjMesh::saveToAscii(const string & filename, int outputMaterials, int verb
   for (unsigned int i=0; i < vertexPositions.size(); i++)
   {
     Vec3d pos = getPosition(i);
-    fout << "v " << pos[0] << " " << pos[1] << " " << pos[2] << endl;
+    fout << "v " << pos[0] << " " << pos[1] << " " <<pos[2] << endl;
+    
   }
 
   // texture coordinates...

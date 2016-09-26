@@ -166,6 +166,7 @@ public:
     void reconstructFromEigenCoefs(Vec3d *target_eigencoefs,double *vert_pos);//full space
     void reconstructFromEigenCoefs(Vec3d *target_eigencoefs,int flag=0);//reduced_space
     void saveReconstructMesh(double *vert_pos);
+    void saveReconstructMesh1(double *vert_pos);
 private:
     void preAllocateLocalFrameCorrespondingVertices();
     void rigidBodyPreComputation();

@@ -718,11 +718,12 @@ void OpenGLDriver::displayFunction()
         }
         else
         {
-            //memcpy(active_instance->u_,active_instance->integrator_base_->Getq(),sizeof(double)*3*active_instance->simulation_vertices_num_);
+            // memcpy(active_instance->u_,active_instance->integrator_base_->Getq(),sizeof(double)*3*active_instance->simulation_vertices_num_);
+
             if((active_instance->render_eigenfunction_)&&(active_instance->isload_object_eigen_))
             {
                 active_instance->render_volumetric_mesh_->RenderVertexColorMap(active_instance->simulation_mesh_,
-                                active_instance->simulator_->objectEigenFunctions()[active_instance->current_render_eigen_idx_-1]);
+                                active_instance->simulator_->objectEigenFunctions()[active_instance->current_render_eigen_idx_-1],active_instance->u_);
             }
             else
             {
@@ -973,8 +974,8 @@ void OpenGLDriver::idleFunction()
         	// std::cout<<"10\n";
             // getchar();
             //time statistics by step, time_step_intervals is 100
-        	// PerformanceCounter step_counter;
-            // step_counter.StartCounter();
+        	PerformanceCounter step_counter;
+            step_counter.StartCounter();
             // if(active_instance->simulation_mode_==REDUCEDSPACE)
             // {
             //     if(active_instance->left_button_down_)
@@ -1148,15 +1149,15 @@ void OpenGLDriver::idleFunction()
                 active_instance->simulator_->advanceStep();
                 // std::cout<<"c\n";
             // }
-            // step_counter.StopCounter();
-            // active_instance->step_simulation_time_+=step_counter.GetElapsedTime();
+            step_counter.StopCounter();
+            active_instance->step_simulation_time_+=step_counter.GetElapsedTime();
             //time computing
-            // if((active_instance->time_step_counter_)%active_instance->timer_sample_interval_==0&&active_instance->time_step_counter_>=active_instance->timer_sample_interval_)
-            // {
-            //     printf("Time in %d steps: %f, average step time: %f\n",active_instance->timer_sample_interval_,active_instance->step_simulation_time_,active_instance->step_simulation_time_/active_instance->timer_sample_interval_);
-            //     active_instance->step_simulation_time_ = 0.0;
-            //     getchar();
-            // }
+            if((active_instance->time_step_counter_)%active_instance->timer_sample_interval_==0&&active_instance->time_step_counter_>=active_instance->timer_sample_interval_)
+            {
+                printf("Time in %d steps: %f, average step time: %f\n",active_instance->timer_sample_interval_,active_instance->step_simulation_time_,active_instance->step_simulation_time_/active_instance->timer_sample_interval_);
+                active_instance->step_simulation_time_ = 0.0;
+                getchar();
+            }
         }
         // std::cout<<"1\n";
         // getchar();
@@ -1195,10 +1196,10 @@ void OpenGLDriver::idleFunction()
         {
             active_instance->saveCurrentObjmesh(0);
         }
-        if((active_instance->time_step_counter_%4==0)&&(active_instance->time_step_counter_>0)&&(active_instance->save_tet_mesh_)&&(!active_instance->pause_simulation_))
-        {
-            active_instance->saveCurrentTetmesh(0);
-        }
+        // if((active_instance->time_step_counter_%4==0)&&(active_instance->time_step_counter_>0)&&(active_instance->save_tet_mesh_)&&(!active_instance->pause_simulation_))
+        // {
+        //     active_instance->saveCurrentTetmesh(0);
+        // }
         // active_instance->simulator_->setu(active_instance->u_);
         glutPostRedisplay();
     }

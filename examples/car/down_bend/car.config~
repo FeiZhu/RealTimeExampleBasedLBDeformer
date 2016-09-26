@@ -15,7 +15,7 @@ reducedImplicitNewmark
 #InvertibleFEM
 
 *invertibleMaterial
-#reducedNeoHookean
+#StVK
 reducedStVK
 
 #for InvertibleFEM
@@ -32,7 +32,6 @@ car_volumetric_surfacemesh.obj
 *objectInterpolationFilename
 car.interp
 
-
 *initialRigidVelX
 -2.0
 *initialRigidVelY
@@ -48,7 +47,7 @@ ex
 
 
 *exampleNum
-2
+3
 *interpolateEigenfunctionNum
 5
 *reconstructEigenfunctionNum
@@ -58,28 +57,31 @@ new-ex
 *objectEigenFunctionFilename
 new-car.eigen
 *correspondingFunctionFilename
-car.ini
+car-4.ini
 *savedExampleEigenFunctionFilenameBase
 new-ex
 *savedObjectEigenFunctionFilename
 new-car.eigen
 *saveObjMeshFilenameBase
 output/a
+*enableSaveSurfaceMtl
+true
 
 *reducedBasisFilename
 nonlinear-65.basis
-#nonlinear.basis
+#nonlinear-135.basis
 
 *isLoadCubica
 true
 *objectCubicaFilename
 nonlinear-65.cubature
-#nonlinear.cubature
+#nonlinear-65.cubature
+#nonlinear-135.cubature
 
 *isLoadLBCubica
-true
+false
 *objectLBCubicaFilename
-car_LB.cubature
+car_LB-100.cubature
 
 *massMatrixFilename
 car.mass
@@ -113,7 +115,7 @@ car.lighting
 true
 
 *gravity
-0.98
+0.0
 *dampingMassCoef
 0.01
 
@@ -121,14 +123,18 @@ true
 0.02
 
 *exampleBias
-0.6
+0.7
+*torqueCoef
+1.0e-2
+*collisionNumLimited
+10
 *exampleStiffnessScale
-800.0
+2.0e3
 *dampingExampleStiffness
-0.5
+0.6
 
 *timestep
-0.01
+0.005
 *framerate
 30
 *totalFrame
