@@ -1152,12 +1152,12 @@ void OpenGLDriver::idleFunction()
             step_counter.StopCounter();
             active_instance->step_simulation_time_+=step_counter.GetElapsedTime();
             //time computing
-            if((active_instance->time_step_counter_)%active_instance->timer_sample_interval_==0&&active_instance->time_step_counter_>=active_instance->timer_sample_interval_)
-            {
-                printf("Time in %d steps: %f, average step time: %f\n",active_instance->timer_sample_interval_,active_instance->step_simulation_time_,active_instance->step_simulation_time_/active_instance->timer_sample_interval_);
-                active_instance->step_simulation_time_ = 0.0;
-                getchar();
-            }
+            // if((active_instance->time_step_counter_)%active_instance->timer_sample_interval_==0&&active_instance->time_step_counter_>=active_instance->timer_sample_interval_)
+            // {
+            //     printf("Time in %d steps: %f, average step time: %f\n",active_instance->timer_sample_interval_,active_instance->step_simulation_time_,active_instance->step_simulation_time_/active_instance->timer_sample_interval_);
+            //     active_instance->step_simulation_time_ = 0.0;
+            //     getchar();
+            // }
         }
         // std::cout<<"1\n";
         // getchar();

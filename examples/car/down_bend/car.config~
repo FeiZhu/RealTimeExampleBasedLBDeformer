@@ -47,7 +47,7 @@ ex
 
 
 *exampleNum
-3
+2
 *interpolateEigenfunctionNum
 5
 *reconstructEigenfunctionNum
@@ -129,7 +129,7 @@ true
 *collisionNumLimited
 10
 *exampleStiffnessScale
-2.0e3
+5.0e1
 *dampingExampleStiffness
 0.6
 
