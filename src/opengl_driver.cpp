@@ -78,6 +78,7 @@ void OpenGLDriver::initConfigurations(const std::string &config_file_name)
     config_file_.addOptionOptional("deformableModel",deformable_model_,"neoHookean");
     config_file_.addOptionOptional("invertibleMaterial",invertible_material_,"none");
     config_file_.addOptionOptional("principalStretchThreshold",&principal_stretch_threshold_,principal_stretch_threshold_);
+    config_file_.addOptionOptional("exampleForceType",example_force_type_,"linear");
 
     //simulation object
     config_file_.addOptionOptional("simulationMeshFilename",simulation_mesh_file_name_,"none");
@@ -188,6 +189,7 @@ void OpenGLDriver::initConfigurations(const std::string &config_file_name)
     //     simulator_->setInitialPosFilename(initial_position_file_name_);
     simulator_->setSimulationType(simulation_type_);
     simulator_->setMaterialType(invertible_material_type_);
+    simulator_->setExampleForceType(example_force_type_);
     simulator_->setRigidInitialVel(initial_rigidvel_x_,initial_rigidvel_y_,initial_rigidvel_z_);
     std::cout<<plane_num_<<"\n";
 }
@@ -627,36 +629,36 @@ void OpenGLDriver::displayFunction()
         glStencilFunc(GL_ALWAYS,0,~(0u));
     }
     //show frame_rate on the left top of the window
-    if(active_instance->render_fps_)
-    {
-        std::stringstream adaptor;
-        adaptor.precision(2);
-        std::string str;
-        adaptor<<active_instance->fps_;
-        str=std::string("FPS:") + adaptor.str();
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        glLoadIdentity();
-        glMatrixMode(GL_PROJECTION);
-        glPushMatrix();
-        glLoadIdentity();
-        glDisable(GL_LIGHTING);
-        glDisable(GL_TEXTURE_2D);
-        gluOrtho2D(0,active_instance->window_width_,0,active_instance->window_height_);
-        glColor3f(1.0,0.0,0.0);
-        glRasterPos2i(5,active_instance->window_height_-19);
-        for(int i=0;i<str.length();++i)
-            glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18,str[i]);
-        glPopMatrix();
-        glMatrixMode(GL_MODELVIEW);
-        glPopMatrix();
-        glEnable(GL_LIGHTING);
-    }
+    // if(active_instance->render_fps_)
+    // {
+    //     std::stringstream adaptor;
+    //     adaptor.precision(2);
+    //     std::string str;
+    //     adaptor<<active_instance->fps_;
+    //     str=std::string("FPS:") + adaptor.str();
+    //     glMatrixMode(GL_MODELVIEW);
+    //     glPushMatrix();
+    //     glLoadIdentity();
+    //     glMatrixMode(GL_PROJECTION);
+    //     glPushMatrix();
+    //     glLoadIdentity();
+    //     glDisable(GL_LIGHTING);
+    //     glDisable(GL_TEXTURE_2D);
+    //     gluOrtho2D(0,active_instance->window_width_,0,active_instance->window_height_);
+    //     glColor3f(1.0,0.0,0.0);
+    //     glRasterPos2i(5,active_instance->window_height_-19);
+    //     for(int i=0;i<str.length();++i)
+    //         glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18,str[i]);
+    //     glPopMatrix();
+    //     glMatrixMode(GL_MODELVIEW);
+    //     glPopMatrix();
+    //     glEnable(GL_LIGHTING);
+    // }
     //render eigenfunction
-    //  if(active_instance->render_eigenfunction_)
-    //  {
-    //     active_instance->drawIndexColorTable();//draw color table at left bottom corner of the window
-    //  }
+     if(active_instance->render_eigenfunction_)
+     {
+        active_instance->drawIndexColorTable();//draw color table at left bottom corner of the window
+     }
 
     //render extra objects
     if(active_instance->extra_objects_num_>0)//render the extra objects in sceneObjectDeformable

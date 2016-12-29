@@ -293,6 +293,7 @@ private:
         REDUCEDSPACE
     };
     SimulationMode simulation_mode_ = FULLSPACE;
+    char example_force_type_[string_length];
     //glui controls
     GLUI *glui_ = NULL;
     GLUI_StaticText *glui_object_surface_eigenfunctions_loaded_;

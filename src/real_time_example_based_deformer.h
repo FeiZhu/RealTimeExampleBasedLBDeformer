@@ -151,6 +151,7 @@ public:
     void setReducedExternalForces(double *ext_forces);
     void setGravity(bool add_gravity,double gravity);
     void setConstrains(bool with_constrains){with_constrains_=with_constrains;}
+    void setExampleForceType(const std::string &example_force_type);
     // void setReducedSimulationMesh(SceneObjectReduced *mesh){reduced_simulation_mesh_=mesh};
 
     //registration of eigenfunctions
@@ -163,10 +164,17 @@ public:
                                 Vec3d *eigencoefs,int affected_vertices_num=0,int *affected_vertices=NULL);
     void projectOnEigenFunctions1(double *displacement, double *vertex_volume,
                                 double **eigenfunctions, double *eigenvalues, unsigned int eigenfunction_num,Vec3d *eigencoefs);
-    void reconstructFromEigenCoefs(Vec3d *target_eigencoefs,double *vert_pos);//full space
+    void reconstructFromEigenCoefs(Vec3d *target_eigencoefs,double *vert_pos,std::string file_name=NULL);//full space
     void reconstructFromEigenCoefs(Vec3d *target_eigencoefs,int flag=0);//reduced_space
-    void saveReconstructMesh(double *vert_pos);
+    void saveReconstructMesh(double *vert_pos,std::string file_name);
     void saveReconstructMesh1(double *vert_pos);
+
+    //deformation transfer
+    Mat3d computeInitVectorDiff(const double *init_pos) const;
+    Mat3d computeT(const double *init_pos,const double *vert_pos);
+    void computeGlobalG();
+    void computeDTNewMeshPosition();
+    void preFactorizeA();
 private:
     void preAllocateLocalFrameCorrespondingVertices();
     void rigidBodyPreComputation();
@@ -344,6 +352,7 @@ private:
     std::string simulation_type_;
     std::string material_type_;
     std::string solver_method_;
+    std::string example_force_type_;
     SparseMatrix *mass_matrix_= NULL;
     SparseMatrixOutline *mass_matrix_outline;
     IsotropicMaterial *isotropic_material_ = NULL;
@@ -435,6 +444,11 @@ private:
     double total_time_=0.0;
     int timer_sample_interval_=100;
     // Matrix<double> elastic_tensor_(6,6,0.0);
+    //deformation transfer
+    double **global_G_=NULL;
+    double *initial_eigen_skeleton_=NULL;
+    double *deformed_eigen_skeleton_=NULL;
+    // std::vector<Mat3d> global_T_;
 
 };
 
