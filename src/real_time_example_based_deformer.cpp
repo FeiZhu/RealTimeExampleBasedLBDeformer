@@ -42,6 +42,7 @@ Eigen::SparseMatrix<double> G(10,10);
 Eigen::SparseMatrix<double> GT;
 Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
 // Eigen::SimplicialLLT<Eigen::SparseMatrix<double>> solver;
+// Eigen::SimplicialCholesky<Eigen::SparseMatrix<double> > solver;
 
 RealTimeExampleBasedDeformer::RealTimeExampleBasedDeformer()
 {
@@ -879,6 +880,10 @@ void RealTimeExampleBasedDeformer::fullspaceSimulation()
 }
 void RealTimeExampleBasedDeformer::reducedspaceSimulationWithConstraints()
 {
+	std::cout<<"test-compute new deformed mesh:\n";
+	computeDTNewMeshPosition();
+	std::cout<<"test-compute new deformed mesh-end!\n\n";
+	getchar();
 	memset(fq_,0.0,sizeof(double)*r_);
 	static int count=1;
 	// reduced_stvk_cubature_force_model_->testEnergyGradients();
@@ -1539,7 +1544,7 @@ void RealTimeExampleBasedDeformer::reconstructFromEigenCoefs(Vec3d *target_eigen
 			vert_pos[3*vert_idx+2]+=target_eigencoefs[i][2]*object_eigenfunctions_[i][vert_idx]*scale_factor;
 
 		}
-		// for(unsigned int i=interpolate_eigenfunction_num_;i<reconstruct_eigenfunction_num_;++i)
+		// for(unsigned int i=interpolate_eigenfunction_num_;i<50/*reconstruct_eigenfunction_num_*/;++i)
 		// {
 		// 	scale_factor=1.0/object_eigenvalues_[i];
 		// 	vert_pos[3*vert_idx]+=object_eigencoefs_[i][0]*object_eigenfunctions_[i][vert_idx]*scale_factor;
@@ -4202,30 +4207,30 @@ Mat3d RealTimeExampleBasedDeformer::computeInitVectorDiff(const double *init_pos
 }
 Mat3d RealTimeExampleBasedDeformer::computeT(const double *init_pos,const double *vert_pos)
 {
-	Mat3d init=computeInitVectorDiff(init_pos);
+	// Mat3d init=computeInitVectorDiff(init_pos);
 	// std::cout<<"init:"<<init<<"\n";
+	Mat3d Di(0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0);
+	for(int i=0;i<3;++i)
+	{
+		Di[0][i]=init_pos[3*i]-init_pos[9];
+		Di[1][i]=init_pos[3*i+1]-init_pos[10];
+		Di[2][i]=init_pos[3*i+2]-init_pos[11];
+	}
 	Mat3d Dm(0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0);
 	for(int i=0;i<3;++i)
 	{
-		Dm[0][i]=init_pos[3*i]-init_pos[9];
-		Dm[1][i]=init_pos[3*i+1]-init_pos[10];
-		Dm[2][i]=init_pos[3*i+2]-init_pos[11];
+		Dm[0][i]=vert_pos[3*i]-vert_pos[9];
+		Dm[1][i]=vert_pos[3*i+1]-vert_pos[10];
+		Dm[2][i]=vert_pos[3*i+2]-vert_pos[11];
 	}
-	Mat3d DmInv=inv(Dm);
+	Mat3d DiInv=inv(Di);
 	// std::cout<<"DmInv:"<<DmInv<<"\n";
-	Mat3d T=init*DmInv;
+	Mat3d T=Dm*DiInv;
 	// std::cout<<"T:"<<T<<"\n";
 	return T;
 }
 void RealTimeExampleBasedDeformer::computeGlobalG()
 {//3mxn
-	// global_G_=new double*[3*simulation_mesh_->getNumElements()];
-	// for(unsigned int i=0; i<3*simulation_mesh_->getNumElements();++i)
-	// {
-	// 	global_G_[i]=new double[simulation_mesh_->getNumVertices()];
-	// 	for(unsigned int j=0;j<simulation_mesh_->getNumVertices();++j)
-	// 		global_G_[i][j]=0.0;
-	// }
 
 	for(unsigned int ele=0; ele < simulation_mesh_->getNumElements(); ++ele)
 	{
@@ -4235,13 +4240,10 @@ void RealTimeExampleBasedDeformer::computeGlobalG()
 		for(unsigned int idx=0;idx<4;++idx)
 		{
 			vert_global_idx[idx]=simulation_mesh_->getVertexIndex(ele,idx);
-			// std::cout<<"vert_global_idx-"<<idx<<":"<<vert_global_idx[idx]<<"\n";
 			vert_pos[idx]=(*simulation_mesh_->getVertex(vert_global_idx[idx]));
-			// std::cout<<"vert_pos"<<vert_pos[idx]<<"\n";
+			// for(unsigned int i=0;i<3;++i)
+			// 	vert_pos[idx][i]=deformed_eigen_skeleton_[3*vert_global_idx[idx]+i];
 		}
-		// Matrix<double> ele_G(3,4);
-		Eigen::Matrix<double,3,4> ele_G;
-		// Eigen::SparseMatrix<double> ele_G;
 		Mat3d V(0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0);
 		for(int i=0;i<3;++i)
 		{
@@ -4249,50 +4251,49 @@ void RealTimeExampleBasedDeformer::computeGlobalG()
 			V[1][i]=vert_pos[i][1]-vert_pos[3][1];
 			V[2][i]=vert_pos[i][2]-vert_pos[3][2];
 		}
-		// if(ele<10)
-		// std::cout<<"ele:"<<ele<<V<<"\n";
+		// std::cout<<"V:"<<V<<"\n";
+		//row0,row1,row2, V is actually as the V^T as in the paper
+		// Mat3d V(vert_pos[0]-vert_pos[3],vert_pos[1]-vert_pos[3],vert_pos[2]-vert_pos[3]);
 		Mat3d VInv=trans(inv(V));
+		// std::cout<<"V:"<<V<<"\n";
+		// Eigen::Matrix<double,3,4> ele_G;
 		G.resize(3*simulation_mesh_->getNumElements(),simulation_mesh_->getNumVertices());
-		for(unsigned int i=0;i<3;++i)
-		{
-			for(unsigned int j=0;j<3;++j)
-				ele_G(i,j)=V[i][j];
-			ele_G(i,3)=(-1.0)*(V[i][0]+V[i][1]+V[i][2]);
-		}
+		// G.reserve(Eigen::VectorXi::Constant(3*simulation_mesh_->getNumElements(),4));
+		// for(unsigned int i=0;i<3;++i)
+		// {
+		// 	for(unsigned int j=0;j<3;++j)
+		// 		ele_G(i,j)=VInv[i][j];
+		// 	ele_G(i,3)=(-1.0)*(VInv[i][0]+VInv[i][1]+VInv[i][2]);
+		// }
 		if(ele==0)
 		{
-			std::cout<<"ele_G:"<<ele_G<<"\n";
+			std::cout<<"VInv:"<<VInv<<"\n";
 		}
 		// if(ele<10)
 		// std::cout<<ele_G<<"\n";
-		for(unsigned int idx=0;idx<4;++idx)
+		for(unsigned int i=0;i<3;++i)
 		{
-			for(unsigned int i=0;i<3;++i)
-				// global_G_[3*ele+i][vert_global_idx[idx]]=ele_G(i,idx);
-				tripletList.emplace_back(3*ele+i,vert_global_idx[idx],ele_G(i,idx));
-			// {
-			// 	G.coeffRef(3*ele+i,vert_global_idx[idx])=ele_G(i,idx);
-			// 	if(ele==0)
-			// 	{
-			// 		std::cout<<"ele:"<<ele<<",3*ele+"<<i<<":"<<3*ele+i<<",vert_global_idx["<<idx<<"]:"<<vert_global_idx[idx];
-			// 		std::cout<<",ele_G("<<i<<","<<idx<<"):"<<ele_G(i,idx)<<"\n";
-			// 	}
-			// }
-
+			for(unsigned int j=0;j<3;++j)
+			{
+				tripletList.emplace_back(3*ele+i,vert_global_idx[j],VInv[i][j]/*ele_G(i,idx)*/);
+					//  G.coeffRef(3*ele+i,vert_global_idx[j])=VInv[i][j];
+					// tripletList.emplace_back(3*ele+i,vert_global_idx[j],ele_G(i,j));
+			}
+			tripletList.emplace_back(3*ele+i,vert_global_idx[3],((-1.0)*(VInv[i][0]+VInv[i][1]+VInv[i][2])));
 		}
 		G.setFromTriplets(tripletList.begin(),tripletList.end());
 	}
-
-		std::ofstream wf("target/A.txt");
-		for(unsigned int j=0;j<3*simulation_mesh_->getNumElements();++j)
-		{
-			for(unsigned int i=0;i<simulation_vertices_num_;++i)
-				wf<<G.coeffRef(j,i)<<",";
-			wf<<std::endl;
-		}
-
-		wf.close();
 	GT=G.transpose();
+
+		// std::ofstream wf("target/A.txt");
+		// for(unsigned int j=0;j<3*simulation_mesh_->getNumElements();++j)
+		// {
+		// 	for(unsigned int i=0;i<simulation_vertices_num_;++i)
+		// 		wf<<G.coeffRef(j,i)<<",";
+		// 	wf<<std::endl;
+		// }
+		//
+		// wf.close();
 	// std::cout<<"global_G:\n";
 	// for(unsigned int i=0; i<10/*3*simulation_mesh_->getNumElements()*/;++i)
 	// {
@@ -4323,6 +4324,12 @@ void RealTimeExampleBasedDeformer::preFactorizeA()
 	solver.analyzePattern(GTG);
 	std::cout<<"solver:factorize.\n";
 	solver.factorize(GTG);
+	// solver.compute(GTG);
+	// if(solver.info()!=Eigen::Success)
+	// {
+	// 	std::cout<<"unable to defactorized GTG.\n";
+	// 	exit(-1);
+	// }
 }
 void RealTimeExampleBasedDeformer::computeDTNewMeshPosition()
 {//global_G:3m*n
@@ -4356,7 +4363,20 @@ void RealTimeExampleBasedDeformer::computeDTNewMeshPosition()
 				deformed_pos[3*i+k]=deformed_eigen_skeleton_[3*global_idx[i]+k];
 			}
 		}
+		// getchar();
+		// for(unsigned int i=0;i<12;++i)
+		// {
+		// 	std::cout<<"init_pos:"<<init_pos[i]<<"\n";
+		// 	std::cout<<"deformed_pos:"<<deformed_pos[i]<<"\n";
+		// }
+
 		Mat3d ele_T=trans(computeT(init_pos,deformed_pos));
+		// if(ele==0)
+		// {
+		// 	std::cout<<ele_T<<"\n";
+		// 	getchar();
+		// }
+
 		for(unsigned int i=0;i<3;++i)
 		{
 			for(unsigned int j=0;j<3;++j)
@@ -4367,37 +4387,6 @@ void RealTimeExampleBasedDeformer::computeDTNewMeshPosition()
 	}
 	std::cout<<"compute eigen_skeleton deformation gradient-end\n";
 
-	/*****************************pre-compute later-before*******************************************/
-
-	// computeGlobalG();
-	//
-	// std::cout<<"G-end\n";
-	//
-	// Eigen::SparseMatrix<double> GT=G.transpose();//nx3m
-	// Eigen::SparseMatrix<double> GTG=GT*G;
-	// // std::ofstream wf("target/A.txt");
-	// // for(unsigned int i=0;i<vert_num;++i)
-	// // {
-	// // 	for(unsigned int j=0;j<3*ele_num;++j)
-	// // 		wf<<GTG(i,j)<<",";
-	// // 	wf<<std::endl;
-	// // }
-	// //
-	// // wf.close();
-	// std::cout<<"GTG-end"<<"\n";
-	// Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> GTT;
-	// GTT.resize((int)vert_num,3);//nx3
-	// GTT=GT*global_T;
-	// std::cout<<"GTT-end"<<"\n";
-	//
-	// Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> x;
-	// x.resize(vert_num,3);
-	// // std::cout<<"solve:x"<<"\n";
-	// // Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
-	// std::cout<<"solver:analyze.\n";
-	// solver.analyzePattern(GTG);
-	// std::cout<<"solver:factorize.\n";
-	// solver.factorize(GTG);
 	preFactorizeA();
 	/*****************************pre-compute later-end*******************************************/
 	Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> GTT;

@@ -169,7 +169,9 @@ public:
     void saveReconstructMesh(double *vert_pos,std::string file_name);
     void saveReconstructMesh1(double *vert_pos);
 
-    //deformation transfer
+    //deformation transfer:
+    //paper: deformation transfer for detail-preserving surface editing
+    //paper:deformation transfer for triangle meshes
     Mat3d computeInitVectorDiff(const double *init_pos) const;
     Mat3d computeT(const double *init_pos,const double *vert_pos);
     void computeGlobalG();
