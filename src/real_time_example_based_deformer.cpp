@@ -565,6 +565,7 @@ void RealTimeExampleBasedDeformer::setupSimulation()
 		preAllocateLocalFrameCorrespondingVertices();
 		if(!with_constrains_)
 			rigidBodyPreComputation();
+		//sdf
     }
     else
     {
@@ -798,7 +799,7 @@ void RealTimeExampleBasedDeformer::fullspaceSimulation()
 		// std::cout<<"-----------------before-reconstruct:\n";
 		PerformanceCounter reconstruct_counter;
 		reconstruct_counter.StartCounter();
-		reconstructFromEigenCoefs(target_eigencoefs_,example_guided_deformation_);
+		reconstructFromEigenCoefs(target_eigencoefs_,example_guided_deformation_,"");
 		reconstruct_counter.StopCounter();
 		total_reconstruction_time_+=reconstruct_counter.GetElapsedTime();
 		// std::cout<<"-----------------after-reconstruct:\n";
@@ -880,10 +881,10 @@ void RealTimeExampleBasedDeformer::fullspaceSimulation()
 }
 void RealTimeExampleBasedDeformer::reducedspaceSimulationWithConstraints()
 {
-	std::cout<<"test-compute new deformed mesh:\n";
-	computeDTNewMeshPosition();
-	std::cout<<"test-compute new deformed mesh-end!\n\n";
-	getchar();
+	// std::cout<<"test-compute new deformed mesh:\n";
+	// computeDTNewMeshPosition();
+	// std::cout<<"test-compute new deformed mesh-end!\n\n";
+	// getchar();
 	memset(fq_,0.0,sizeof(double)*r_);
 	static int count=1;
 	// reduced_stvk_cubature_force_model_->testEnergyGradients();
@@ -952,7 +953,7 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulationWithConstraints()
 			target_eigencoefs_[i]=object_current_eigencoefs_[i]-target_eigencoefs_[i];
 		PerformanceCounter reconstruct_counter;
 		reconstruct_counter.StartCounter();
-		reconstructFromEigenCoefs(target_eigencoefs_,example_guided_deformation_);
+		reconstructFromEigenCoefs(target_eigencoefs_,example_guided_deformation_,"");
 		reconstruct_counter.StopCounter();
 		total_reconstruction_time_+=reconstruct_counter.GetElapsedTime();
 		// reconstruct_counter.StopCounter();
@@ -1117,10 +1118,10 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulationWithConstraints()
 }
 void RealTimeExampleBasedDeformer::reducedspaceSimulationWithoutConstraints()
 {
-	std::cout<<"test-compute new deformed mesh:\n";
-	computeDTNewMeshPosition();
-	std::cout<<"test-compute new deformed mesh-end!\n\n";
-	getchar();
+	// std::cout<<"test-compute new deformed mesh:\n";
+	// computeDTNewMeshPosition();
+	// std::cout<<"test-compute new deformed mesh-end!\n\n";
+	// getchar();
 	memset(fq_,0.0,sizeof(double)*r_);
 	// static int count1=1;
 	// static double temp_coef=1.005;
@@ -1214,7 +1215,7 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulationWithoutConstraints()
 		// std::cout<<"\n";
 		PerformanceCounter reconstruct_counter;
 		reconstruct_counter.StartCounter();
-		reconstructFromEigenCoefs(target_eigencoefs_,example_guided_deformation_);
+		reconstructFromEigenCoefs(target_eigencoefs_,example_guided_deformation_,"");
 		reconstruct_counter.StopCounter();
 		total_reconstruction_time_+=reconstruct_counter.GetElapsedTime();
 		//method 1:reconstruct by dis_coefs-end.
@@ -1490,7 +1491,55 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulationWithoutConstraints()
 		std::cout<<"Total target configuration solver time: "<<total_target_time_<<" s.\n";
 	}
 }
+void RealTimeExampleBasedDeformer::projectOnReducedBasis(VolumetricMesh *mesh, double *displacement, double *vertex_volume,
+                                                           double **reducedBasis, double *reducedValues, unsigned int eigenfunction_num,
+                                                           Vec3d *reducedBasiscoefs)
+{
+	//local example mode is not written yet
+    int vert_num=mesh->getNumVertices();
+	double scale_factor;
+	for(unsigned int i=0;i<r_;++i)
+	{
+		for(unsigned int j=0;j<3;++j)
+		{
+			reducedBasiscoefs[i][j]=0.0;
+		}
+		scale_factor=reducedValues[i];
+		for(unsigned int vert_idx=0;vert_idx<vert_num;++vert_idx)
+		{
+			Vec3d vert_pos;
+			for(unsigned int dim=0;dim<3;++dim)
+			{
+				vert_pos[dim]=/*(*mesh->getVertex(vert_idx))[dim]+*/displacement[3*vert_idx+dim];
+				reducedBasiscoefs[i][dim]+=vert_pos[dim]*reducedBasis[i][3*vert_idx+dim]*scale_factor*(mass_matrix_outline->GetEntry(3*vert_idx+dim,3*vert_idx+dim));//*vertex_volume[vert_idx];
+			}
+		}
+	}
+}
 
+void RealTimeExampleBasedDeformer::reconstructFromReducedBasis(Vec3d *target_eigencoefs,double *vert_pos,std::string file_name)
+{
+	double scale_factor;
+	memset(vert_pos,0.0,sizeof(double)*3*simulation_vertices_num_);
+	// std::cout<<"reconstruct_eigenfunction_num_:"<<reconstruct_eigenfunction_num_<<"\n";
+	std::cout<<"reconstruct from reduced basis:\n";
+	for(unsigned int vert_idx=0;vert_idx<simulation_vertices_num_;++vert_idx)
+	{
+		for(unsigned int i=0;i<r_;++i)
+		{
+			scale_factor=1.0/reduced_basis_values_[i];
+			vert_pos[3*vert_idx]+=target_eigencoefs[i][0]*reduced_basis_[i][3*vert_idx]*scale_factor;
+			vert_pos[3*vert_idx+1]+=target_eigencoefs[i][1]*reduced_basis_[i][3*vert_idx+1]*scale_factor;
+			vert_pos[3*vert_idx+2]+=target_eigencoefs[i][2]*reduced_basis_[i][3*vert_idx+2]*scale_factor;
+			if(vert_idx==0)
+				std::cout<<vert_pos[3*vert_idx]<<","<<vert_pos[3*vert_idx+1]<<","<<vert_pos[3*vert_idx+2]<<"\n";
+		}
+	}
+	std::cout<<"\n";
+	// getchar();
+	saveReconstructMesh(vert_pos,file_name);
+	// getchar();
+}
 void RealTimeExampleBasedDeformer::reconstructFromEigenCoefs(Vec3d *target_eigencoefs,double *vert_pos,std::string file_name)
 {
 	// for(int i=0;i<interpolate_eigenfunction_num_;++i)
@@ -1544,7 +1593,7 @@ void RealTimeExampleBasedDeformer::reconstructFromEigenCoefs(Vec3d *target_eigen
 			vert_pos[3*vert_idx+2]+=target_eigencoefs[i][2]*object_eigenfunctions_[i][vert_idx]*scale_factor;
 
 		}
-		// for(unsigned int i=interpolate_eigenfunction_num_;i<50/*reconstruct_eigenfunction_num_*/;++i)
+		// for(unsigned int i=interpolate_eigenfunction_num_;i<reconstruct_eigenfunction_num_;++i)
 		// {
 		// 	scale_factor=1.0/object_eigenvalues_[i];
 		// 	vert_pos[3*vert_idx]+=object_eigencoefs_[i][0]*object_eigenfunctions_[i][vert_idx]*scale_factor;
@@ -1568,7 +1617,7 @@ void RealTimeExampleBasedDeformer::reconstructFromEigenCoefs(Vec3d *target_eigen
 	// 	vert_pos[3*i+1]=local_x[1];
 	// 	vert_pos[3*i+2]=local_x[2];
 	// }
-	saveReconstructMesh(vert_pos,file_name);
+	// saveReconstructMesh(vert_pos,file_name);
 	// getchar();
 }
 void RealTimeExampleBasedDeformer::reconstructFromEigenCoefs(Vec3d *target_eigencoefs,int flag)
@@ -1650,12 +1699,12 @@ void RealTimeExampleBasedDeformer::saveReconstructMesh1(double *new_pos)
 		// pos[0]=target_reconstruction_[3*i+0];
 		// pos[1]=target_reconstruction_[3*i+1];
 		// pos[2]=target_reconstruction_[3*i+2];
-		// pos[0]=(*simulation_mesh_->getVertex(i))[0]+new_pos[3*i+0];
-		// pos[1]=(*simulation_mesh_->getVertex(i))[1]+new_pos[3*i+1];
-		// pos[2]=(*simulation_mesh_->getVertex(i))[2]+new_pos[3*i+2];
-		pos[0]=new_pos[3*i+0];
-		pos[1]=new_pos[3*i+1];
-		pos[2]=new_pos[3*i+2];
+		pos[0]=(*simulation_mesh_->getVertex(i))[0]+new_pos[3*i+0];
+		pos[1]=(*simulation_mesh_->getVertex(i))[1]+new_pos[3*i+1];
+		pos[2]=(*simulation_mesh_->getVertex(i))[2]+new_pos[3*i+2];
+		// pos[0]=new_pos[3*i+0];
+		// pos[1]=new_pos[3*i+1];
+		// pos[2]=new_pos[3*i+2];
 
 		// pos[0]=(*simulation_mesh_->getVertex(i))[0]+u_[3*i+0];
 		// pos[1]=(*simulation_mesh_->getVertex(i))[1]+u_[3*i+1];
@@ -1708,12 +1757,12 @@ void RealTimeExampleBasedDeformer::saveReconstructMesh(double *new_pos,std::stri
 		// pos[0]=target_reconstruction_[3*i+0];
 		// pos[1]=target_reconstruction_[3*i+1];
 		// pos[2]=target_reconstruction_[3*i+2];
-		// pos[0]=(*simulation_mesh_->getVertex(i))[0]+new_pos[3*i+0];
-		// pos[1]=(*simulation_mesh_->getVertex(i))[1]+new_pos[3*i+1];
-		// pos[2]=(*simulation_mesh_->getVertex(i))[2]+new_pos[3*i+2];
-		pos[0]=new_pos[3*i+0];
-		pos[1]=new_pos[3*i+1];
-		pos[2]=new_pos[3*i+2];
+		pos[0]=(*simulation_mesh_->getVertex(i))[0]+new_pos[3*i+0];
+		pos[1]=(*simulation_mesh_->getVertex(i))[1]+new_pos[3*i+1];
+		pos[2]=(*simulation_mesh_->getVertex(i))[2]+new_pos[3*i+2];
+		// pos[0]=new_pos[3*i+0];
+		// pos[1]=new_pos[3*i+1];
+		// pos[2]=new_pos[3*i+2];
 
 		// pos[0]=(*simulation_mesh_->getVertex(i))[0]+u_[3*i+0];
 		// pos[1]=(*simulation_mesh_->getVertex(i))[1]+u_[3*i+1];
@@ -2488,7 +2537,8 @@ void RealTimeExampleBasedDeformer::preAllocateLocalFrameCorrespondingVertices()
 bool RealTimeExampleBasedDeformer::loadMassmatrix(const std::string &file_name)
 {
 	//get the mass matrix
-    SparseMatrixOutline *mass_matrix_outline;
+	std::cout<<"load mass matrix:------------------------\n";
+    // SparseMatrixOutline *mass_matrix_outline;
     try
     {
         //3 is expansion flag to indicate this is a mass matrix and does 3x3 identify block expansion
@@ -2500,7 +2550,10 @@ bool RealTimeExampleBasedDeformer::loadMassmatrix(const std::string &file_name)
         exit(1);
     }
     mass_matrix_=new SparseMatrix(mass_matrix_outline);
-    delete(mass_matrix_outline);
+
+    // delete(mass_matrix_outline);
+
+
 	//compute for reduced simulation
 	if(simulation_mode_==REDUCEDSPACE)
 	{
@@ -2781,6 +2834,34 @@ bool RealTimeExampleBasedDeformer::loadReducedBasis(const std::string &file_name
 	// 		reduced_basis_[i][j]/=sum;
 	// }
 	isload_reduced_basis_ = true;
+	// std::string temp_file_name1="35.veg";
+	// temp_mesh_=VolumetricMeshLoader::load(temp_file_name1.c_str());
+	// if(temp_mesh_==NULL)
+	// {
+	// 	std::cout<<"Error: unable to load temp mesh from"<<temp_file_name1<<std::endl;
+	// 	return false;
+	// }
+	// std::cout<<"Num:"<<temp_mesh_->getNumVertices()<<"\n";
+	// examples_deformation_=new double[3*temp_mesh_->getNumVertices()];
+	// for(int i=0;i<temp_mesh_->getNumVertices();++i)
+	// {
+	// 	examples_deformation_[3*i+0]=(*temp_mesh_->getVertex(i))[0]-(*simulation_mesh_->getVertex(i))[0];
+	// 	examples_deformation_[3*i+1]=(*temp_mesh_->getVertex(i))[1]-(*simulation_mesh_->getVertex(i))[1];
+	// 	examples_deformation_[3*i+2]=(*temp_mesh_->getVertex(i))[2]-(*simulation_mesh_->getVertex(i))[2];
+	// }
+	// // std::cout<<"----4----\n";
+	// double *dis=new double[3*simulation_mesh_->getNumVertices()];
+	// for(int i=0;i<3*simulation_mesh_->getNumVertices();++i)
+	// 	dis[i]=0.0;
+	//
+	// Vec3d *object_reduced_coefs = NULL;
+	// r_=20;
+	// object_reduced_coefs=new Vec3d[r_];
+	// projectOnReducedBasis(simulation_mesh_,examples_deformation_,object_vertex_volume_,reduced_basis_,reduced_basis_values_,
+	// 						r_,object_reduced_coefs);
+    // reconstructFromReducedBasis(object_reduced_coefs,dis,"target/20-1.smesh");
+
+	//test------------------------------end
     return true;
 }
 //format:.eigencoef
@@ -2891,6 +2972,7 @@ bool RealTimeExampleBasedDeformer::loadObjectEigenfunctions(const std::string &f
 	delete[] dis;
 	initial_eigen_skeleton_=new double[3*simulation_mesh_->getNumVertices()];
 	memset(initial_eigen_skeleton_,0.0,sizeof(double)*3*simulation_mesh_->getNumVertices());
+	deformed_eigen_skeleton_=new double[3*simulation_vertices_num_];
 	reconstructFromEigenCoefs(object_eigencoefs_,initial_eigen_skeleton_,"target/initial_eigen_skeleton_.smesh");
 
 	if(simulation_mode_==REDUCEDSPACE)
@@ -4284,24 +4366,6 @@ void RealTimeExampleBasedDeformer::computeGlobalG()
 		G.setFromTriplets(tripletList.begin(),tripletList.end());
 	}
 	GT=G.transpose();
-
-		// std::ofstream wf("target/A.txt");
-		// for(unsigned int j=0;j<3*simulation_mesh_->getNumElements();++j)
-		// {
-		// 	for(unsigned int i=0;i<simulation_vertices_num_;++i)
-		// 		wf<<G.coeffRef(j,i)<<",";
-		// 	wf<<std::endl;
-		// }
-		//
-		// wf.close();
-	// std::cout<<"global_G:\n";
-	// for(unsigned int i=0; i<10/*3*simulation_mesh_->getNumElements()*/;++i)
-	// {
-	// 	// global_G_[i]=new double[simulation_mesh_->getNumVertices()];
-	// 	for(unsigned int j=0;j<10/*simulation_mesh_->getNumVertices()*/;++j)
-	// 		std::cout<<global_G_[i][j]<<",";
-	// }
-	// std::cout<<"\n";
 }
 void RealTimeExampleBasedDeformer::preFactorizeA()
 {
@@ -4334,16 +4398,16 @@ void RealTimeExampleBasedDeformer::preFactorizeA()
 void RealTimeExampleBasedDeformer::computeDTNewMeshPosition()
 {//global_G:3m*n
 	//set a initial target:example1,
-	deformed_eigen_skeleton_=new double[3*simulation_vertices_num_];
+	// deformed_eigen_skeleton_=new double[3*simulation_vertices_num_];
 	memset(deformed_eigen_skeleton_,0.0,sizeof(double)*3*simulation_vertices_num_);
-	std::cout<<"generate deformed eige_skeleton:\n";
-	reconstructFromEigenCoefs(example_eigencoefs_[1],deformed_eigen_skeleton_,"target/deformed_eigen_skeleton.smesh");
-	std::cout<<"generate deformed eige_skeleton:\n";
+	// std::cout<<"generate deformed eige_skeleton:\n";
+	// reconstructFromEigenCoefs(example_eigencoefs_[1],deformed_eigen_skeleton_,"target/deformed_eigen_skeleton.smesh");
+	// std::cout<<"generate deformed eige_skeleton:\n";
 	unsigned int ele_num=simulation_mesh_->getNumElements();
 	unsigned int vert_num=simulation_mesh_->getNumVertices();
 	std::cout<<"ele_num:"<<ele_num<<",vert_num:"<<vert_num<<"\n";
 	// global_T_.resize(ele_num);
-	std::cout<<"1\n";
+	// std::cout<<"1\n";
 	std::cout<<"compute eigen_skeleton deformation gradient:\n";
 	Eigen::Matrix<double,Eigen::Dynamic,3> global_T;
 	global_T.resize((int)3*ele_num,3);
@@ -4363,20 +4427,7 @@ void RealTimeExampleBasedDeformer::computeDTNewMeshPosition()
 				deformed_pos[3*i+k]=deformed_eigen_skeleton_[3*global_idx[i]+k];
 			}
 		}
-		// getchar();
-		// for(unsigned int i=0;i<12;++i)
-		// {
-		// 	std::cout<<"init_pos:"<<init_pos[i]<<"\n";
-		// 	std::cout<<"deformed_pos:"<<deformed_pos[i]<<"\n";
-		// }
-
 		Mat3d ele_T=trans(computeT(init_pos,deformed_pos));
-		// if(ele==0)
-		// {
-		// 	std::cout<<ele_T<<"\n";
-		// 	getchar();
-		// }
-
 		for(unsigned int i=0;i<3;++i)
 		{
 			for(unsigned int j=0;j<3;++j)
@@ -4407,7 +4458,7 @@ void RealTimeExampleBasedDeformer::computeDTNewMeshPosition()
 	for(unsigned int i=0;i<vert_num;++i)
 		for(unsigned int j=0;j<3;++j)
 			pos[3*i+j]=x(i,j);
-	saveReconstructMesh(pos,"target/deformed_mesh.smesh");
+	// saveReconstructMesh(pos,"target/deformed_mesh.smesh");
 	delete[] pos;
 }
 //deformation transfer method-end

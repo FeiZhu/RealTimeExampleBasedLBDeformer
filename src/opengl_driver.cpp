@@ -384,6 +384,14 @@ void OpenGLDriver::initSimulation()
     }
     visual_mesh_=new SceneObjectDeformable(visual_mesh_file_name_);
 
+    //load mass matrix
+    if(strcmp(mass_matrix_file_name_,"none")==0)
+    {
+        std::cout<<"Error: mass matrix for the deformable model not specified.\n";
+        exit(1);
+    }
+    std::cout<<"Loading the mass matrix from file "<<mass_matrix_file_name_<<".\n";
+    loadMassmatrix(0);
     //load cubica file
     if(isload_cubica_)
     {
@@ -424,14 +432,6 @@ void OpenGLDriver::initSimulation()
     fq_plane_=new double[r_];
     memset(fq_plane_,0.0,sizeof(double)*r_);
     collide_vert_num_=new int[1];
-    //load mass matrix
-    if(strcmp(mass_matrix_file_name_,"none")==0)
-    {
-        std::cout<<"Error: mass matrix for the deformable model not specified.\n";
-        exit(1);
-    }
-    std::cout<<"Loading the mass matrix from file "<<mass_matrix_file_name_<<".\n";
-    loadMassmatrix(0);
     if((simulation_mode_==REDUCEDSPACE)&&(!with_constrains_))
         loadInertiaTensor(0);
     // if((simulation_mode_==REDUCEDSPACE)&&(with_constrains_))
@@ -1198,10 +1198,10 @@ void OpenGLDriver::idleFunction()
         {
             active_instance->saveCurrentObjmesh(0);
         }
-        // if((active_instance->time_step_counter_%4==0)&&(active_instance->time_step_counter_>0)&&(active_instance->save_tet_mesh_)&&(!active_instance->pause_simulation_))
-        // {
-        //     active_instance->saveCurrentTetmesh(0);
-        // }
+        if((active_instance->time_step_counter_%4==0)&&(active_instance->time_step_counter_>0)&&(active_instance->save_tet_mesh_)&&(!active_instance->pause_simulation_))
+        {
+            active_instance->saveCurrentTetmesh(0);
+        }
         // active_instance->simulator_->setu(active_instance->u_);
         glutPostRedisplay();
     }

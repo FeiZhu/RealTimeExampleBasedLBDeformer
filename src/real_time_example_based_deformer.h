@@ -177,6 +177,11 @@ public:
     void computeGlobalG();
     void computeDTNewMeshPosition();
     void preFactorizeA();
+
+    //test mesh project on reduced basis
+    void projectOnReducedBasis(VolumetricMesh *mesh, double *displacement, double *vertex_volume,double **reducedBasis,
+                                double *reducedValues, unsigned int eigenfunction_num, Vec3d *reducedBasiscoefs);
+    void reconstructFromReducedBasis(Vec3d *target_eigencoefs,double *vert_pos,std::string file_name);
 private:
     void preAllocateLocalFrameCorrespondingVertices();
     void rigidBodyPreComputation();
