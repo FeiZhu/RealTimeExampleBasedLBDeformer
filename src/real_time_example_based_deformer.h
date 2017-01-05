@@ -162,9 +162,10 @@ public:
     void projectOnEigenFunctions(VolumetricMesh *mesh, double *displacement, double *vertex_volume,
                                 double **eigenfunctions, double *eigenvalues, unsigned int eigenfunction_num,
                                 Vec3d *eigencoefs,int affected_vertices_num=0,int *affected_vertices=NULL);
-    void projectOnEigenFunctions1(double *displacement, double *vertex_volume,
+    void projectOnEigenFunctionsInLocalFrame(double *displacement, double *vertex_volume,
                                 double **eigenfunctions, double *eigenvalues, unsigned int eigenfunction_num,Vec3d *eigencoefs);
     void reconstructFromEigenCoefs(Vec3d *target_eigencoefs,int eigenfunction_num,double *vert_pos,std::string file_name=NULL);//full space
+    void reconstructFromEigenCoefsInLocalFrame(Vec3d *target_eigencoefs,int eigenfunction_num,double *vert_pos,std::string file_name);
     void reconstructFromEigenCoefs(Vec3d *target_eigencoefs,int flag=0);//reduced_space
     void saveReconstructMesh(double *vert_pos,std::string file_name);
     void saveReconstructMesh1(double *vert_pos);
