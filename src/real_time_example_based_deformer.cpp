@@ -804,7 +804,7 @@ void RealTimeExampleBasedDeformer::fullspaceSimulation()
 		// std::cout<<"-----------------before-reconstruct:\n";
 		PerformanceCounter reconstruct_counter;
 		reconstruct_counter.StartCounter();
-		reconstructFromEigenCoefs(target_eigencoefs_,interpolate_eigenfunction_num_,example_guided_deformation_,"");
+		reconstructFromEigenCoefs(target_eigencoefs_,interpolate_eigenfunction_num_,example_guided_deformation_);
 		reconstruct_counter.StopCounter();
 		total_reconstruction_time_+=reconstruct_counter.GetElapsedTime();
 		// std::cout<<"-----------------after-reconstruct:\n";
@@ -949,7 +949,7 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulationWithConstraints()
 		//get entire mesh from target configuration
 		PerformanceCounter reconstruct_counter;
 		reconstruct_counter.StartCounter();
-		reconstructFromEigenCoefs(target_eigencoefs_,reconstruct_eigenfunction_num_,deformed_eigen_skeleton_,"");
+		reconstructFromEigenCoefs(target_eigencoefs_,reconstruct_eigenfunction_num_,deformed_eigen_skeleton_);
 		//add details
 		computeDTNewMeshPosition();
 		reconstruct_counter.StopCounter();
@@ -957,13 +957,13 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulationWithConstraints()
 		//--------------------------------------deformation transfer get entire mesh----end------------
 		//--------------------------------------------------------------------------------------------
 		//----------------used for reduced elastic force-reconstruct target configuration first--------
-		// reconstructFromEigenCoefs(target_eigencoefs_,reconstruct_eigenfunction_num_,target_reconstruction_,"");
+		// reconstructFromEigenCoefs(target_eigencoefs_,reconstruct_eigenfunction_num_,target_reconstruction_);
 		//---------------------------------------------------------------------------------------------
 		// for(int i=0;i<interpolate_eigenfunction_num_;++i)
 		// 	target_eigencoefs_[i]=object_current_eigencoefs_[i]-target_eigencoefs_[i];
 		// PerformanceCounter reconstruct_counter;
 		// reconstruct_counter.StartCounter();
-		// reconstructFromEigenCoefs(target_eigencoefs_,reconstruct_eigenfunction_num_,reconstruct_eigenfunction_num_,example_guided_deformation_,"");
+		// reconstructFromEigenCoefs(target_eigencoefs_,reconstruct_eigenfunction_num_,reconstruct_eigenfunction_num_,example_guided_deformation_);
 		// reconstruct_counter.StopCounter();
 		// total_reconstruction_time_+=reconstruct_counter.GetElapsedTime();
 		// reconstruct_counter.StopCounter();
@@ -1219,7 +1219,7 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulationWithoutConstraints()
 		//method 1:reconstruct by dis_coefs-begin:
 		//--------------------------------------------------------------------------------------------
 		//----------------used for reduced elastic force-reconstruct target configuration first--------
-		// reconstructFromEigenCoefs(target_eigencoefs_,reconstruct_eigenfunction_num_,target_reconstruction_,"");
+		// reconstructFromEigenCoefs(target_eigencoefs_,reconstruct_eigenfunction_num_,target_reconstruction_);
 		//---------------------------------------------------------------------------------------------
 		for(int i=0;i<interpolate_eigenfunction_num_;++i)
 			target_eigencoefs_[i]=object_current_eigencoefs_[i]-target_eigencoefs_[i];
@@ -1228,7 +1228,7 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulationWithoutConstraints()
 		// std::cout<<"\n";
 		PerformanceCounter reconstruct_counter;
 		reconstruct_counter.StartCounter();
-		reconstructFromEigenCoefs(target_eigencoefs_,reconstruct_eigenfunction_num_,example_guided_deformation_,"");
+		reconstructFromEigenCoefs(target_eigencoefs_,reconstruct_eigenfunction_num_,example_guided_deformation_);
 		reconstruct_counter.StopCounter();
 		total_reconstruction_time_+=reconstruct_counter.GetElapsedTime();
 		//method 1:reconstruct by dis_coefs-end.
@@ -1553,7 +1553,7 @@ void RealTimeExampleBasedDeformer::reconstructFromReducedBasis(Vec3d *target_eig
 	saveReconstructMesh(vert_pos,file_name);
 	// getchar();
 }
-void RealTimeExampleBasedDeformer::reconstructFromEigenCoefs(Vec3d *target_eigencoefs,int eigenfunction_num,double *vert_pos,std::string file_name)
+void RealTimeExampleBasedDeformer::reconstructFromEigenCoefs(Vec3d *target_eigencoefs,int eigenfunction_num,double *vert_pos)
 {
 	// for(int i=0;i<interpolate_eigenfunction_num_;++i)
 	// std::cout<<reconstruct_eigenfunction_num_<<"\n";
@@ -1631,10 +1631,10 @@ void RealTimeExampleBasedDeformer::reconstructFromEigenCoefs(Vec3d *target_eigen
 		vert_pos[3*i+1]=local_x[1]+t_[1];
 		vert_pos[3*i+2]=local_x[2]+t_[2];
 	}
-	saveReconstructMesh(vert_pos,file_name);
+	// saveReconstructMesh(vert_pos,file_name);
 	// getchar();
 }
-void RealTimeExampleBasedDeformer::reconstructFromEigenCoefsInLocalFrame(Vec3d *target_eigencoefs,int eigenfunction_num,double *vert_pos,std::string file_name)
+void RealTimeExampleBasedDeformer::reconstructFromEigenCoefsInLocalFrame(Vec3d *target_eigencoefs,int eigenfunction_num,double *vert_pos)
 {
 	// for(int i=0;i<interpolate_eigenfunction_num_;++i)
 	// std::cout<<reconstruct_eigenfunction_num_<<"\n";
@@ -1672,7 +1672,6 @@ void RealTimeExampleBasedDeformer::reconstructFromEigenCoefsInLocalFrame(Vec3d *
 		vert_pos[3*i+1]=local_x[1];
 		vert_pos[3*i+2]=local_x[2];
 	}
-	saveReconstructMesh(vert_pos,file_name);
 	// getchar();
 }
 void RealTimeExampleBasedDeformer::reconstructFromEigenCoefs(Vec3d *target_eigencoefs,int flag)
@@ -3024,17 +3023,25 @@ bool RealTimeExampleBasedDeformer::loadObjectEigenfunctions(const std::string &f
 	// getchar();
     // projectOnEigenFunctions(simulation_mesh_,dis,object_vertex_volume_,object_eigenfunctions_,object_eigenvalues_,
 	// 						eigenfunction_col_num,object_eigencoefs_,object_affected_vertices_num_,object_affected_vertices_);
+    // reconstructFromEigenCoefs(object_eigencoefs_,reconstruct_eigenfunction_num_,dis);
+
+
+	// ------------------------test--------------------
 	projectOnEigenFunctionsInLocalFrame(dis,object_vertex_volume_,object_eigenfunctions_,object_eigenvalues_,
 							eigenfunction_col_num,object_eigencoefs_);
-	reconstructFromEigenCoefs(object_eigencoefs_,reconstruct_eigenfunction_num_,dis,"target/test.smesh");
-    // reconstructFromEigenCoefs(object_eigencoefs_,reconstruct_eigenfunction_num_,dis,"target/t.smesh");
+	reconstructFromEigenCoefs(object_eigencoefs_,reconstruct_eigenfunction_num_,dis);
+	saveReconstructMesh(dis,"target/test.smesh");
+	//--------------------------test-end---------------
+
+
+
 	delete[] dis;
 	initial_eigen_skeleton_=new double[3*simulation_mesh_->getNumVertices()];
 	memset(initial_eigen_skeleton_,0.0,sizeof(double)*3*simulation_mesh_->getNumVertices());
 	deformed_eigen_skeleton_=new double[3*simulation_vertices_num_];
 	memset(deformed_eigen_skeleton_,0.0,sizeof(double)*3*simulation_mesh_->getNumVertices());
-	// reconstructFromEigenCoefs(object_eigencoefs_,reconstruct_eigenfunction_num_,initial_eigen_skeleton_,"target/initial_eigen_skeleton_.smesh");
-	// reconstructFromEigenCoefs(object_eigencoefs_,reconstruct_eigenfunction_num_,initial_eigen_skeleton_,"target/car-reconstruct.smesh");
+	// reconstructFromEigenCoefs(object_eigencoefs_,reconstruct_eigenfunction_num_,initial_eigen_skeleton_);
+	// saveReconstructMesh(initial_eigen_skeleton_,"target/initial_eigen_skeleton_.smesh");
 
 	//-------------------------test-----------------------------------------
 	std::string temp_file_name1="car-rotate2.veg";
@@ -3073,7 +3080,8 @@ bool RealTimeExampleBasedDeformer::loadObjectEigenfunctions(const std::string &f
 	// Vec3d *object_reduced_coefs = NULL;
 	projectOnEigenFunctions(temp_mesh_,dis,temp_vert_volume,object_eigenfunctions_,object_eigenvalues_,
 							reconstruct_eigenfunction_num_,object_eigencoefs_);
-	reconstructFromEigenCoefs(object_eigencoefs_,reconstruct_eigenfunction_num_,dis1,"target/car-rotate2-reconstruct1.smesh");
+	reconstructFromEigenCoefs(object_eigencoefs_,reconstruct_eigenfunction_num_,dis1);
+	saveReconstructMesh(dis1,"target/car-rotate2-reconstruct1.smesh");
 	delete[] dis1;
 	//---------------------------test----------------------------------------------------------------------------------
 
@@ -3309,7 +3317,7 @@ bool RealTimeExampleBasedDeformer::loadExampleEigenFunctions(const std::string &
                                 eigenfunction_col_num,example_eigencoefs_[ex_num],
 								example_affected_vertices_num_[ex_num],example_affected_vertices_[ex_num]);
 
-		// reconstructFromEigenCoefs(example_eigencoefs_[ex_num],reconstruct_eigenfunction_num_,dis,"");
+		// reconstructFromEigenCoefs(example_eigencoefs_[ex_num],reconstruct_eigenfunction_num_,dis);
 		// for(int j=0;j<20;++j)
 		// 	if(ex_num==2)
 		// 		std::cout<<dis[3*j]<<","<<dis[3*j+1]<<","<<dis[3*j+2]<<"\n";
@@ -3327,7 +3335,7 @@ bool RealTimeExampleBasedDeformer::loadExampleEigenFunctions(const std::string &
 		// // 		for(unsigned int j=0;j<3;++j)
 		// // 			temp_eigencoefs[i][j]=example_eigencoefs_[ex_num][i][j];//object_eigencoefs_[i][j];
 		// //
-		// // 	reconstructFromEigenCoefs(temp_eigencoefs,reconstruct_eigenfunction_num_,example_guided_deformation_,"");
+		// // 	reconstructFromEigenCoefs(temp_eigencoefs,reconstruct_eigenfunction_num_,example_guided_deformation_);
 		// 	reconstructFromEigenCoefs(object_eigencoefs_,2);
 		// }
 
@@ -3342,12 +3350,12 @@ bool RealTimeExampleBasedDeformer::loadExampleEigenFunctions(const std::string &
 	}
 	// double *dis;
 	// memset(dis,0.0,sizeof(double)*3*examples_[1]->getNumVertices());
-	// reconstructFromEigenCoefs(example_eigencoefs_[1],reconstruct_eigenfunction_num_,example_guided_deformation_,"");
+	// reconstructFromEigenCoefs(example_eigencoefs_[1],reconstruct_eigenfunction_num_,example_guided_deformation_);
 	// delete[] dis;
 	// double *dis=new double[3*simulation_vertices_num_];
 	// for(int j=0;j<3*simulation_vertices_num_;++j)
 	// 	dis[j]=0.0;
-	// reconstructFromEigenCoefs(example_eigencoefs_[1],,reconstruct_eigenfunction_num_,dis,"");
+	// reconstructFromEigenCoefs(example_eigencoefs_[1],,reconstruct_eigenfunction_num_,dis);
 	// 		delete[] dis;
 	//Presume system have 2 examples
 	// example_length_[0]=example_length_[1]=example_length_[2]=1.0;
@@ -4503,7 +4511,7 @@ void RealTimeExampleBasedDeformer::computeDTNewMeshPosition()
 	// deformed_eigen_skeleton_=new double[3*simulation_vertices_num_];
 	// memset(deformed_eigen_skeleton_,0.0,sizeof(double)*3*simulation_vertices_num_);
 	// std::cout<<"generate deformed eige_skeleton:\n";
-	// reconstructFromEigenCoefs(example_eigencoefs_[1],reconstruct_eigenfunction_num_,deformed_eigen_skeleton_,"");
+	// reconstructFromEigenCoefs(example_eigencoefs_[1],reconstruct_eigenfunction_num_,deformed_eigen_skeleton_);
 	// std::cout<<"generate deformed eige_skeleton:\n";
 	unsigned int ele_num=simulation_mesh_->getNumElements();
 	unsigned int vert_num=simulation_mesh_->getNumVertices();
