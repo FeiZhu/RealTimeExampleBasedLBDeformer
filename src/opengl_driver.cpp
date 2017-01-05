@@ -629,31 +629,31 @@ void OpenGLDriver::displayFunction()
         glStencilFunc(GL_ALWAYS,0,~(0u));
     }
     //show frame_rate on the left top of the window
-    // if(active_instance->render_fps_)
-    // {
-    //     std::stringstream adaptor;
-    //     adaptor.precision(2);
-    //     std::string str;
-    //     adaptor<<active_instance->fps_;
-    //     str=std::string("FPS:") + adaptor.str();
-    //     glMatrixMode(GL_MODELVIEW);
-    //     glPushMatrix();
-    //     glLoadIdentity();
-    //     glMatrixMode(GL_PROJECTION);
-    //     glPushMatrix();
-    //     glLoadIdentity();
-    //     glDisable(GL_LIGHTING);
-    //     glDisable(GL_TEXTURE_2D);
-    //     gluOrtho2D(0,active_instance->window_width_,0,active_instance->window_height_);
-    //     glColor3f(1.0,0.0,0.0);
-    //     glRasterPos2i(5,active_instance->window_height_-19);
-    //     for(int i=0;i<str.length();++i)
-    //         glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18,str[i]);
-    //     glPopMatrix();
-    //     glMatrixMode(GL_MODELVIEW);
-    //     glPopMatrix();
-    //     glEnable(GL_LIGHTING);
-    // }
+    if(active_instance->render_fps_)
+    {
+        std::stringstream adaptor;
+        adaptor.precision(2);
+        std::string str;
+        adaptor<<active_instance->fps_;
+        str=std::string("FPS:") + adaptor.str();
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        glDisable(GL_LIGHTING);
+        glDisable(GL_TEXTURE_2D);
+        gluOrtho2D(0,active_instance->window_width_,0,active_instance->window_height_);
+        glColor3f(1.0,0.0,0.0);
+        glRasterPos2i(5,active_instance->window_height_-19);
+        for(int i=0;i<str.length();++i)
+            glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18,str[i]);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPopMatrix();
+        glEnable(GL_LIGHTING);
+    }
     //render eigenfunction
      if(active_instance->render_eigenfunction_)
      {
