@@ -647,6 +647,7 @@ void ReducedStVKCubatureForceModel::computeReducedElasticEnergy(const double *di
 }
 void ReducedStVKCubatureForceModel::computeReducedElasticInternalForce(const double *dis,double *forces,const double *reference_pos) const
 {//q:r*1
+    std::cout<<"compute reduced elastic internal force with reference pos, dis, to get a reduced force\n";
 	// PerformanceCounter counter2;
 	// counter2.StartCounter();
     // std::cout<<"begin:\n";
@@ -663,7 +664,7 @@ void ReducedStVKCubatureForceModel::computeReducedElasticInternalForce(const dou
     // double *global_forces=new double[3*volumetric_mesh_->getNumVertices()];
     // memset(global_forces,0.0,sizeof(double)*3*volumetric_mesh_->getNumVertices());
     // double total_time=0.0,other_total_time=0.0,F_time=0.0,assemble_f=0.0;
-
+    std::cout<<"cubica_num_:"<<cubica_num_<<"\n";
     for(int cubica_idx=0;cubica_idx<cubica_num_;++cubica_idx)
 	{
 		int ele=cubica_elements_[cubica_idx];
@@ -684,6 +685,7 @@ void ReducedStVKCubatureForceModel::computeReducedElasticInternalForce(const dou
             }
         }
     	Mat3d F=computeReducedElasticF(ele_dis,ele_pos);
+        // if(cubica_idx==0)
         // std::cout<<det(F)<<"\n";
 		Mat3d P=firstPiolaKirchhoff(F);
         Mat3d temp1=trans(computeElasticDmInv(ele_pos));
@@ -722,6 +724,7 @@ void ReducedStVKCubatureForceModel::computeReducedElasticInternalForce(const dou
         {
             forces[i] += cubica_weights_[cubica_idx]*g[i];
         }
+
         delete[] ele_force;
         delete[] g;
         delete[] ele_pos;

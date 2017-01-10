@@ -545,6 +545,7 @@ void OpenGLDriver::initSimulation()
         current_example_mesh_=example_mesh_[0];
         //set interpolate_eigenfunction num for simulator;
         simulator_->setInterpolateEigenfunctionNum(interpolate_eigenfunction_num_);
+        simulator_->setReconstructEigenfunctionNum(reconstruct_eigenfunction_num_);
         //set LB cubica file name
         if(isload_LB_cubica_)
         {

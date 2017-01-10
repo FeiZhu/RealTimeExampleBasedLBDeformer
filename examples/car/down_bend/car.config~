@@ -2,13 +2,13 @@
 false
 
 *simulationType
-#fullspace
-reducedspace
+fullspace
+#reducedspace
 
 *solver
 #implicitBackwardEuler
-#implicitNewmark
-reducedImplicitNewmark
+implicitNewmark
+#reducedImplicitNewmark
 #reducedImplicitBackwardEuler
 
 #*deformableModel
@@ -129,7 +129,7 @@ true
 *collisionNumLimited
 10
 *exampleStiffnessScale
-5.0e1
+2.0e3
 *dampingExampleStiffness
 0.6
 
