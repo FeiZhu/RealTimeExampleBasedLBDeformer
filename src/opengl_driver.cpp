@@ -317,7 +317,22 @@ void OpenGLDriver::initGLUI()
     glui_->add_button_to_panel(save_panel,"Save object color for all eigenfunctions",0,saveObjectEigenfunctionsColor);
 
     //simulation
+    static_text_content.clear();
+    if(simulation_mode_==FULLSPACE)
+    {
+        std::cout<<"fullspace:\n";
+        static_text_content="fullspace simulation";
+    }
+    else
+    {
+        if(with_constrains_)
+            static_text_content="reduced simulation with constraints";
+        else
+            static_text_content="reduced simulation without constraints";
+    }
+
     GLUI_Panel *sim_panel=glui_->add_panel("Simulation",GLUI_PANEL_EMBOSSED);
+    glui_->add_statictext_to_panel(sim_panel,static_text_content.c_str());
     //add_rollout("Simulation",true);
     sim_panel->set_alignment(GLUI_ALIGN_LEFT);
     glui_->add_button_to_panel(sim_panel,"Reset",0,/*resetDeformation*/changeSimulationMode);

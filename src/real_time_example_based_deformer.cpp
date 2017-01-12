@@ -1144,7 +1144,7 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulationWithConstraints()
 			// 	f_ext_[i]=(-1.0)*example_stiffness_scale_*example_guided_deformation_[i];
 			// }
 			// computeReducedElasticInternalForce(example_guided_deformation_,f_ext_,u_);
-			reduced_stvk_cubature_force_model_->computeReducedElasticInternalForce(example_guided_deformation_,f_ext_,u_);//target_deformation_);
+			reduced_stvk_cubature_force_model_->computeReducedElasticInternalForce(example_guided_deformation_,fq_,u_);//target_deformation_);
 			// for(int i=0;i<3*simulation_vertices_num_;++i)
 			// {
 			// 	f_ext_[i]=(-1)*example_stiffness_scale_*example_f_[i];
@@ -1190,7 +1190,7 @@ void RealTimeExampleBasedDeformer::reducedspaceSimulationWithConstraints()
 
 	// std::cout<<"\n";
 	//linear-force
-	modal_matrix_->ProjectVector(f_ext_,fq_);
+	// modal_matrix_->ProjectVector(f_ext_,fq_);
 	integrator_base_dense_->SetExternalForces(fq_);
 	if(time_step_counter_ < total_steps_)
 	{

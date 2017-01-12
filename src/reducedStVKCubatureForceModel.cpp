@@ -653,8 +653,8 @@ void ReducedStVKCubatureForceModel::computeReducedElasticInternalForce(const dou
 	// PerformanceCounter counter2;
 	// counter2.StartCounter();
     // std::cout<<"begin:\n";
-	memset(forces,0.0,sizeof(double)*3*volumetric_mesh_->getNumVertices());
-    // memset(forces,0.0,sizeof(double)*r_);
+	// memset(forces,0.0,sizeof(double)*3*volumetric_mesh_->getNumVertices());
+    memset(forces,0.0,sizeof(double)*r_);
     // double *global_dis=new double[3*volumetric_mesh_->getNumVertices()];
     // memset(global_dis,0.0,sizeof(double)*3*volumetric_mesh_->getNumVertices());
     // modal_matrix_->AssembleVector(dis,global_dis);
@@ -720,27 +720,27 @@ void ReducedStVKCubatureForceModel::computeReducedElasticInternalForce(const dou
 			}
 		}
         // std::cout<<"---a---"<<ele<<"\n";
-        for(int i=0;i<4;++i)
-        {
-            int vertID=volumetric_mesh_->getVertexIndex(ele,i);
-            // std::cout<<"vertID:"<<vertID<<"\n";
-            for(int j=0;j<3;++j)
-                forces[3*vertID+j] += (-1.0)*ele_force[3*i+j];
-        }
-        // std::cout<<"---b---\n";
-        // double *g=new double[(int)r_];
-        // memset(g,0.0,sizeof(double)*r_);
-        // for(int i=0;i<r_;++i)
-        //     for(int j=0;j<12;++j)
-        //         g[i]+=cubica_subBasis_[cubica_idx][j][i]*ele_force[j];
-        //
-		// for(int i=0;i<r_;++i)
+        // for(int i=0;i<4;++i)
         // {
-        //     forces[i] += cubica_weights_[cubica_idx]*g[i];
+        //     int vertID=volumetric_mesh_->getVertexIndex(ele,i);
+        //     // std::cout<<"vertID:"<<vertID<<"\n";
+        //     for(int j=0;j<3;++j)
+        //         forces[3*vertID+j] += (-1.0)*ele_force[3*i+j];
         // }
+        // std::cout<<"---b---\n";
+        double *g=new double[(int)r_];
+        memset(g,0.0,sizeof(double)*r_);
+        for(int i=0;i<r_;++i)
+            for(int j=0;j<12;++j)
+                g[i]+=cubica_subBasis_[cubica_idx][j][i]*ele_force[j];
+
+		for(int i=0;i<r_;++i)
+        {
+            forces[i] += (-1.0)*cubica_weights_[cubica_idx]*g[i];
+        }
 
         delete[] ele_force;
-        // delete[] g;
+        delete[] g;
         delete[] ele_pos;
         delete[] ele_dis;
 	}
