@@ -154,7 +154,7 @@ public:
     void setConstrains(bool with_constrains){with_constrains_=with_constrains;}
     void setExampleForceType(const std::string &example_force_type);
     // void setReducedSimulationMesh(SceneObjectReduced *mesh){reduced_simulation_mesh_=mesh};
-
+    void computeEigenfunction(const std::string &A_filename, const std::string &B_filename,const unsigned int &vert_num,const std::string &eigen_filename);
     //registration of eigenfunctions
     bool loadCorrespondenceData(const std::string &file_name);//the vertex is 1-indexed;
     bool registerEigenfunctions();
@@ -235,6 +235,11 @@ private:
     void projectOnSubBasis(VolumetricMesh *mesh,
                            double **eigenfunctions, unsigned int eigenfunction_num,
                            Vec3d *eigencoefs);
+
+    void computeReducedElasticInternalForce(double *dis,double *forces,double *reference_pos);
+    Mat3d computeElasticDs(const double *ele_deformed_pos) const;
+    Mat3d computeElasticDmInv(const double *ele_reference_pos) const;
+    Mat3d computeReducedElasticF(const double *ele_dis,const double *ele_reference_pos) const;
 
 private:
     static RealTimeExampleBasedDeformer *active_instance_;

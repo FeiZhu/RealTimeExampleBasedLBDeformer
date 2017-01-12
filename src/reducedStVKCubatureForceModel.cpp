@@ -31,6 +31,7 @@ ReducedStVKCubatureForceModel::ReducedStVKCubatureForceModel(const int &r,Volume
     }
     // std::cout<<"c\n";
     volumetric_mesh_ = volumetricMesh;
+	tet_mesh_=dynamic_cast<TetMesh*>(volumetric_mesh_);
     U_ = new double*[3*volumetricMesh->getNumVertices()];
     for(int i=0;i<3*volumetricMesh->getNumVertices();++i)
     {
@@ -577,34 +578,35 @@ Mat3d ReducedStVKCubatureForceModel::computeReducedElasticF(const double *ele_di
 //         std::cout<<q[j]<<",";
 //     std::cout<<"\n";
 //     std::cout<<"reference_pos:\n";
-//     for(int j=0;j<3;++j)
+//     for(int j=0;j<12;++j)
 // 	{
-//         std::cout<<reference_pos[j]<<",";
+//         std::cout<<ele_reference_pos[j]<<",";
 //     }
 // std::cout<<"\n";
 	for(int j=0;j<12;++j)
 	{
 		deformed[j]=ele_reference_pos[j]+ele_dis[j];
-        // std::cout<<deformed[j]<<",";
+        // std::cout<<"deformed:"<<deformed[j]<<",";
 	}
     // std::cout<<"deformed:"<<deformed[3*vert+0]<<","<<reference_pos[3*vert+1]<<","<<reference_pos[3*vert+0]<<"\n";
-	Mat3d F=computeElasticDs(deformed)*computeElasticDmInv(ele_reference_pos);
     // std::cout<<"ds:"<<computeElasticDs(deformed)<<"\n";
     // std::cout<<"DmInv:"<<computeElasticDmInv(ele_reference_pos)<<"\n";
+	Mat3d F=computeElasticDs(deformed)*computeElasticDmInv(ele_reference_pos);
+    // getchar();
     //temp handle invert F_
-	Mat3d U,V;
-    Vec3d Fhat;
-    ModifiedSVD(F,U,Fhat,V);
-    //clamphat if below the principle stretch threshold
-    double principle_threshold = 0.6;
-    for(unsigned int i = 0; i < 3 ; ++i)
-        if(Fhat[i] < principle_threshold)
-            Fhat[i] = principle_threshold;
-    Mat3d Fhat_mat;
-    for(unsigned int i = 0; i < 3; ++i)
-        for(unsigned int j = 0; j < 3; ++j)
-            Fhat_mat[i][j] = (i==j)?Fhat[i]:0;
-    F = U*Fhat_mat*trans(V);
+	// Mat3d U,V;
+    // Vec3d Fhat;
+    // ModifiedSVD(F,U,Fhat,V);
+    // //clamphat if below the principle stretch threshold
+    // double principle_threshold = 0.6;
+    // for(unsigned int i = 0; i < 3 ; ++i)
+    //     if(Fhat[i] < principle_threshold)
+    //         Fhat[i] = principle_threshold;
+    // Mat3d Fhat_mat;
+    // for(unsigned int i = 0; i < 3; ++i)
+    //     for(unsigned int j = 0; j < 3; ++j)
+    //         Fhat_mat[i][j] = (i==j)?Fhat[i]:0;
+    // F = U*Fhat_mat*trans(V);
     // delete[] temp;
     // std::cout<<F<<"\n";
 	delete[] deformed;
@@ -651,8 +653,8 @@ void ReducedStVKCubatureForceModel::computeReducedElasticInternalForce(const dou
 	// PerformanceCounter counter2;
 	// counter2.StartCounter();
     // std::cout<<"begin:\n";
-	// memset(forces,0.0,sizeof(double)*3*volumetric_mesh_->getNumVertices());
-    memset(forces,0.0,sizeof(double)*r_);
+	memset(forces,0.0,sizeof(double)*3*volumetric_mesh_->getNumVertices());
+    // memset(forces,0.0,sizeof(double)*r_);
     // double *global_dis=new double[3*volumetric_mesh_->getNumVertices()];
     // memset(global_dis,0.0,sizeof(double)*3*volumetric_mesh_->getNumVertices());
     // modal_matrix_->AssembleVector(dis,global_dis);
@@ -664,7 +666,7 @@ void ReducedStVKCubatureForceModel::computeReducedElasticInternalForce(const dou
     // double *global_forces=new double[3*volumetric_mesh_->getNumVertices()];
     // memset(global_forces,0.0,sizeof(double)*3*volumetric_mesh_->getNumVertices());
     // double total_time=0.0,other_total_time=0.0,F_time=0.0,assemble_f=0.0;
-    std::cout<<"cubica_num_:"<<cubica_num_<<"\n";
+    // std::cout<<"cubica_num_:"<<cubica_num_<<"\n";
     for(int cubica_idx=0;cubica_idx<cubica_num_;++cubica_idx)
 	{
 		int ele=cubica_elements_[cubica_idx];
@@ -673,6 +675,8 @@ void ReducedStVKCubatureForceModel::computeReducedElasticInternalForce(const dou
         // std::cout<<"ele:"<<ele<<"\n";
         double *ele_pos=new double[12];
         double *ele_dis=new double[12];
+        double ele_volume=tet_mesh_->getTetVolume(tet_mesh_->getVertex(ele,0),tet_mesh_->getVertex(ele,1),
+			tet_mesh_->getVertex(ele,2),tet_mesh_->getVertex(ele,3));
         for(int i=0;i<4;++i)
         {
             int vertID=volumetric_mesh_->getVertexIndex(ele,i);
@@ -680,16 +684,25 @@ void ReducedStVKCubatureForceModel::computeReducedElasticInternalForce(const dou
             // getchar();
             for(int j=0;j<3;++j)
             {
-                ele_pos[3*i+j]=reference_pos[3*vertID+j];
+                ele_pos[3*i+j]=reference_pos[3*vertID+j]+(*volumetric_mesh_->getVertex(vertID))[j];
+                // std::cout<<"ele_pos:"<<ele_pos[3*i+j]<<",";
                 ele_dis[3*i+j]=dis[3*vertID+j];
+                // std::cout<<"ele_dis:"<<ele_dis[3*i+j]<<",";
             }
         }
     	Mat3d F=computeReducedElasticF(ele_dis,ele_pos);
-        // if(cubica_idx==0)
-        // std::cout<<det(F)<<"\n";
+        // if(ele==0)
+        // std::cout<<"det(F)="<<det(F)<<"\n";
 		Mat3d P=firstPiolaKirchhoff(F);
-        Mat3d temp1=trans(computeElasticDmInv(ele_pos));
-        Mat3d temp=P*temp1;
+
+		// std::cout<<"P="<<P<<"\n";
+		Mat3d temp1=computeElasticDmInv(ele_pos);
+        Mat3d temp2=trans(temp1);
+		// double ele_volume=tet_mesh_->getTetVolume(tet_mesh_->getVertex(ele,0),tet_mesh_->getVertex(ele,1),
+		// 	tet_mesh_->getVertex(ele,2),tet_mesh_->getVertex(ele,3));
+        Mat3d temp=(1.0/det(temp1))*P*temp2;
+        // Mat3d temp1=trans(computeElasticDmInv(ele_pos));
+        // Mat3d temp=ele_volume*P*temp1;
 		// Matrix<double> ele_force(12,1);
         double *ele_force=new double[12];
         memset(ele_force,0.0,sizeof(double)*12);
@@ -702,34 +715,40 @@ void ReducedStVKCubatureForceModel::computeReducedElasticInternalForce(const dou
 					ele_force[3*i+j]=(-1.0)*(temp[j][0]+temp[j][1]+temp[j][2]);
 				else
 					ele_force[3*i+j]=temp[j][i];
-                // std::cout<<"ele_force:"<<ele_force[3*i+j]<<",";
+                // if(ele==0)
+                //     std::cout<<"ele_force:"<<ele_force[3*i+j]<<",";
 			}
 		}
         // std::cout<<"---a---"<<ele<<"\n";
-        // for(int i=0;i<4;++i)
-        // {
-        //     int vertID=volumetric_mesh_->getVertexIndex(ele,i);
-        //     // std::cout<<"vertID:"<<vertID<<"\n";
-        //     for(int j=0;j<3;++j)
-        //         forces[3*vertID+j] += ele_force[3*i+j];
-        // }
-        // std::cout<<"---b---\n";
-        double *g=new double[(int)r_];
-        memset(g,0.0,sizeof(double)*r_);
-        for(int i=0;i<r_;++i)
-            for(int j=0;j<12;++j)
-                g[i]+=cubica_subBasis_[cubica_idx][j][i]*ele_force[j];
-
-		for(int i=0;i<r_;++i)
+        for(int i=0;i<4;++i)
         {
-            forces[i] += cubica_weights_[cubica_idx]*g[i];
+            int vertID=volumetric_mesh_->getVertexIndex(ele,i);
+            // std::cout<<"vertID:"<<vertID<<"\n";
+            for(int j=0;j<3;++j)
+                forces[3*vertID+j] += (-1.0)*ele_force[3*i+j];
         }
+        // std::cout<<"---b---\n";
+        // double *g=new double[(int)r_];
+        // memset(g,0.0,sizeof(double)*r_);
+        // for(int i=0;i<r_;++i)
+        //     for(int j=0;j<12;++j)
+        //         g[i]+=cubica_subBasis_[cubica_idx][j][i]*ele_force[j];
+        //
+		// for(int i=0;i<r_;++i)
+        // {
+        //     forces[i] += cubica_weights_[cubica_idx]*g[i];
+        // }
 
         delete[] ele_force;
-        delete[] g;
+        // delete[] g;
         delete[] ele_pos;
         delete[] ele_dis;
 	}
+
+    // for(int i=0;i<3*10;++i)
+    // {
+    //     std::cout<<forces[3*i]<<","<<forces[3*i+1]<<","<<forces[3*i+2]<<"----\n";
+    // }
     // modal_matrix_->ProjectVector(global_forces,forces);
     // std::cout<<"----end\n";
     // delete[] global_forces;

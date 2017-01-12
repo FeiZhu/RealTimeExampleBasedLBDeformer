@@ -891,7 +891,7 @@ void OpenGLDriver::displayFunction()
             for(int j=0;j<3;++j)
             {
                 vert_pos[j]=(*active_instance->simulation_mesh_->getVertex(i))[j]+active_instance->u_[3*i+j];
-                vert_new_pos[j]=vert_pos[j]+active_instance->simulator_->getExternalForce()[3*i+j]*0.001;
+                vert_new_pos[j]=vert_pos[j]+active_instance->simulator_->getExternalForce()[3*i+j]*0.001*active_instance->render_velocity_scale_;
             }
             glColor3f(1.0,0.3,1.0);
             glLineWidth(2.0);
@@ -1279,9 +1279,11 @@ void OpenGLDriver::keyboardFunction(unsigned char key, int x, int y)
         break;
     case 'i':
         active_instance->render_velocity_scale_ *=2.0;
+
         break;
     case 'd':
         active_instance->render_velocity_scale_ *= 0.5;
+
         break;
     // case 'u':
     //     active_instance->render_dis_ = !(active_instance->render_dis_);

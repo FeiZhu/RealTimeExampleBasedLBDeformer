@@ -12,6 +12,7 @@
 #include "reducedForceModel.h"
 #include "matrix.h"
 #include "volumetricMesh.h"
+#include "tetMesh.h"
 #include "mat3d.h"
 #include "modalMatrix.h"
 class VolumetricMesh;
@@ -61,6 +62,7 @@ protected:
 protected:
     int r_;
     VolumetricMesh *volumetric_mesh_=NULL;
+    TetMesh *tet_mesh_=NULL;
     double **U_=NULL;
     int cubica_num_;
     double *cubica_elements_=NULL;
