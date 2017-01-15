@@ -1,0 +1,110 @@
+#####################################################
+# scons script to compile VegaFEM into lib files
+# compiler: GNU g++
+# @author: Fei Zhu
+# created: 01/13/2014
+# revised: 08/21/2015
+# Usage:
+# 1. put this script in libraries/ directory of VegaFEM
+# 2. enter the directory in terminal and enter
+#    scons
+# 3. ALL lib files are generated in libraries/lib/
+#####################################################
+
+#########
+import os
+import platform
+import shutil
+
+#####################################################
+def get_immediate_subdirectories(dir):
+    return [name for name in os.listdir(dir)
+            if os.path.isdir(os.path.join(dir, name))]
+#####################################################
+
+#os_name
+os_name=platform.system()
+os_architecture=platform.architecture()[0]
+
+#mkl path
+mkl_inc_path = '/opt/intel/composer_xe_2015.3.187/mkl/include/'
+
+#library_src_root_path
+lib_src_root_path='./'
+lib_inc_path = lib_src_root_path+'include/'
+
+#name of libraries
+lib_names=get_immediate_subdirectories(lib_src_root_path)
+
+#glui_src_files
+glui_src_files=Split('glui_add_controls.cpp glui_string.cpp glui.cpp glui_bitmap_img_data.cpp glui_bitmaps.cpp glui_button.cpp glui_edittext.cpp glui_commandline.cpp glui_checkbox.cpp glui_node.cpp glui_radio.cpp glui_statictext.cpp glui_panel.cpp glui_separator.cpp glui_spinner.cpp glui_control.cpp glui_column.cpp glui_translation.cpp glui_rotation.cpp glui_mouse_iaction.cpp glui_listbox.cpp glui_rollout.cpp glui_window.cpp arcball.cpp algebra3.cpp quaternion.cpp viewmodel.cpp glui_treepanel.cpp glui_tree.cpp glui_textbox.cpp glui_scrollbar.cpp glui_list.cpp glui_filebrowser.cpp')
+
+#builders
+compile=Builder(action='g++ -o $TARGET $SOURCE -c -O3 -DNDEBUG -I '+lib_inc_path)   
+arc_lib=Builder(action='ar rcs $TARGET $SOURCES')
+#need mkl on linux
+if os_name == 'Linux':
+    compile=Builder(action='g++ -o $TARGET $SOURCE -c -O3 -DNDEBUG -I '+lib_inc_path+' -I '+mkl_inc_path)   
+   
+
+#environment
+ENV={'PATH':os.environ['PATH']}
+env=Environment(ENV=ENV)
+env.Append(BUILDERS={'COMPILE':compile})        
+env.Append(BUILDERS={'ARCLIB':arc_lib})
+env.Append(tools=['gcc','g++'])
+
+#prefix and suffix
+if os_name=='Windows':
+    lib_preffix = './lib/'
+    obj_suffix='.obj'
+    lib_suffix='.lib'
+elif os_name in ('Linux','Darwin'):
+    lib_preffix='./lib/lib'
+    obj_suffix='.o'
+    lib_suffix='.a'
+
+#copy headers to include directory
+for name in lib_names:
+    if name not in ['include','lib','common','glui']:
+        for src_name in os.listdir(lib_src_root_path+name):
+            if src_name.endswith('.h'):
+               src_file = lib_src_root_path+name+'/'+src_name
+               target_file = lib_inc_path+src_name
+               shutil.copyfile(src_file,target_file)
+    elif name=='glui':
+         src_file = lib_src_root_path+name+'/glui-2.35/src/include/GL/glui.h'
+         target_file = lib_inc_path+'GL/glui.h'
+         if not os.path.exists(lib_inc_path+'GL/'):
+            os.makedirs(lib_inc_path+'GL/')
+         shutil.copyfile(src_file,target_file)
+
+#create each library
+for name in lib_names:
+    obj_names=[]
+    if name not in ['include','lib','common','glui']:
+        for src_name in os.listdir(lib_src_root_path+name):
+            if src_name.endswith('.cpp'):
+                src_name=lib_src_root_path+name+'/'+src_name
+                obj_name=os.path.splitext(src_name)[0]+obj_suffix
+                obj_names.append(obj_name)
+                env.COMPILE(obj_name,src_name)
+        lib_name=name+lib_suffix
+        if os_name in ('Linux','Darwin'):
+            lib_name=lib_preffix+lib_name
+        env.ARCLIB(lib_name,obj_names)
+    elif name=='glui':
+        glui_src_path=lib_src_root_path+name+'/glui-2.35/src/'
+        for src_name in glui_src_files:
+            src_name=glui_src_path+src_name
+            obj_name=os.path.splitext(src_name)[0]+obj_suffix
+            obj_names.append(obj_name)
+            env.COMPILE(obj_name,src_name)
+        if os_architecture=='32bit':
+            lib_name=name+'32'+lib_suffix
+        else:
+            lib_name=name+'64'+lib_suffix
+        if os_name in ('Linux','Darwin'):
+            lib_name=lib_preffix+lib_name
+        env.ARCLIB(lib_name,obj_names)
+        

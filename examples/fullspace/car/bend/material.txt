@@ -1,0 +1,5 @@
+*MATERIAL BODY
+ENU, 1000, 2.5e5, 0.4
+
+*REGION
+allElements, BODY
