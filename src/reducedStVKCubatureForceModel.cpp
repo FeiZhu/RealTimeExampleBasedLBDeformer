@@ -684,7 +684,7 @@ void ReducedStVKCubatureForceModel::computeReducedElasticInternalForce(const dou
             // getchar();
             for(int j=0;j<3;++j)
             {
-                ele_pos[3*i+j]=reference_pos[3*vertID+j]+(*volumetric_mesh_->getVertex(vertID))[j];
+                ele_pos[3*i+j]=reference_pos[3*vertID+j];//+(*volumetric_mesh_->getVertex(vertID))[j];
                 // std::cout<<"ele_pos:"<<ele_pos[3*i+j]<<",";
                 ele_dis[3*i+j]=dis[3*vertID+j];
                 // std::cout<<"ele_dis:"<<ele_dis[3*i+j]<<",";
@@ -698,9 +698,7 @@ void ReducedStVKCubatureForceModel::computeReducedElasticInternalForce(const dou
 		// std::cout<<"P="<<P<<"\n";
 		Mat3d temp1=computeElasticDmInv(ele_pos);
         Mat3d temp2=trans(temp1);
-		// double ele_volume=tet_mesh_->getTetVolume(tet_mesh_->getVertex(ele,0),tet_mesh_->getVertex(ele,1),
-		// 	tet_mesh_->getVertex(ele,2),tet_mesh_->getVertex(ele,3));
-        Mat3d temp=(1.0/det(temp1))*P*temp2;
+        Mat3d temp=(1.0/(6*det(temp1)))*P*temp2;
         // Mat3d temp1=trans(computeElasticDmInv(ele_pos));
         // Mat3d temp=ele_volume*P*temp1;
 		// Matrix<double> ele_force(12,1);

@@ -1,5 +1,5 @@
 *withConstrains
-true
+false
 
 *simulationType
 #fullspace
@@ -15,8 +15,8 @@ reducedImplicitNewmark
 #InvertibleFEM
 
 *invertibleMaterial
-StVK
-#reducedStVK
+#StVK
+reducedStVK
 
 #for InvertibleFEM
 *principalStretchThreshold
@@ -41,23 +41,18 @@ car.interp
 
 *exampleFilenameBase
 ex
-#*exampleSurfaceMeshFilenameBase
-
-#*exampleInterpolationFilenameBase
-
-
 *exampleNum
 2
 *interpolateEigenfunctionNum
-5
+6
 *reconstructEigenfunctionNum
 100
 *exampleEigenFunctionFilenameBase
-new-ex
+ex
 *objectEigenFunctionFilename
-new-car.eigen
+car.eigen
 *correspondingFunctionFilename
-car-4.ini
+car.ini
 *savedExampleEigenFunctionFilenameBase
 new-ex
 *savedObjectEigenFunctionFilename
@@ -69,19 +64,18 @@ true
 
 *reducedBasisFilename
 nonlinear-65.basis
-#nonlinear-135.basis
+
 
 *isLoadCubica
 true
 *objectCubicaFilename
 nonlinear-65.cubature
-#nonlinear-65.cubature
-#nonlinear-135.cubature
+
 
 *isLoadLBCubica
 false
 *objectLBCubicaFilename
-car_LB-100.cubature
+car_LB50.cubature
 
 *massMatrixFilename
 car.mass
@@ -110,31 +104,39 @@ car.lighting
 #*initialPositionFilename
 
 #*initialVelocityFilename
+#initial.vel
 
 *addGravity
 true
 
 *gravity
-500.0
+0.98
 *dampingMassCoef
-0.01
-
-*dampingStiffnessCoef
 0.02
 
-*exampleBias
-0.7
-*torqueCoef
-1.0e-2
-*collisionNumLimited
-10
-*exampleStiffnessScale
-2.0e3
-*dampingExampleStiffness
-0.6
+*dampingStiffnessCoef
+0.03
 
 *timestep
-0.001
+0.005
+*exampleBias
+0.6
+*torqueCoef
+0.0
+*collisionNumLimited
+20
+*exampleStiffnessScale
+#for full space elastic force
+#-0.4
+#--linear
+#-5e5
+3.0e4
+*dampingExampleStiffness
+0.5
+*exampleForceType
+#reduced_StVK
+linear
+
 *framerate
 30
 *totalFrame

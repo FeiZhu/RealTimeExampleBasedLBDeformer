@@ -318,17 +318,21 @@ void OpenGLDriver::initGLUI()
 
     //simulation
     static_text_content.clear();
+    adaptor.clear();
+    std::string force_type_str;
+    adaptor<<example_force_type_;
+    adaptor>>force_type_str;
     if(simulation_mode_==FULLSPACE)
     {
         std::cout<<"fullspace:\n";
-        static_text_content="fullspace simulation";
+        static_text_content="fullspace simulation-force type:"+force_type_str;
     }
     else
     {
         if(with_constrains_)
-            static_text_content="reduced simulation with constraints";
+            static_text_content="reduced simulation with constraints-force type:"+force_type_str;
         else
-            static_text_content="reduced simulation without constraints";
+            static_text_content="reduced simulation without constraints-force type:"+force_type_str;
     }
 
     GLUI_Panel *sim_panel=glui_->add_panel("Simulation",GLUI_PANEL_EMBOSSED);

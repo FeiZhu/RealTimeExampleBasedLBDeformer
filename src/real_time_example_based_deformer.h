@@ -236,10 +236,11 @@ private:
                            double **eigenfunctions, unsigned int eigenfunction_num,
                            Vec3d *eigencoefs);
 
-    void computeReducedElasticInternalForce(double *dis,double *forces,double *reference_pos);
+    void computeFullSpaceElasticInternalForce(double *dis,double *forces,double *reference_pos);
     Mat3d computeElasticDs(const double *ele_deformed_pos) const;
     Mat3d computeElasticDmInv(const double *ele_reference_pos) const;
-    Mat3d computeReducedElasticF(const double *ele_dis,const double *ele_reference_pos) const;
+    Mat3d computeElasticF(const double *ele_dis,const double *ele_reference_pos) const;
+    void generateDeformedSmesh(const std::string &input_filename,const std::string &output_filename);
 
 private:
     static RealTimeExampleBasedDeformer *active_instance_;
@@ -255,6 +256,7 @@ private:
     SparseMatrix *laplacian_damping_matrix_ = NULL;
     //visual mesh for rendering
     SceneObjectDeformable *visual_mesh_ = NULL;
+    SceneObjectDeformable *deformed_init_mesh_ = NULL;
     //simulation data
     double **ex_dis_ = NULL;
     double *displacement_ = NULL;
@@ -390,6 +392,7 @@ private:
     CentralDifferencesDense *central_differences_dense_ = NULL;
 
     //fullspace Simulation
+    double *current_configuration_=NULL;
     double *u_=NULL;
     double *vel_=NULL;
     double *collide_vel_=NULL;
