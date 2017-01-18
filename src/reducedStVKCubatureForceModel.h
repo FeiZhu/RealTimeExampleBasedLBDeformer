@@ -35,6 +35,7 @@ public:
     void computeReducedEnergy(const double *q,double &energy) const;
     void computeReducedInternalForce(const double *q,double *forces) const;
     //compute elastic pos for given reference_configration, q is reduced displacement of (current-reference)
+    void computeReducedElasticEnergy(const double *dis,double &energy,const double *reference_pos) const;
     void computeReducedElasticInternalForce(const double *dis,double *forces,const double *reference_pos) const;
 protected:
     void InitGravity(double *U); //aux function
@@ -47,6 +48,7 @@ protected:
     Mat3d computeF_gradient(const int &ele,const int &vert_idx,const int &vert_idx_dim) const;
     Mat3d computeP_gradient(const int &ele,const Mat3d &F,const int &vert_idx,const int &vert_idx_dim) const;
     void computeReducedDis(const double *x, double *q) const;
+    void computeGlobalDis(const int &cubica_idx, const double *q, double *dis) const;
 
     void computeReducedStiffnessMatrix(const double *q,double *reduced_K/*Matrix<double> &reduced_K*/) const;
 
@@ -54,9 +56,9 @@ protected:
     Mat3d computeElasticDs(const double *ele_deformed_pos) const;
     Mat3d computeElasticDmInv(const double *ele_reference_pos) const;
     Mat3d computeReducedElasticF(const double *ele_dis,const double *ele_reference_pos) const;
-    void computeReducedElasticEnergy(const double *dis,double &energy,const double *reference_pos) const;
     void FindOrthonormalVector(Vec3d & v, Vec3d & result) const;
     int ModifiedSVD(Mat3d & F, Mat3d & U, Vec3d & Fhat, Mat3d & V) const;
+
 
 
 protected:

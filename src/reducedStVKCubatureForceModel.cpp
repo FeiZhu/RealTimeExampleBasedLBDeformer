@@ -143,18 +143,18 @@ ReducedStVKCubatureForceModel::~ReducedStVKCubatureForceModel()
         delete[] volumetric_mesh_;
     if(gf_)
         delete[] gf_;
-    for(int i=0;i<cubica_num_;++i)
-    {
-        if(cubica_subBasis_[i])
-        {
-            for(int j=0;j<12;++j)
-            {
-                if(cubica_subBasis_[i][j])
-                    delete[] cubica_subBasis_[i][j];
-            }
-            delete[] cubica_subBasis_[i];
-        }
-    }
+    // for(int i=0;i<cubica_num_;++i)
+    // {
+    //     if(cubica_subBasis_[i])
+    //     {
+    //         for(int j=0;j<12;++j)
+    //         {
+    //             if(cubica_subBasis_[i][j])
+    //                 delete[] cubica_subBasis_[i][j];
+    //         }
+    //         delete[] cubica_subBasis_[i];
+    //     }
+    // }
 }
 
 void ReducedStVKCubatureForceModel::GetInternalForce(double * q, double * internalForces)
@@ -274,6 +274,7 @@ Mat3d ReducedStVKCubatureForceModel::computeF(const int &cubica_idx,const double
     delete[] temp;
     return F;
 }
+
 Mat3d ReducedStVKCubatureForceModel::computeF_gradient(const int &ele,const int &vert_idx,const int &vert_idx_dim) const
 {
 	//vert_idx denotes the j-th vertex, vert_idx_dim is the k-th coordinate of the j-th vertex
@@ -367,14 +368,45 @@ void ReducedStVKCubatureForceModel::computeReducedDis(const double *x, double *q
         }
     }
 }
+void ReducedStVKCubatureForceModel::computeGlobalDis(const int &cubica_idx, const double *q, double *dis) const
+{
+    memset(dis,0.0,sizeof(double)*12);
+    for(int i=0;i<12;++i)
+        for(int j=0;j<r_;++j)
+            dis[i]+=cubica_subBasis_[cubica_idx][i][j]*q[j];
+}
 void ReducedStVKCubatureForceModel::computeReducedEnergy(const double *q,double &energy) const
 {
 	energy=0.0;
 	//computeF(reduced_dis);//compute F for all cubica elements
 	for(int cubica_idx=0;cubica_idx<cubica_num_;++cubica_idx)
 	{
-		Mat3d F=computeF(cubica_idx,q);
+		int ele=cubica_elements_[cubica_idx];
+        // double ele_volume=tet_mesh_->getTetVolume(tet_mesh_->getVertex(ele,0),tet_mesh_->getVertex(ele,1),
+		// 	tet_mesh_->getVertex(ele,2),tet_mesh_->getVertex(ele,3));
+        // double *ele_pos=new double[12];
+        // memset(ele_pos,0.0,sizeof(double)*12);
+        // double *ele_dis=new double[12];
+        // memset(ele_dis,0.0,sizeof(double)*12);
+        // computeGlobalDis(cubica_idx,q,ele_dis);
+        // for(int i=0;i<4;++i)
+        // {
+        //     int vertID=volumetric_mesh_->getVertexIndex(ele,i);
+        //     // std::cout<<"vertID:"<<vertID<<"\n";
+        //     // getchar();
+        //     for(int j=0;j<3;++j)
+        //     {
+        //         ele_pos[3*i+j]=(*volumetric_mesh_->getVertex(vertID))[j];
+        //         // std::cout<<"ele_pos:"<<ele_pos[3*i+j]<<",";
+        //         // ele_dis[3*i+j]=dis[3*i+j];
+        //         // std::cout<<"ele_dis:"<<ele_dis[3*i+j]<<",";
+        //     }
+        // }
         Mat3d I(1.0);
+        // Mat3d F=computeReducedElasticF(ele_dis,ele_pos);
+        // delete[] ele_pos;
+        // delete[] ele_dis;
+        Mat3d F=computeF(cubica_idx,q);
         Mat3d temp=trans(F)*F;
     	Mat3d E=0.5*(temp-I);
         double trace_E=E[0][0]+E[1][1]+E[2][2];
@@ -388,13 +420,14 @@ void ReducedStVKCubatureForceModel::computeReducedEnergy(const double *q,double 
 }
 void ReducedStVKCubatureForceModel::computeReducedInternalForce(const double *q,double *forces) const
 {//q:r*1
-	// PerformanceCounter counter2;
-	// counter2.StartCounter();
+    // std::cout<<"----------------------reduced stvk cubature internal force-----------------------\n";
 	memset(forces,0.0,sizeof(double)*r_);
     // double total_time=0.0,other_total_time=0.0,F_time=0.0,assemble_f=0.0;
 	for(int cubica_idx=0;cubica_idx<cubica_num_;++cubica_idx)
 	{
 		int ele=cubica_elements_[cubica_idx];
+        // double ele_volume=tet_mesh_->getTetVolume(tet_mesh_->getVertex(ele,0),tet_mesh_->getVertex(ele,1),
+		// 	tet_mesh_->getVertex(ele,2),tet_mesh_->getVertex(ele,3));
     	Mat3d F=computeF(cubica_idx,q);
 		Mat3d P=firstPiolaKirchhoff(F);
         Mat3d temp1=trans(computeDmInv(ele));
@@ -415,13 +448,13 @@ void ReducedStVKCubatureForceModel::computeReducedInternalForce(const double *q,
         for(int i=0;i<r_;++i)
             for(int j=0;j<12;++j)
                 gf_[i]+=cubica_subBasis_[cubica_idx][j][i]*ele_force[j];
-        delete[] ele_force;
 		for(int i=0;i<r_;++i)
 			forces[i] += cubica_weights_[cubica_idx]*gf_[i];
+        delete[] ele_force;
 	}
-    if(add_gravity_)
-        for(int i=0;i<r_;++i)
-            forces[i] -= gravity_force_[i];
+    // if(add_gravity_)
+    //     for(int i=0;i<r_;++i)
+    //         forces[i] -= gravity_force_[i];
     // counter2.StopCounter();
     // std::cout<<"integrator compute internal force:"<<counter2.GetElapsedTime()<<"\n";
 }
@@ -437,31 +470,13 @@ void ReducedStVKCubatureForceModel::computeReducedStiffnessMatrix(const double *
     // std::cout<<cubica_num_<<"\n";
 	for(int cubica_idx=0;cubica_idx<cubica_num_;++cubica_idx)
 	{
-
-    	// PerformanceCounter counter21;
-    	// counter21.StartCounter();
-        //
-    	// PerformanceCounter counter33;
-    	// counter33.StartCounter();
 		int ele=cubica_elements_[cubica_idx];
+        // double ele_volume=tet_mesh_->getTetVolume(tet_mesh_->getVertex(ele,0),tet_mesh_->getVertex(ele,1),
+		// 	tet_mesh_->getVertex(ele,2),tet_mesh_->getVertex(ele,3));
 		Matrix<double> subU=tetSubBasis(cubica_idx);//12*r
-
-        // counter33.StopCounter();
-        // else_time+=counter33.GetElapsedTime();
 		Matrix<double> ele_K(12,12);
-    	// PerformanceCounter counter2;
-    	// counter2.StartCounter();
         Mat3d F=computeF(cubica_idx,q);
-        // counter2.StopCounter();
-        // F_time+=counter2.GetElapsedTime();
-
-    	// PerformanceCounter counter3;
-    	// counter3.StartCounter();
 		Mat3d trans_DmInv=trans(computeDmInv(ele));
-        // counter3.StopCounter();
-        // std::cout<<"computeK-counter3:"<<counter3.GetElapsedTime()<<"\n";
-        // PerformanceCounter counter4;
-    	// counter4.StartCounter();
 		for(int i=0;i<4;++i)
 		{
 			std::vector<Mat3d> g_derivative(3);//computes dg/dx_j^0,dg/dx_j^1,dg/dx_j^2
@@ -488,32 +503,9 @@ void ReducedStVKCubatureForceModel::computeReducedStiffnessMatrix(const double *
 				}
 			}
 		}
-        // counter4.StopCounter();
-        // assemble_k+=counter4.GetElapsedTime();
-        //
-        // counter21.StopCounter();
-        // other_count_time+=counter21.GetElapsedTime();
-        // PerformanceCounter counter5;
-    	// counter5.StartCounter();
-        // MultiplyMatrix()
-        // modal_matrix_ = new ModalMatrix(volumetric_mesh_->getNumVertices(),r_,U);
-        // modal_matrix_->ProjectMatrix(r_,ele_K,)
         Matrix<double> temp=subU.MultiplyT(ele_K);
-
-        // for(int i=0;i<r_;++i)
-        // {
-        //     for(int j=0;j<12;++j)
-        //         std::cout<<temp(i,j)<<",";
-        //     std::cout<<"\n";
-        // }
-        // std::cout<<"\n";
-        // std::cout<<"\n";
-        // if(cubica_idx==0)
-        //     getchar();
         Matrix<double> temp1=temp*subU;
         K+=(cubica_weights_[cubica_idx]*temp1);
-        // counter5.StopCounter();
-        // total_time+=counter5.GetElapsedTime();
 	}
     for(int i=0;i<r_;++i)
         for(int j=0;j<r_;++j)
@@ -566,31 +558,10 @@ Mat3d ReducedStVKCubatureForceModel::computeReducedElasticF(const double *ele_di
 	//compute displacement x=X+Uq
 	double *deformed=new double[12];
 	memset(deformed,0.0,sizeof(double)*12);
-    // Matrix<double> subU=tetSubBasis(ele);//12xr
-    // double *temp=new double[12];
-    // memset(temp,0.0,sizeof(double)*12);
-    // for(int i=0;i<12;++i)
-    //     for(int j=0;j<r_;++j)
-    //         temp[i]+=cubica_subBasis_[cubica_idx][i][j]*q[j];//project reduced displacement q to full space
-
-//     std::cout<<"q:\n";
-//     for(int j=0;j<r_;++j)
-//         std::cout<<q[j]<<",";
-//     std::cout<<"\n";
-//     std::cout<<"reference_pos:\n";
-//     for(int j=0;j<12;++j)
-// 	{
-//         std::cout<<ele_reference_pos[j]<<",";
-//     }
-// std::cout<<"\n";
 	for(int j=0;j<12;++j)
 	{
 		deformed[j]=ele_reference_pos[j]+ele_dis[j];
-        // std::cout<<"deformed:"<<deformed[j]<<",";
 	}
-    // std::cout<<"deformed:"<<deformed[3*vert+0]<<","<<reference_pos[3*vert+1]<<","<<reference_pos[3*vert+0]<<"\n";
-    // std::cout<<"ds:"<<computeElasticDs(deformed)<<"\n";
-    // std::cout<<"DmInv:"<<computeElasticDmInv(ele_reference_pos)<<"\n";
 	Mat3d F=computeElasticDs(deformed)*computeElasticDmInv(ele_reference_pos);
     // getchar();
     //temp handle invert F_
@@ -617,10 +588,12 @@ void ReducedStVKCubatureForceModel::computeReducedElasticEnergy(const double *di
 {
 	energy=0.0;
 	//computeF(reduced_dis);//compute F for all cubica elements
-	// for(int cubica_idx=0;cubica_idx<cubica_num_;++cubica_idx)
-    for(int ele=0;ele<volumetric_mesh_->getNumElements();++ele)
+	for(int cubica_idx=0;cubica_idx<cubica_num_;++cubica_idx)
+    // for(int ele=0;ele<volumetric_mesh_->getNumElements();++ele)
 	{
-        // int ele=cubica_elements_[cubica_idx];
+        int ele=cubica_elements_[cubica_idx];
+        // double ele_volume=tet_mesh_->getTetVolume(tet_mesh_->getVertex(ele,0),tet_mesh_->getVertex(ele,1),
+		// 	tet_mesh_->getVertex(ele,2),tet_mesh_->getVertex(ele,3));
         double *ele_pos=new double[12];
         double *ele_dis=new double[12];
         for(int i=0;i<4;++i)
@@ -644,12 +617,12 @@ void ReducedStVKCubatureForceModel::computeReducedElasticEnergy(const double *di
             for(int j=0;j<3;++j)
                 doubleE+=E[i][j]*E[i][j];
         double element_energy=0.5*lamda_*trace_E*trace_E+mu_*doubleE;
-		energy += element_energy;
+		energy += cubica_weights_[cubica_idx]*element_energy;
 	}
 }
 void ReducedStVKCubatureForceModel::computeReducedElasticInternalForce(const double *dis,double *forces,const double *reference_pos) const
 {//q:r*1
-    std::cout<<"compute reduced elastic internal force with reference pos, dis, to get a reduced force\n";
+    // std::cout<<"compute reduced elastic internal force with reference pos, dis, to get a reduced force\n";
 	// PerformanceCounter counter2;
 	// counter2.StartCounter();
     // std::cout<<"begin:\n";
@@ -696,11 +669,11 @@ void ReducedStVKCubatureForceModel::computeReducedElasticInternalForce(const dou
 		Mat3d P=firstPiolaKirchhoff(F);
 
 		// std::cout<<"P="<<P<<"\n";
-		Mat3d temp1=computeElasticDmInv(ele_pos);
-        Mat3d temp2=trans(temp1);
-        Mat3d temp=(1.0/(6*det(temp1)))*P*temp2;
-        // Mat3d temp1=trans(computeElasticDmInv(ele_pos));
-        // Mat3d temp=ele_volume*P*temp1;
+		// Mat3d temp1=computeElasticDmInv(ele_pos);
+        // Mat3d temp2=trans(temp1);
+        // Mat3d temp=(1.0/(6*det(temp1)))*P*temp2;
+        Mat3d temp1=trans(computeElasticDmInv(ele_pos));
+        Mat3d temp=P*temp1;
 		// Matrix<double> ele_force(12,1);
         double *ele_force=new double[12];
         memset(ele_force,0.0,sizeof(double)*12);
@@ -753,73 +726,32 @@ void ReducedStVKCubatureForceModel::computeReducedElasticInternalForce(const dou
 }
 void ReducedStVKCubatureForceModel::testEnergyGradients()
 {
-    // double *x=new double[r_];
-    // double *dx=new double[r_];
-    // double *grad = new double[r_];
-    // srand((unsigned)time(0));
-    // int lowest=1,highest=10;
-	// int range=(highest-lowest)+1;
-	// for(int i=0;i<r_;++i)
-	// {
-	// 	x[i]=(lowest+rand()%range)/10.0;
-	// 	std::cout<<x[i]<<",";
-	// }
-    // computeReducedInternalForce(x,grad);
-	// for(int i=0;i<r_;++i)
-	// {
-	// 	dx[i]=(lowest+rand()%range)/1.0e7;
-	// 	x[i]+=dx[i];
-	// }
-    // double f_plus,f_min;
-    // computeReducedEnergy(x,f_plus);
-    // for(int i=0;i<r_;++i)
-    // {
-    //     x[i]-=2*dx[i];
-    // }
-    // computeReducedEnergy(x,f_min);
-    // double f_grad_times_dx=0.0;
-    // for(int i=0;i<r_;++i)
-    //     f_grad_times_dx+=grad[i]*2*dx[i];
-    //     std::cout<<f_plus<<"...\n";
-    // std::cout<<"Objective, df, analytic: "<<std::setprecision(15)<<f_grad_times_dx<<", numerial: "<<std::setprecision(15)<<f_plus-f_min;
-    // std::cout<<"f_plus:"<<f_plus<<",f_min:"<<f_min<<", absolute_error= "<<f_plus-f_min-f_grad_times_dx;
-    // std::cout<<", rel_error= "<<(f_plus-f_min-f_grad_times_dx)/(fabs(f_grad_times_dx)>1e-20?fabs(f_grad_times_dx):1e-20)<<"\n";
-    // delete[] x;
-    // delete[] dx;
-    // delete[] grad;
-    double *x=new double[3*volumetric_mesh_->getNumVertices()];
-    double *dx=new double[3*volumetric_mesh_->getNumVertices()];
-    double *y=new double[3*volumetric_mesh_->getNumVertices()];
-    double *grad = new double[3*volumetric_mesh_->getNumVertices()];
+    double *x=new double[r_];
+    double *dx=new double[r_];
+    double *grad = new double[r_];
     srand((unsigned)time(0));
     int lowest=1,highest=10;
 	int range=(highest-lowest)+1;
-	for(int i=0;i<3*volumetric_mesh_->getNumVertices();++i)
-	{
-		y[i]=(lowest+rand()%range);
-		// std::cout<<x[i]<<",";
-	}
-    // modal_matrix_->AssembleVector(x,qx);
-	for(int i=0;i<3*volumetric_mesh_->getNumVertices();++i)
+	for(int i=0;i<r_;++i)
 	{
 		x[i]=(lowest+rand()%range)/10.0;
-		// std::cout<<x[i]<<",";
+		std::cout<<x[i]<<",";
 	}
-    computeReducedElasticInternalForce(x,grad,y);
-	for(int i=0;i<3*volumetric_mesh_->getNumVertices();++i)
+    computeReducedInternalForce(x,grad);
+	for(int i=0;i<r_;++i)
 	{
 		dx[i]=(lowest+rand()%range)/1.0e7;
 		x[i]+=dx[i];
 	}
     double f_plus,f_min;
-    computeReducedElasticEnergy(x,f_plus,y);
-    for(int i=0;i<3*volumetric_mesh_->getNumVertices();++i)
+    computeReducedEnergy(x,f_plus);
+    for(int i=0;i<r_;++i)
     {
         x[i]-=2*dx[i];
     }
-    computeReducedElasticEnergy(x,f_min,y);
+    computeReducedEnergy(x,f_min);
     double f_grad_times_dx=0.0;
-    for(int i=0;i<3*volumetric_mesh_->getNumVertices();++i)
+    for(int i=0;i<r_;++i)
         f_grad_times_dx+=grad[i]*2*dx[i];
         std::cout<<f_plus<<"...\n";
     std::cout<<"Objective, df, analytic: "<<std::setprecision(15)<<f_grad_times_dx<<", numerial: "<<std::setprecision(15)<<f_plus-f_min;
@@ -828,6 +760,47 @@ void ReducedStVKCubatureForceModel::testEnergyGradients()
     delete[] x;
     delete[] dx;
     delete[] grad;
+    // double *x=new double[3*volumetric_mesh_->getNumVertices()];
+    // double *dx=new double[3*volumetric_mesh_->getNumVertices()];
+    // double *y=new double[3*volumetric_mesh_->getNumVertices()];
+    // double *grad = new double[3*volumetric_mesh_->getNumVertices()];
+    // srand((unsigned)time(0));
+    // int lowest=1,highest=10;
+	// int range=(highest-lowest)+1;
+	// for(int i=0;i<3*volumetric_mesh_->getNumVertices();++i)
+	// {
+	// 	y[i]=(lowest+rand()%range);
+	// 	// std::cout<<x[i]<<",";
+	// }
+    // // modal_matrix_->AssembleVector(x,qx);
+	// for(int i=0;i<3*volumetric_mesh_->getNumVertices();++i)
+	// {
+	// 	x[i]=(lowest+rand()%range)/10.0;
+	// 	// std::cout<<x[i]<<",";
+	// }
+    // computeReducedElasticInternalForce(x,grad,y);
+	// for(int i=0;i<3*volumetric_mesh_->getNumVertices();++i)
+	// {
+	// 	dx[i]=(lowest+rand()%range)/1.0e7;
+	// 	x[i]+=dx[i];
+	// }
+    // double f_plus,f_min;
+    // computeReducedElasticEnergy(x,f_plus,y);
+    // for(int i=0;i<3*volumetric_mesh_->getNumVertices();++i)
+    // {
+    //     x[i]-=2*dx[i];
+    // }
+    // computeReducedElasticEnergy(x,f_min,y);
+    // double f_grad_times_dx=0.0;
+    // for(int i=0;i<3*volumetric_mesh_->getNumVertices();++i)
+    //     f_grad_times_dx+=grad[i]*2*dx[i];
+    //     std::cout<<f_plus<<"...\n";
+    // std::cout<<"Objective, df, analytic: "<<std::setprecision(15)<<f_grad_times_dx<<", numerial: "<<std::setprecision(15)<<f_plus-f_min;
+    // std::cout<<"f_plus:"<<f_plus<<",f_min:"<<f_min<<", absolute_error= "<<f_plus-f_min-f_grad_times_dx;
+    // std::cout<<", rel_error= "<<(f_plus-f_min-f_grad_times_dx)/(fabs(f_grad_times_dx)>1e-20?fabs(f_grad_times_dx):1e-20)<<"\n";
+    // delete[] x;
+    // delete[] dx;
+    // delete[] grad;
 }
 void ReducedStVKCubatureForceModel::testObjectiveGradients()
 {

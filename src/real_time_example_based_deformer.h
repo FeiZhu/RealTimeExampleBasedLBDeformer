@@ -408,6 +408,7 @@ private:
     double *q_=NULL;
     double *temp_q_=NULL;
     double *temp_grad_=NULL;
+    double *temp_u_=NULL;
     double *qvel_=NULL;
     double *qaccel_=NULL;
     double *fq_=NULL;
@@ -428,6 +429,7 @@ private:
     double *examples_deformation0_=NULL;//temp
     Vec3d *temp_eigencoefs0_=NULL;
     std::map<int,int> vert_vertex1,vert_vertex2;
+    double **example_reconstruction_=NULL;
 
     //rigid body simulation
     RigidBody_GeneralTensor *rigid_=NULL;
