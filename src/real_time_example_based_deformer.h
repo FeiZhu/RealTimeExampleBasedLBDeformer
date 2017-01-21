@@ -153,6 +153,7 @@ public:
     void setGravity(bool add_gravity,double gravity);
     void setConstrains(bool with_constrains){with_constrains_=with_constrains;}
     void setExampleForceType(const std::string &example_force_type);
+    void resetRotation();
     // void setReducedSimulationMesh(SceneObjectReduced *mesh){reduced_simulation_mesh_=mesh};
     void computeEigenfunction(const std::string &A_filename, const std::string &B_filename,const unsigned int &vert_num,const std::string &eigen_filename);
     //registration of eigenfunctions
@@ -453,6 +454,7 @@ private:
     // double *f_enl_=NULL;
     // double *f_cen_=NULL;
     // double *vert_f_ext_=NULL;
+    double *local_f_ext_=NULL;
     double R_[9];
     double new_R_[9];
     double t_[3];
@@ -474,6 +476,7 @@ private:
     double *initial_eigen_skeleton_=NULL;
     double *deformed_eigen_skeleton_=NULL;
     bool is_reconstructed_by_deformation_transfer_=false;
+    bool enable_slow_rotate_=false;
     // std::vector<Mat3d> global_T_;
 
 };

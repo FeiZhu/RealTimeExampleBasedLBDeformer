@@ -250,6 +250,26 @@ void OpenGLDriver::initGLUI()
     std::string eigenfunction_num_str;
     std::string reconstruct_eigenfunction_num_str;
 
+    if(example_num_ > 0)
+    {
+       adaptor.clear();
+       adaptor<<interpolate_eigenfunction_num_;
+       adaptor>>eigenfunction_num_str;
+       static_text_content.clear();
+       static_text_content = std::string("Number of eigenfunctions for examples: ");
+       static_text_content += eigenfunction_num_str;
+       adaptor.clear();
+       adaptor<<reconstruct_eigenfunction_num_;
+       adaptor>>reconstruct_eigenfunction_num_str;
+       static_text_content += "/" + reconstruct_eigenfunction_num_str;
+       glui_->add_statictext_to_panel(eigen_panel,static_text_content.c_str());
+       adaptor.clear();
+       glui_current_example_eigenfunctions_loaded_=glui_->add_statictext_to_panel(eigen_panel,"Eigenfunctions for current example loaded:No");
+       glui_->add_button_to_panel(eigen_panel,"Load Eigenfunctions for All Examples",0,loadExampleEigenfunctions);
+       glui_->add_separator_to_panel(eigen_panel);
+    }
+    adaptor.clear();
+
     std::string interpolate_eigenfunction_num_str;
     adaptor<<interpolate_eigenfunction_num_;
     adaptor>>interpolate_eigenfunction_num_str;
@@ -272,27 +292,6 @@ void OpenGLDriver::initGLUI()
     glui_rendering_eigenfunctions_enabled_=glui_->add_statictext_to_panel(eigen_panel,static_text_content.c_str());
     render_eigen_index_spinner_=glui_->add_spinner_to_panel(eigen_panel,"Current eigenfunction index: ",GLUI_SPINNER_INT,&current_render_eigen_idx_,0,changeCurrentEigenIndex);
     render_eigen_index_spinner_->set_int_limits(-1,-1,GLUI_LIMIT_CLAMP);
-
-    adaptor.clear();
-
-    if(example_num_ > 0)
-    {
-        adaptor.clear();
-        adaptor<<interpolate_eigenfunction_num_;
-        adaptor>>eigenfunction_num_str;
-        static_text_content.clear();
-        static_text_content = std::string("Number of eigenfunctions for examples: ");
-        static_text_content += eigenfunction_num_str;
-        adaptor.clear();
-        adaptor<<reconstruct_eigenfunction_num_;
-        adaptor>>reconstruct_eigenfunction_num_str;
-        static_text_content += "/" + reconstruct_eigenfunction_num_str;
-        glui_->add_statictext_to_panel(eigen_panel,static_text_content.c_str());
-        adaptor.clear();
-        glui_current_example_eigenfunctions_loaded_=glui_->add_statictext_to_panel(eigen_panel,"Eigenfunctions for current example loaded:No");
-        glui_->add_button_to_panel(eigen_panel,"Load Eigenfunctions for All Examples",0,loadExampleEigenfunctions);
-        glui_->add_separator_to_panel(eigen_panel);
-    }
 
     //coupled quasi-harmonic bases
     if(example_num_>0)
@@ -342,6 +341,8 @@ void OpenGLDriver::initGLUI()
     //add_rollout("Simulation",true);
     sim_panel->set_alignment(GLUI_ALIGN_LEFT);
     glui_->add_button_to_panel(sim_panel,"Reset",0,/*resetDeformation*/changeSimulationMode);
+    if((simulation_mode_==REDUCEDSPACE)&&(!with_constrains_))
+        glui_->add_button_to_panel(sim_panel,"stopRotate",0,resetRotation);
     //glui_->add_button_to_panel(sim_panel,"Save Current object Surface",0,/*saveCurrentObjectSurface*/changeSimulationMode);
     if(example_num_>0)
         change_simulation_mode_button_=glui_->add_button_to_panel(sim_panel,"Enable Example-based Simulation",0,changeSimulationMode);
@@ -1215,7 +1216,7 @@ void OpenGLDriver::idleFunction()
             active_instance->time_step_counter_++;
 
         //save files per 4 steps
-        if((active_instance->time_step_counter_%4==0)&&(active_instance->time_step_counter_>0)&&(active_instance->enable_save_objmesh_)&&(!active_instance->pause_simulation_))
+        if((active_instance->time_step_counter_%10==0)&&(active_instance->time_step_counter_>0)&&(active_instance->enable_save_objmesh_)&&(!active_instance->pause_simulation_))
         {
             active_instance->saveCurrentObjmesh(0);
         }
@@ -1532,7 +1533,12 @@ void OpenGLDriver::changeSimulationMode(int code)
         active_instance->change_simulation_mode_button_->set_name("Enable example-based simulation");
     }
 }
-
+void OpenGLDriver::resetRotation(int code)
+{
+    OpenGLDriver* active_instance = OpenGLDriver::activeInstance();
+    assert(active_instance);
+    active_instance->simulator_->resetRotation();
+}
 // void OpenGLDriver::enableReducedSimulation(int code)
 // {
 //     OpenGLDriver* active_instance = OpenGLDriver::activeInstance();

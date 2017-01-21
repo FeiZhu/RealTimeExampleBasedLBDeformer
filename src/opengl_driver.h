@@ -63,6 +63,7 @@ private:
     static void updateCurrentExample(int code);
     static void changeCurrentEigenIndex(int code);
     static void changeSimulationMode(int code);
+    static void resetRotation(int code);
 //    static void enableReducedSimulation(int code);
     static void loadMassmatrix(int code);
     static void loadInertiaTensor(int code);
